@@ -101,8 +101,9 @@ Tres cosas que conviene tener claras:
 - **El endpoint tiene que ser HTTPS.** Con `http` la aplicación ni siquiera
   arranca: se aborta al inicio. Es deliberado, porque un canal en claro
   permitiría a cualquiera en la red servir una actualización falsa.
-- `plugins.updater.endpoints` lleva un marcador `TU-USUARIO`. Hay que
-  cambiarlo por el repositorio real antes de publicar.
+- El manifiesto se lee de la última *release* del repositorio, así que cada
+  versión debe publicarse como release con el `.exe`, el `.sig` y el
+  `latest.json` adjuntos.
 
 ## El instalador
 

@@ -49,7 +49,7 @@
       "icons/128x128@2x.png",
       "icons/icon.ico"
     ],
-    "copyright": "Esdras",
+    "copyright": "Esdras Clother",
     "shortDescription": "Editor Markdown con vista previa en vivo",
     "windows": {
       "nsis": {
@@ -74,12 +74,13 @@
         "role": "Editor"
       }
     ],
-    "createUpdaterArtifacts": true
+    "createUpdaterArtifacts": true,
+    "homepage": "https://github.com/esdrasclth/unfold"
   },
   "plugins": {
     "updater": {
       "endpoints": [
-        "https://github.com/TU-USUARIO/unfold/releases/latest/download/latest.json"
+        "https://github.com/esdrasclth/unfold/releases/latest/download/latest.json"
       ],
       "pubkey": "dW50cnVzdGVkIGNvbW1lbnQ6IG1pbmlzaWduIHB1YmxpYyBrZXk6IEQ3MkQ5QzQyRUUwODJFMTYKUldRV0xnanVRcHd0MTBSM1hOb1FzMjF3QXJOWVI4c0JjZ2RVcENLa3lvRTRxNm9kYk5aOXo3MzkK",
       "windows": {
