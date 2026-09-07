@@ -113,24 +113,35 @@ function baseExtensions(paste: PasteOptions, links: LinkHandlers): Extension {
   ];
 }
 
+/**
+ * Crea el estado de un documento.
+ *
+ * Se expone aparte de la vista porque cada pestaña guarda su propio estado
+ * completo —texto, selección e historial— y cambiar de pestaña es sustituirlo
+ * en la única vista que hay.
+ */
+export function createEditorState(doc: string, options: EditorOptions): EditorState {
+  return EditorState.create({
+    doc,
+    extensions: [
+      baseExtensions(options.paste, options.links),
+      assetResolver.of(options.resolveAsset ?? ((src) => src)),
+      EditorView.updateListener.of((update) => {
+        if (update.docChanged) options.onChange(update.state.doc.toString());
+        if ((update.selectionSet || update.docChanged) && options.onSelection) {
+          const head = update.state.selection.main.head;
+          const line = update.state.doc.lineAt(head);
+          options.onSelection(line.number, head - line.from + 1);
+        }
+      }),
+    ],
+  });
+}
+
 export function createEditor(options: EditorOptions): EditorView {
   return new EditorView({
     parent: options.parent,
-    state: EditorState.create({
-      doc: options.doc,
-      extensions: [
-        baseExtensions(options.paste, options.links),
-        assetResolver.of(options.resolveAsset ?? ((src) => src)),
-        EditorView.updateListener.of((update) => {
-          if (update.docChanged) options.onChange(update.state.doc.toString());
-          if ((update.selectionSet || update.docChanged) && options.onSelection) {
-            const head = update.state.selection.main.head;
-            const line = update.state.doc.lineAt(head);
-            options.onSelection(line.number, head - line.from + 1);
-          }
-        }),
-      ],
-    }),
+    state: createEditorState(options.doc, options),
   });
 }
 

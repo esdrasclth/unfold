@@ -184,7 +184,7 @@ body {
 
 #app {
   display: grid;
-  grid-template-rows: auto auto 1fr auto;
+  grid-template-rows: auto auto auto 1fr auto;
   height: 100vh;
   background: var(--chrome);
   overflow: hidden;
@@ -223,6 +223,10 @@ body {
 .titlebar-panel {
   flex: none;
   margin-right: 0.15rem;
+}
+
+.titlebar-file.is-hidden {
+  visibility: hidden;
 }
 
 .titlebar-file {
@@ -1100,4 +1104,230 @@ body.typewriter-mode .cm-content {
 .dialog-button:focus-visible {
   outline: 2px solid var(--accent);
   outline-offset: 2px;
+}
+
+/* --- Barra de pestañas ------------------------------------------------------ */
+
+.tab-bar {
+  display: flex;
+  gap: 2px;
+  padding: 0 0.4rem 0.3rem;
+  background: var(--chrome);
+  overflow-x: auto;
+  scrollbar-width: none;
+  user-select: none;
+  animation: drop-in var(--medium) var(--ease);
+}
+
+.tab-bar[hidden] {
+  display: none;
+}
+
+.tab-bar::-webkit-scrollbar {
+  height: 0;
+}
+
+.tab {
+  display: flex;
+  align-items: center;
+  gap: 0.35rem;
+  flex: 0 1 13rem;
+  min-width: 5.5rem;
+  height: 28px;
+  padding: 0 0.3rem 0 0.65rem;
+  border-radius: 7px;
+  color: var(--chrome-soft);
+  font-size: 12.5px;
+  cursor: pointer;
+  transition:
+    background var(--fast) var(--ease),
+    color var(--fast) var(--ease);
+}
+
+.tab:hover {
+  background: var(--chrome-hover);
+  color: var(--chrome-text);
+}
+
+/* La activa se dibuja con el plano del lienzo: se lee como su prolongación. */
+.tab.is-active {
+  background: var(--canvas);
+  color: var(--text);
+}
+
+.tab-name {
+  flex: 1;
+  min-width: 0;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.tab-close {
+  display: grid;
+  place-items: center;
+  flex: none;
+  width: 19px;
+  height: 19px;
+  padding: 0;
+  border: none;
+  border-radius: 5px;
+  background: transparent;
+  color: inherit;
+  opacity: 0;
+  cursor: pointer;
+  transition: opacity var(--fast) var(--ease), background var(--fast) var(--ease);
+}
+
+.tab-close svg {
+  width: 10px;
+  height: 10px;
+  display: block;
+}
+
+.tab:hover .tab-close,
+.tab.is-active .tab-close {
+  opacity: 0.65;
+}
+
+.tab-close:hover {
+  opacity: 1;
+  background: var(--chrome-pressed);
+}
+
+/*
+ * Con cambios sin guardar la cruz deja paso a un punto, que vuelve a ser cruz
+ * al pasar por encima: así el aviso está siempre visible sin quitar el cierre.
+ */
+.tab.is-dirty .tab-close {
+  opacity: 1;
+}
+
+.tab.is-dirty .tab-close svg {
+  display: none;
+}
+
+.tab.is-dirty .tab-close::before {
+  content: "";
+  width: 7px;
+  height: 7px;
+  border-radius: 50%;
+  background: var(--accent-chrome);
+}
+
+.tab.is-dirty.is-active .tab-close::before {
+  background: var(--accent);
+}
+
+.tab.is-dirty .tab-close:hover svg {
+  display: block;
+}
+
+.tab.is-dirty .tab-close:hover::before {
+  display: none;
+}
+
+/* --- Menú desplegable ------------------------------------------------------- */
+
+.menu {
+  position: fixed;
+  z-index: 40;
+  min-width: 16rem;
+  max-width: 22rem;
+  padding: 5px;
+  border-radius: 11px;
+  background: var(--chrome);
+  box-shadow: 0 12px 34px rgba(0, 0, 0, 0.26);
+  animation: menu-in var(--fast) var(--ease);
+}
+
+@keyframes menu-in {
+  from {
+    opacity: 0;
+    transform: translateY(-5px);
+  }
+}
+
+.menu-head {
+  padding: 0.45rem 0.6rem 0.5rem;
+  font-size: 10px;
+  font-weight: 640;
+  letter-spacing: 0.09em;
+  text-transform: uppercase;
+  color: var(--chrome-faint);
+}
+
+.menu-item {
+  position: relative;
+  display: block;
+  width: 100%;
+  padding: 0.35rem 1.6rem 0.35rem 0.6rem;
+  border: none;
+  border-radius: 7px;
+  background: transparent;
+  color: var(--chrome-text);
+  font-family: inherit;
+  font-size: 12.5px;
+  text-align: left;
+  cursor: pointer;
+  transition: background var(--fast) var(--ease);
+}
+
+.menu-item:hover {
+  background: var(--chrome-hover);
+}
+
+.menu-item-name {
+  display: block;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.menu-item-meta {
+  display: block;
+  margin-top: 1px;
+  font-size: 11px;
+  color: var(--chrome-faint);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.menu-item-forget {
+  position: absolute;
+  top: 50%;
+  right: 0.35rem;
+  display: grid;
+  place-items: center;
+  width: 19px;
+  height: 19px;
+  transform: translateY(-50%);
+  border-radius: 5px;
+  color: var(--chrome-faint);
+  font-size: 14px;
+  line-height: 1;
+  opacity: 0;
+  transition: opacity var(--fast) var(--ease), background var(--fast) var(--ease);
+}
+
+.menu-item:hover .menu-item-forget {
+  opacity: 1;
+}
+
+.menu-item-forget:hover {
+  background: var(--chrome-pressed);
+  color: var(--chrome-text);
+}
+
+.menu-item.is-action {
+  margin-top: 3px;
+  color: var(--chrome-soft);
+}
+
+.menu-empty {
+  margin: 0.2rem 0.6rem 0.5rem;
+  font-size: 12px;
+  line-height: 1.5;
+  color: var(--chrome-faint);
 }

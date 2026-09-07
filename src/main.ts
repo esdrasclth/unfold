@@ -1,6 +1,12 @@
 import { openSearchPanel } from "@codemirror/search";
 import type { EditorView } from "@codemirror/view";
-import { createEditor, replaceDocument, setTypewriter } from "./editor/index.ts";
+import {
+  createEditor,
+  createEditorState,
+  replaceDocument,
+  setTypewriter,
+  type EditorOptions,
+} from "./editor/index.ts";
 import { exportHtml, printDocument, type ExportContext } from "./export/index.ts";
 import {
   extensionForImage,
@@ -13,7 +19,11 @@ import {
   saveImageBeside,
   type OpenedFile,
 } from "./files.ts";
+import { rememberRecent } from "./recent.ts";
+import { Tabs } from "./tabs.ts";
 import { confirmDialog } from "./ui/confirmDialog.ts";
+import { RecentMenu } from "./ui/recentMenu.ts";
+import { TabBar } from "./ui/tabBar.ts";
 import { icon } from "./ui/icons.ts";
 import { Outline } from "./ui/outline.ts";
 import { SettingsPanel } from "./ui/settings.ts";
@@ -62,14 +72,37 @@ console.log(saludo("Esdras"));
 \`\`\`
 `;
 
-interface Session {
-  path: string | null;
-  name: string;
-  dirty: boolean;
-}
+/**
+ * `session` sigue siendo el documento en pantalla, pero ahora es una vista
+ * sobre la pestaña activa: se lee y se escribe a través de ella para no tener
+ * que tocar cada uso repartido por el archivo.
+ */
+const session = {
+  get path(): string | null {
+    return tabs.active().path;
+  },
+  set path(value: string | null) {
+    tabs.active().path = value;
+  },
+  get name(): string {
+    return tabs.active().name;
+  },
+  set name(value: string) {
+    tabs.active().name = value;
+  },
+  get dirty(): boolean {
+    return tabs.active().dirty;
+  },
+  set dirty(value: boolean) {
+    tabs.active().dirty = value;
+    tabs.touch();
+  },
+};
 
-const session: Session = { path: null, name: "Sin título", dirty: false };
 let view: EditorView;
+let tabs: Tabs;
+let tabBar: TabBar;
+let recentMenu: RecentMenu;
 let outline: Outline;
 let autosaveTimer: number | undefined;
 /** Contenido externo pendiente de resolver mientras hay conflicto. */
@@ -87,6 +120,7 @@ app.innerHTML = `
       <span class="titlebar-status" id="doc-status"></span>
     </div>
     <div class="titlebar-actions">
+      <button class="icon-button" id="btn-recent" title="Recientes">${icon("clock")}</button>
       <button class="icon-button" id="btn-open" title="Abrir (Ctrl+O)">${icon("open")}</button>
       <button class="icon-button" id="btn-save" title="Guardar (Ctrl+S)">${icon("save")}</button>
       <button class="icon-button" id="btn-search" title="Buscar (Ctrl+F)">${icon("search")}</button>
@@ -99,6 +133,7 @@ app.innerHTML = `
     </div>
     <div class="window-controls" id="window-controls"></div>
   </header>
+  <div class="tab-bar" id="tab-bar" hidden></div>
   <div class="conflict-bar" id="conflict" hidden>
     <span class="conflict-text">Este archivo ha cambiado fuera de Unfold y tienes cambios sin guardar.</span>
     <button class="conflict-action" id="conflict-reload">Cargar la versión del disco</button>
@@ -132,7 +167,25 @@ const el = {
   outlineButton: document.querySelector<HTMLButtonElement>("#btn-outline")!,
   settings: document.querySelector<HTMLElement>("#settings")!,
   settingsButton: document.querySelector<HTMLButtonElement>("#btn-settings")!,
+  recentButton: document.querySelector<HTMLButtonElement>("#btn-recent")!,
+  tabBar: document.querySelector<HTMLElement>("#tab-bar")!,
+  titlebarFile: document.querySelector<HTMLElement>(".titlebar-file")!,
 };
+
+/**
+ * Nombre de una pestaña sin archivo, sacado de su primera línea con contenido.
+ * Con varios documentos nuevos abiertos, «Sin título» repetido no distingue
+ * ninguno; su propio título sí.
+ */
+function titleFromDoc(doc: string): string {
+  const first = doc.split("\n").find((line) => line.trim().length > 0) ?? "";
+  const clean = first
+    .replace(/^#{1,6}\s+/, "")
+    .replace(/^[-*+]\s+/, "")
+    .replace(/[*_`~[\]]/g, "")
+    .trim();
+  return clean ? clean.slice(0, 32) : "Sin título";
+}
 
 /** Aviso breve en la barra de título; se borra solo. */
 let noticeTimer: number | undefined;
@@ -149,6 +202,9 @@ function notify(message: string): void {
 // --- Estado visible -----------------------------------------------------------
 
 function renderHeader(): void {
+  // Con pestañas visibles, el nombre ya está en la pestaña activa: repetirlo
+  // en la barra de título sería ruido.
+  el.titlebarFile.classList.toggle("is-hidden", tabs.count() > 1);
   el.name.textContent = session.name;
   el.status.textContent = session.dirty ? "sin guardar" : "guardado";
   el.status.classList.toggle("is-dirty", session.dirty);
@@ -219,16 +275,23 @@ async function persist(prompt: boolean): Promise<void> {
 }
 
 function applyFile(file: OpenedFile): void {
-  session.path = file.path;
-  session.name = file.name;
-  session.dirty = false;
   conflictContent = null;
   el.conflict.hidden = true;
-  replaceDocument(view, file.content);
+  tabs.open(view, file.path, file.name, file.content);
+  rememberRecent(file.path, file.name);
+  afterTabChange();
+}
+
+/** Todo lo que hay que refrescar cuando cambia el documento en pantalla. */
+function afterTabChange(): void {
+  const doc = view.state.doc.toString();
   renderHeader();
-  renderStats(file.content);
+  renderStats(doc);
   outline.refresh();
-  void watcher.watch(file.path);
+  // El modo máquina de escribir vive en un compartimento del estado, y el
+  // estado nuevo trae el suyo vacío: hay que reponerlo en cada cambio.
+  applyTypewriter();
+  void watcher.watch(session.path);
   view.focus();
 }
 
@@ -285,19 +348,40 @@ async function confirmDiscard(accion: string): Promise<boolean> {
   return true;
 }
 
-async function newDocument(): Promise<void> {
-  if (!(await confirmDiscard("empezar uno nuevo"))) return;
-  watcher.close();
-  session.path = null;
-  session.name = "Sin título";
-  session.dirty = false;
+/** Ctrl+N abre una pestaña más; no reemplaza lo que estabas escribiendo. */
+function newDocument(): void {
   conflictContent = null;
   el.conflict.hidden = true;
-  replaceDocument(view, "");
-  renderHeader();
-  renderStats("");
-  outline.refresh();
-  view.focus();
+  tabs.create(view);
+  afterTabChange();
+}
+
+async function switchTab(id: number): Promise<void> {
+  if (id === tabs.active().id) return;
+  // Se guarda lo pendiente de la que se abandona: al volver debe estar como
+  // se dejó, y el autoguardado de la otra ya no se dispararía.
+  if (session.dirty && session.path && conflictContent === null) await persist(false);
+  conflictContent = null;
+  el.conflict.hidden = true;
+  tabs.activate(view, id);
+  afterTabChange();
+}
+
+async function closeTab(id: number): Promise<void> {
+  const target = tabs.list().find((tab) => tab.id === id);
+  if (!target) return;
+
+  if (target.dirty) {
+    // Se trae al frente antes de preguntar: no se decide a ciegas sobre un
+    // documento que no se está viendo.
+    await switchTab(id);
+    if (!(await confirmDiscard("cerrar la pestaña"))) return;
+  }
+
+  tabs.close(view, id);
+  conflictContent = null;
+  el.conflict.hidden = true;
+  afterTabChange();
 }
 
 function exportContext(): ExportContext {
@@ -373,7 +457,7 @@ const savedTheme = localStorage.getItem("unfold:theme");
 document.documentElement.dataset.theme = savedTheme ?? "light";
 el.theme.innerHTML = icon(document.documentElement.dataset.theme === "dark" ? "sun" : "moon");
 
-view = createEditor({
+const editorOptions: EditorOptions = {
   parent: el.host,
   doc: WELCOME,
   resolveAsset: makeAssetResolver(() => session.path),
@@ -383,6 +467,7 @@ view = createEditor({
   },
   onChange: (doc) => {
     session.dirty = true;
+    if (!session.path) session.name = titleFromDoc(doc);
     renderHeader();
     renderStats(doc);
     scheduleAutosave();
@@ -416,6 +501,23 @@ view = createEditor({
       }
     },
   },
+};
+
+view = createEditor(editorOptions);
+
+tabs = new Tabs(
+  (doc) => createEditorState(doc, editorOptions),
+  () => tabBar.render(tabs.list(), tabs.active().id),
+);
+tabBar = new TabBar(el.tabBar, {
+  activate: (id) => void switchTab(id),
+  close: (id) => void closeTab(id),
+});
+tabs.adopt(view.state, titleFromDoc(WELCOME));
+
+recentMenu = new RecentMenu(el.recentButton, {
+  open: (path) => void loadPath(path),
+  browse: () => void load(),
 });
 
 outline = new Outline(el.outline, () => view);
@@ -438,6 +540,7 @@ el.outlineButton.addEventListener("click", toggleOutline);
 el.typewriter.addEventListener("click", toggleTypewriter);
 el.theme.addEventListener("click", toggleTheme);
 el.settingsButton.addEventListener("click", () => toggleSettings());
+el.recentButton.addEventListener("click", () => recentMenu.toggle());
 
 document.querySelector("#conflict-reload")!.addEventListener("click", () => resolveConflict(false));
 document.querySelector("#conflict-keep")!.addEventListener("click", () => resolveConflict(true));
@@ -462,10 +565,20 @@ if (isTauri) {
     await appWindow.onCloseRequested(async (event) => {
       if (closing) return;
       event.preventDefault();
-      if (await confirmDiscard("cerrar")) {
-        closing = true;
-        await appWindow.destroy();
+
+      // Se repasan todas las pestañas con cambios, no sólo la que se ve: la
+      // ventana se lleva por delante también las de detrás.
+      while (tabs.dirtyTabs().length > 0) {
+        const pending = tabs.dirtyTabs()[0];
+        await switchTab(pending.id);
+        if (!(await confirmDiscard("cerrar"))) return;
+        // Si se descartó, la pestaña sigue marcada como sucia: se limpia para
+        // no volver a preguntar por ella en la siguiente vuelta.
+        pending.dirty = false;
       }
+
+      closing = true;
+      await appWindow.destroy();
     });
 
     const startup = await invoke<string | null>("startup_file");
@@ -518,7 +631,14 @@ window.addEventListener("keydown", (event) => {
     void load();
   } else if (key === "n") {
     event.preventDefault();
-    void newDocument();
+    newDocument();
+  } else if (key === "w") {
+    event.preventDefault();
+    void closeTab(tabs.active().id);
+  } else if (event.key === "Tab") {
+    event.preventDefault();
+    tabs.cycle(view, event.shiftKey ? -1 : 1);
+    afterTabChange();
   } else if (key === "s") {
     event.preventDefault();
     void persist(event.shiftKey);
