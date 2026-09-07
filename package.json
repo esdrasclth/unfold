@@ -9,7 +9,7 @@
     "start": "tauri dev",
     "release": "tauri build",
     "tauri": "tauri",
-    "test": "node --experimental-strip-types scripts/test-markdown.mjs && node --experimental-strip-types scripts/test-export.mjs"
+    "test": "node --experimental-strip-types scripts/test-markdown.mjs && node --experimental-strip-types scripts/test-export.mjs && node --experimental-strip-types scripts/test-math.mjs"
   },
   "dependencies": {
     "@codemirror/commands": "^6.11.0",
@@ -25,10 +25,12 @@
     "@tauri-apps/api": "^2.11.1",
     "@tauri-apps/plugin-dialog": "^2.7.3",
     "@tauri-apps/plugin-fs": "^2.5.2",
-    "@tauri-apps/plugin-opener": "^2.5.5"
+    "@tauri-apps/plugin-opener": "^2.5.5",
+    "katex": "^0.18.7"
   },
   "devDependencies": {
     "@tauri-apps/cli": "^2.11.4",
+    "@types/katex": "^0.16.8",
     "linkedom": "^0.18.13",
     "typescript": "^7.0.2",
     "vite": "^8.2.2"

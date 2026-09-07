@@ -293,3 +293,57 @@ body.following-links .cm-md-link {
   color: var(--accent);
   text-underline-offset: 2px;
 }
+
+/* --- Frontmatter ------------------------------------------------------------ */
+
+/*
+ * Metadatos, no contenido: se dibuja como una ficha discreta al principio del
+ * documento en lugar de dejarlo pasar por título y reglas horizontales.
+ */
+.cm-md-frontmatter {
+  font-family: var(--font-mono);
+  font-size: 0.82em;
+  color: var(--text-soft);
+  background: var(--code-bg);
+  padding-left: 1em;
+  padding-right: 1em;
+}
+
+.cm-md-frontmatter:first-child {
+  border-radius: 9px 9px 0 0;
+  padding-top: 0.5em;
+}
+
+.cm-md-frontmatter:has(+ :not(.cm-md-frontmatter)) {
+  border-radius: 0 0 9px 9px;
+  padding-bottom: 0.5em;
+}
+
+/* --- Matemáticas ------------------------------------------------------------ */
+
+.cm-md-math {
+  color: var(--text);
+}
+
+.cm-md-math.is-block {
+  display: block;
+  margin: 0.5em 0;
+  padding: 0.4em 0;
+  text-align: center;
+  overflow-x: auto;
+}
+
+.cm-md-math.is-broken {
+  font-family: var(--font-mono);
+  font-size: 0.86em;
+  color: var(--danger);
+}
+
+/* KaTeX trae su propio tamaño; se ata al del documento para que acompañe. */
+.cm-md-math .katex {
+  font-size: 1.05em;
+}
+
+.cm-md-math .katex-error {
+  color: var(--danger);
+}

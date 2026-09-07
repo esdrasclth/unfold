@@ -14,6 +14,9 @@ import {
   ViewPlugin,
   type ViewUpdate,
 } from "@codemirror/view";
+import { frontmatterRange } from "./frontmatter.ts";
+import { inlineMath } from "./inlineMath.ts";
+import { MathWidget, mathBlocks } from "./math.ts";
 import { BulletWidget, ImageWidget, RuleWidget, TableWidget, TaskWidget } from "./widgets.ts";
 
 /**
@@ -48,6 +51,7 @@ const headingLine = [1, 2, 3, 4, 5, 6].map((level) =>
   Decoration.line({ class: `cm-md-heading cm-md-h${level}` }),
 );
 const quoteLine = Decoration.line({ class: "cm-md-quote" });
+const frontmatterLine = Decoration.line({ class: "cm-md-frontmatter" });
 const codeLine = Decoration.line({ class: "cm-md-codeblock" });
 
 /**
@@ -104,12 +108,34 @@ function buildDecorations(view: EditorView): {
     }
   };
 
+  const frontmatter = frontmatterRange(state);
+  if (frontmatter) {
+    decorateLines(frontmatter.from, frontmatter.to, frontmatterLine);
+  }
+
   for (const { from, to } of view.visibleRanges) {
+    // Fórmulas en línea: se ocultan bajo el cursor como cualquier otra
+    // sintaxis, para poder editarlas.
+    for (const formula of inlineMath(state, from, to)) {
+      if (touches(formula.from, formula.to)) continue;
+      replaceWith(
+        formula.from,
+        formula.to,
+        Decoration.replace({ widget: new MathWidget(formula.tex, false, formula.from) }),
+      );
+    }
+
     syntaxTree(state).iterate({
       from,
       to,
       enter: (node) => {
         const name = node.name;
+
+        // Dentro del frontmatter no se aplica nada del análisis de Markdown:
+        // ahí las rayas y los dos puntos son YAML, no sintaxis.
+        if (frontmatter && node.from >= frontmatter.from && node.to <= frontmatter.to) {
+          return false;
+        }
 
         // --- Bloques -----------------------------------------------------
         if (name.startsWith("ATXHeading")) {
@@ -349,5 +375,5 @@ const livePreviewPlugin = ViewPlugin.fromClass(
 );
 
 export function livePreview(): Extension {
-  return [tableField, livePreviewPlugin];
+  return [tableField, mathBlocks(), livePreviewPlugin];
 }

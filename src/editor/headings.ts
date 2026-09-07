@@ -1,5 +1,6 @@
 import { syntaxTree } from "@codemirror/language";
 import type { EditorState } from "@codemirror/state";
+import { frontmatterRange } from "./frontmatter.ts";
 
 export interface Heading {
   level: number;
@@ -17,11 +18,15 @@ export interface Heading {
 export function headingsOf(state: EditorState): Heading[] {
   const headings: Heading[] = [];
   const tree = syntaxTree(state);
+  // El cierre del frontmatter convierte su última clave en un encabezado
+  // subrayado a ojos de Markdown; ese falso título no debe salir en el esquema.
+  const frontmatter = frontmatterRange(state);
 
   for (let node = tree.topNode.firstChild; node; node = node.nextSibling) {
     const atx = node.name.startsWith("ATXHeading");
     const setext = node.name.startsWith("SetextHeading");
     if (!atx && !setext) continue;
+    if (frontmatter && node.from >= frontmatter.from && node.to <= frontmatter.to + 1) continue;
 
     const raw = state.doc.sliceString(node.from, node.to);
     const text = atx
