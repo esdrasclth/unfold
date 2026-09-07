@@ -59,6 +59,8 @@ La salida queda en `src-tauri/target/release/`, y el instalador en
 | Acción | Atajo |
 | --- | --- |
 | Nuevo documento | `Ctrl+N` |
+| Cerrar pestaña | `Ctrl+W` |
+| Pestaña siguiente / anterior | `Ctrl+Tab` / `Ctrl+Shift+Tab` |
 | Abrir / Guardar / Guardar como | `Ctrl+O` / `Ctrl+S` / `Ctrl+Shift+S` |
 | Seguir un enlace | `Ctrl` + clic |
 | Negrita / Cursiva | `Ctrl+B` / `Ctrl+I` |
@@ -245,6 +247,38 @@ Cubre los dos conversores, que son las piezas con más casos límite: HTML a
 Markdown (al pegar) y Markdown a HTML (al exportar). Corren en dos segundos sin
 abrir la aplicación, así que conviene ejecutarlos antes de tocar cualquiera de
 los dos.
+
+## Varios documentos
+
+Cada pestaña guarda un `EditorState` entero, no sólo su texto, así que al
+volver a ella se recuperan la selección, el scroll y el historial de deshacer.
+Se comparte una única vista: cambiar de pestaña es un `setState`, mucho más
+barato que mantener un editor por documento.
+
+La barra sólo aparece con dos o más abiertos; con uno repetiría el nombre que
+ya está en la barra de título. Un documento sin guardar toma su nombre de la
+primera línea, porque «Sin título» repetido no distingue ninguno.
+
+Cerrar la ventana repasa **todas** las pestañas con cambios, no sólo la que se
+ve, trayendo cada una al frente antes de preguntar: no se decide a ciegas sobre
+un documento que no se está viendo.
+
+El botón del reloj abre los recientes, con su carpeta y cuándo se usaron.
+
+## Frontmatter y matemáticas
+
+El bloque `---` del principio se dibuja como una ficha de metadatos. Hay que
+reconocerlo aparte porque para Markdown no existe: la primera raya es una regla
+horizontal y la de cierre convierte lo de en medio en un encabezado subrayado,
+que además se colaba en el esquema.
+
+`$…$` y `$$…$$` se renderizan con KaTeX, y se ocultan bajo el cursor como
+cualquier otra sintaxis. La detección va aparte del renderizado para poder
+probarla sin abrir la aplicación: el delimitador es un solo carácter que
+también sirve para precios, y un falso positivo desfigura el texto. Las reglas
+son que no haya espacio pegado a la apertura ni al cierre, que no haya un
+dígito tras el cierre y que dentro no quede otro `$` sin escapar. Esta última
+es la que evita que «$20 pero $x=1$» se trague el precio y la fórmula.
 
 ## Enlaces y cierre
 
