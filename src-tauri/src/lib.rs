@@ -45,6 +45,7 @@ pub fn run() {
     tauri::Builder::default()
         .plugin(tauri_plugin_fs::init())
         .plugin(tauri_plugin_dialog::init())
+        .plugin(tauri_plugin_opener::init())
         .invoke_handler(tauri::generate_handler![startup_file])
         .setup(|app| {
             // La ventana se crea oculta y se muestra ya pintada: asi no se ve

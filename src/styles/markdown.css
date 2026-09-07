@@ -85,8 +85,13 @@
   text-decoration-color: color-mix(in srgb, var(--accent) 30%, transparent);
   text-underline-offset: 3px;
   text-decoration-thickness: 1px;
-  cursor: pointer;
   transition: text-decoration-color var(--fast) var(--ease);
+}
+
+/* La mano aparece sólo con Ctrl pulsado, que es cuando el enlace se sigue. */
+body.following-links .cm-md-link {
+  cursor: pointer;
+  text-decoration-color: var(--accent);
 }
 
 .cm-md-link:hover {

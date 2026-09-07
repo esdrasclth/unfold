@@ -21,6 +21,7 @@ import {
   toggleItalic,
   toggleStrikethrough,
 } from "./commands.ts";
+import { clickableLinks, type LinkHandlers } from "./links.ts";
 import { assetResolver, livePreview } from "./livePreview.ts";
 import { smartPaste, type PasteOptions } from "./paste.ts";
 import { nextCell, nextRow, previousCell } from "./tables.ts";
@@ -38,6 +39,8 @@ export interface EditorOptions {
   resolveAsset?: (src: string) => string;
   /** Qué hacer al pegar imágenes y HTML con formato. */
   paste: PasteOptions;
+  /** Qué hacer al seguir un enlace con Ctrl+clic. */
+  links: LinkHandlers;
 }
 
 const formattingKeymap = keymap.of([
@@ -73,7 +76,7 @@ const nativeSpellcheck = EditorView.contentAttributes.of({
   autocapitalize: "off",
 });
 
-function baseExtensions(paste: PasteOptions): Extension {
+function baseExtensions(paste: PasteOptions, links: LinkHandlers): Extension {
   return [
     history(),
     drawSelection(),
@@ -95,6 +98,7 @@ function baseExtensions(paste: PasteOptions): Extension {
     livePreview(),
     unfoldTheme(),
     smartPaste(paste),
+    clickableLinks(links),
     typewriterMode.of([]),
     // El orden importa: las tablas capturan Tab y Enter antes que el resto.
     tableKeymap,
@@ -115,7 +119,7 @@ export function createEditor(options: EditorOptions): EditorView {
     state: EditorState.create({
       doc: options.doc,
       extensions: [
-        baseExtensions(options.paste),
+        baseExtensions(options.paste, options.links),
         assetResolver.of(options.resolveAsset ?? ((src) => src)),
         EditorView.updateListener.of((update) => {
           if (update.docChanged) options.onChange(update.state.doc.toString());
