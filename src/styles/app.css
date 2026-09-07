@@ -1,0 +1,1009 @@
+/**
+ * Sistema visual de Unfold.
+ *
+ * Dos principios:
+ *
+ * 1. Sin bordes. La separación entre zonas se consigue con capas de fondo, no
+ *    con líneas. Una interfaz llena de rectángulos de 1px se lee como una hoja
+ *    de cálculo; una de planos se lee como un documento.
+ *
+ * 2. El lienzo manda. El área de escritura es la capa más clara y el resto del
+ *    cromo se hunde por detrás, de modo que la vista cae siempre en el texto.
+ */
+
+:root {
+  --font-ui: "Inter", "Segoe UI Variable Text", "Segoe UI", system-ui, sans-serif;
+  --font-body: "Inter", "Segoe UI Variable Text", "Segoe UI", system-ui, sans-serif;
+  --font-mono: "Cascadia Code", "JetBrains Mono", "Consolas", ui-monospace, monospace;
+
+  --editor-measure: 47rem;
+  --editor-padding-inline: 2.5rem;
+  --editor-padding-block: 3.25rem;
+  --editor-font-size: 17px;
+  --editor-line-height: 1.78;
+
+  /* Curvas y tiempos compartidos: todo se mueve con el mismo carácter. */
+  --ease: cubic-bezier(0.22, 0.8, 0.28, 1);
+  --fast: 110ms;
+  --medium: 190ms;
+
+  color-scheme: light;
+
+  --canvas: #fdfcfa;
+  --wash: rgba(32, 26, 16, 0.055);
+  --wash-strong: rgba(32, 26, 16, 0.09);
+
+  /*
+   * El cromo (barra superior, esquema, apariencia y barra de estado) tiene su
+   * propia familia de colores. Sin separarla, poner la barra en petróleo
+   * dejaba encima el texto oscuro pensado para el papel del editor.
+   *
+   * `--on-chrome` es la tinta que va sobre la barra, en componentes sueltos
+   * para poder graduarla. Todo lo demás se deriva de esas dos variables, así
+   * que un tema nuevo son dos líneas.
+   */
+  --chrome: #f2f0eb;
+  --on-chrome: 32 26 16;
+
+  /* Tres pesos de texto: títulos, cuerpo y apoyo. */
+  --text: #17150f;
+  --text-body: #35312a;
+  --text-soft: #6f6a60;
+  --text-faint: #a8a298;
+
+  --accent: #b4572a;
+  --accent-wash: color-mix(in srgb, var(--accent) 11%, transparent);
+  --accent-edge: color-mix(in srgb, var(--accent) 30%, transparent);
+  --danger: #c0392b;
+
+  --caret: #24211d;
+  --selection: rgba(90, 140, 198, 0.22);
+  --selection-match: rgba(180, 87, 42, 0.1);
+  --search-match: rgba(240, 186, 60, 0.4);
+  --search-match-active: rgba(240, 168, 30, 0.72);
+  --line-active: rgba(32, 26, 16, 0.02);
+  --code-bg: rgba(32, 26, 16, 0.045);
+  --rule: rgba(32, 26, 16, 0.11);
+
+  --syn-keyword: #9c3780;
+  --syn-name: #35312a;
+  --syn-function: #2b6a9c;
+  --syn-property: #35673a;
+  --syn-type: #856819;
+  --syn-number: #b4572a;
+  --syn-string: #467539;
+  --syn-comment: #a49d93;
+  --syn-punct: #7b756c;
+}
+
+:root[data-theme="dark"] {
+  color-scheme: dark;
+
+  --canvas: #1b1a18;
+  --wash: rgba(255, 255, 255, 0.062);
+  --wash-strong: rgba(255, 255, 255, 0.1);
+
+  --chrome: #141312;
+  --on-chrome: 242 238 230;
+
+  --text: #f2eee6;
+  --text-body: #d6d1c8;
+  --text-soft: #948e85;
+  --text-faint: #6b665e;
+
+  --accent: #e0905e;
+  --accent-wash: color-mix(in srgb, var(--accent) 15%, transparent);
+  --accent-edge: color-mix(in srgb, var(--accent) 34%, transparent);
+  --danger: #e06c60;
+
+  --caret: #f2eee6;
+  --selection: rgba(96, 140, 190, 0.3);
+  --selection-match: rgba(224, 144, 94, 0.13);
+  --search-match: rgba(190, 150, 50, 0.34);
+  --search-match-active: rgba(214, 168, 44, 0.62);
+  --line-active: rgba(255, 255, 255, 0.022);
+  --code-bg: rgba(255, 255, 255, 0.05);
+  --rule: rgba(255, 255, 255, 0.11);
+
+  --syn-keyword: #d78cc4;
+  --syn-name: #d6d1c8;
+  --syn-function: #7fb2dd;
+  --syn-property: #8ec48f;
+  --syn-type: #d9bd72;
+  --syn-number: #e0905e;
+  --syn-string: #9dc98a;
+  --syn-comment: #6b665e;
+  --syn-punct: #928c83;
+}
+
+/*
+ * Acentos. Cada uno lleva dos valores porque un único color no puede servir a
+ * los dos temas: el que se lee bien sobre papel se apaga sobre negro.
+ */
+:root[data-accent="oceano"] { --accent: #2f6f9f; }
+:root[data-accent="bosque"] { --accent: #3f7d51; }
+:root[data-accent="ciruela"] { --accent: #8a4a86; }
+
+:root[data-theme="dark"][data-accent="oceano"] { --accent: #6aa9d8; }
+:root[data-theme="dark"][data-accent="bosque"] { --accent: #74bd8a; }
+:root[data-theme="dark"][data-accent="ciruela"] { --accent: #c58ac0; }
+
+/* Derivados del cromo: valen para cualquier color de barra. */
+:root {
+  --chrome-text: rgb(var(--on-chrome) / 1);
+  --chrome-soft: rgb(var(--on-chrome) / 0.72);
+  --chrome-faint: rgb(var(--on-chrome) / 0.52);
+  --chrome-hover: rgb(var(--on-chrome) / 0.09);
+  --chrome-pressed: rgb(var(--on-chrome) / 0.16);
+  --chrome-rule: rgb(var(--on-chrome) / 0.16);
+
+  /*
+   * El acento sobre la barra se acerca a la tinta lo justo para leerse: sobre
+   * barra oscura se aclara y sobre barra clara se oscurece, sin dejar de ser
+   * el mismo color. Así el estado activo conserva su identidad en todos los
+   * temas en vez de volverse un gris neutro.
+   */
+  --accent-chrome: color-mix(in srgb, var(--accent) 68%, rgb(var(--on-chrome)));
+  --accent-chrome-wash: color-mix(in srgb, var(--accent) 22%, transparent);
+}
+
+/*
+ * Temas de barra. La tinta de cada uno se eligió midiendo el contraste WCAG
+ * del blanco y del negro sobre el color, y quedándose con el mayor.
+ */
+:root[data-chrome="petroleo"] { --chrome: #0b3c49; --on-chrome: 255 255 255; }
+:root[data-chrome="tinta"]    { --chrome: #001011; --on-chrome: 255 255 255; }
+:root[data-chrome="jade"]     { --chrome: #35605a; --on-chrome: 255 255 255; }
+:root[data-chrome="ciruela"]  { --chrome: #7b506f; --on-chrome: 255 255 255; }
+:root[data-chrome="carmin"]   { --chrome: #9c0d38; --on-chrome: 255 255 255; }
+:root[data-chrome="malva"]    { --chrome: #584b53; --on-chrome: 255 255 255; }
+:root[data-chrome="bosque"]   { --chrome: #498467; --on-chrome: 0 0 0; }
+:root[data-chrome="pizarra"]  { --chrome: #6b818c; --on-chrome: 0 0 0; }
+:root[data-chrome="cielo"]    { --chrome: #64a6bd; --on-chrome: 0 0 0; }
+:root[data-chrome="naranja"]  { --chrome: #f17300; --on-chrome: 0 0 0; }
+:root[data-chrome="oro"]      { --chrome: #f1d302; --on-chrome: 0 0 0; }
+
+* {
+  box-sizing: border-box;
+}
+
+html,
+body {
+  height: 100%;
+  margin: 0;
+}
+
+body {
+  background: var(--chrome);
+  color: var(--text-body);
+  font-family: var(--font-ui);
+  -webkit-font-smoothing: antialiased;
+  text-rendering: optimizeLegibility;
+  overflow: hidden;
+}
+
+#app {
+  display: grid;
+  grid-template-rows: auto auto 1fr auto;
+  height: 100vh;
+  background: var(--chrome);
+  overflow: hidden;
+}
+
+/*
+ * Flex y no rejilla: una columna `auto` se dimensiona por el contenido, y el
+ * panel del esquema necesita que mande su ancho declarado para poder animarlo
+ * hasta cero.
+ */
+.workspace {
+  display: flex;
+  min-height: 0;
+}
+
+/* --- Barra de título propia ------------------------------------------------ */
+
+.titlebar {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  height: 38px;
+  padding-left: 0.4rem;
+  background: var(--chrome);
+  transition: opacity var(--medium) var(--ease);
+  user-select: none;
+  /* Sin esto, arrastrar la ventana selecciona el nombre del archivo. */
+  -webkit-user-select: none;
+}
+
+/*
+ * El conmutador del panel vive en el extremo izquierdo, encima de la columna
+ * que gobierna. Entre las acciones del documento, a la derecha, se leia como
+ * una accion mas sobre el texto y confundia.
+ */
+.titlebar-panel {
+  flex: none;
+  margin-right: 0.15rem;
+}
+
+.titlebar-file {
+  display: flex;
+  align-items: center;
+  gap: 0.45rem;
+  min-width: 0;
+  flex: 1;
+  font-size: 12.5px;
+  color: var(--chrome-soft);
+  pointer-events: none;
+}
+
+.titlebar-icon svg {
+  width: 14px;
+  height: 14px;
+  display: block;
+  color: var(--chrome-faint);
+}
+
+.titlebar-name {
+  font-weight: 520;
+  color: var(--chrome-text);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.titlebar-status {
+  font-size: 11px;
+  color: var(--chrome-faint);
+  transition: color var(--fast) var(--ease);
+}
+
+.titlebar-status.is-dirty,
+.titlebar-status.is-notice {
+  color: var(--accent);
+}
+
+.titlebar-actions {
+  display: flex;
+  align-items: center;
+  gap: 1px;
+  padding-right: 0.35rem;
+}
+
+.icon-button {
+  display: grid;
+  place-items: center;
+  width: 30px;
+  height: 28px;
+  padding: 0;
+  border: none;
+  border-radius: 7px;
+  background: transparent;
+  color: var(--chrome-soft);
+  cursor: pointer;
+  transition:
+    background var(--fast) var(--ease),
+    color var(--fast) var(--ease),
+    transform var(--fast) var(--ease);
+}
+
+.icon-button:hover {
+  background: var(--chrome-hover);
+  color: var(--chrome-text);
+}
+
+.icon-button:active {
+  background: var(--chrome-pressed);
+  transform: scale(0.94);
+}
+
+.icon-button svg {
+  width: 16px;
+  height: 16px;
+  display: block;
+}
+
+.icon-button.is-on {
+  background: var(--accent-chrome-wash);
+  color: var(--accent-chrome);
+}
+
+/* --- Controles de ventana (Windows 11) ------------------------------------- */
+
+.window-controls {
+  display: flex;
+  align-self: stretch;
+  margin-left: auto;
+}
+
+.window-button {
+  display: grid;
+  place-items: center;
+  width: 46px;
+  height: 100%;
+  border: none;
+  background: transparent;
+  color: var(--chrome-soft);
+  cursor: pointer;
+  transition:
+    background var(--fast) var(--ease),
+    color var(--fast) var(--ease);
+}
+
+.window-button svg {
+  width: 12px;
+  height: 12px;
+  display: block;
+}
+
+.window-button:hover {
+  background: var(--chrome-hover);
+  color: var(--chrome-text);
+}
+
+.window-button.is-close:hover {
+  /* El único color saturado de toda la interfaz, y sólo al pasar por encima. */
+  background: #c42b1c;
+  color: #fff;
+}
+
+.window-button.is-close:active {
+  background: #b02616;
+}
+
+/* --- Editor ---------------------------------------------------------------- */
+
+.editor-host {
+  flex: 1;
+  min-width: 0;
+  min-height: 0;
+  overflow: hidden;
+  background: var(--canvas);
+  /* El lienzo se separa del cromo por su propio plano, sin línea divisoria. */
+  border-radius: 10px 0 0 0;
+  transition: border-radius var(--medium) var(--ease);
+}
+
+.outline.is-collapsed + .editor-host {
+  border-radius: 10px 10px 0 0;
+}
+
+.editor-host .cm-editor {
+  height: 100%;
+}
+
+/* --- Barra de estado -------------------------------------------------------- */
+
+.statusbar {
+  display: flex;
+  gap: 1.15rem;
+  justify-content: flex-end;
+  padding: 0.45rem 1.35rem;
+  font-size: 11px;
+  color: var(--chrome-faint);
+  background: var(--chrome);
+  font-variant-numeric: tabular-nums;
+  transition: opacity var(--medium) var(--ease);
+  user-select: none;
+}
+
+/* --- Esquema del documento -------------------------------------------------- */
+
+/*
+ * El panel se pliega animando su ancho, no con `display: none`, que corta
+ * cualquier transición en seco: con él el panel se abría con suavidad pero
+ * desaparecía de golpe.
+ */
+.outline {
+  --outline-width: 240px;
+  position: relative;
+  width: var(--outline-width);
+  flex: none;
+  overflow: hidden;
+  background: var(--chrome);
+  user-select: none;
+  transition: width var(--medium) var(--ease);
+}
+
+.outline.is-collapsed {
+  width: 0;
+}
+
+/* Mientras se arrastra el borde, el panel debe seguir al ratón sin retraso. */
+.outline.is-resizing {
+  transition: none;
+}
+
+/*
+ * El contenido conserva su ancho aunque el panel se estreche: así al plegarlo
+ * el texto se desliza fuera de vista en vez de reajustarse línea a línea.
+ */
+.outline-inner {
+  width: var(--outline-width);
+  height: 100%;
+  overflow-y: auto;
+  padding: 0.5rem 0.55rem 1.5rem;
+  opacity: 1;
+  transition: opacity var(--fast) var(--ease);
+}
+
+.outline.is-collapsed .outline-inner {
+  opacity: 0;
+}
+
+/* Franja de arrastre en el borde derecho, invisible hasta que la buscas. */
+.outline-resizer {
+  position: absolute;
+  top: 0;
+  right: 0;
+  bottom: 0;
+  width: 6px;
+  cursor: col-resize;
+  background: transparent;
+  transition: background var(--fast) var(--ease);
+}
+
+.outline-resizer:hover,
+.outline.is-resizing .outline-resizer {
+  background: var(--accent-chrome-wash);
+}
+
+/* Sin esto, arrastrar el borde selecciona texto del editor por el camino. */
+body.is-resizing {
+  cursor: col-resize;
+  user-select: none;
+}
+
+.outline-head {
+  padding: 0.35rem 0.6rem 0.6rem;
+  font-size: 10px;
+  font-weight: 640;
+  letter-spacing: 0.09em;
+  text-transform: uppercase;
+  color: var(--chrome-faint);
+}
+
+.outline-list {
+  display: flex;
+  flex-direction: column;
+  gap: 1px;
+}
+
+.outline-item {
+  position: relative;
+  display: block;
+  width: 100%;
+  padding: 0.28rem 0.6rem;
+  border: none;
+  border-radius: 6px;
+  background: transparent;
+  color: var(--chrome-soft);
+  font-family: inherit;
+  font-size: 12.5px;
+  line-height: 1.45;
+  text-align: left;
+  cursor: pointer;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  transition:
+    background var(--fast) var(--ease),
+    color var(--fast) var(--ease);
+}
+
+.outline-item:hover {
+  background: var(--chrome-hover);
+  color: var(--chrome-text);
+}
+
+.outline-item.is-active {
+  background: var(--accent-chrome-wash);
+  color: var(--accent-chrome);
+  font-weight: 550;
+}
+
+.outline-item.level-0 {
+  padding-left: 0.6rem;
+  font-weight: 580;
+  color: var(--chrome-text);
+}
+
+.outline-item.level-1 { padding-left: 1.3rem; }
+.outline-item.level-2 { padding-left: 2rem; font-size: 12px; }
+.outline-item.level-3 { padding-left: 2.7rem; font-size: 12px; }
+
+.outline-item.level-0.is-active {
+  color: var(--accent-chrome);
+}
+
+.outline-empty {
+  margin: 0.4rem 0.6rem;
+  font-size: 12px;
+  line-height: 1.55;
+  color: var(--chrome-faint);
+}
+
+/* --- Aviso de cambio externo ------------------------------------------------ */
+
+.conflict-bar {
+  display: flex;
+  align-items: center;
+  gap: 0.55rem;
+  padding: 0.5rem 1rem;
+  /* Mezclado con la barra, no transparente: destaca sea cual sea su color. */
+  background: color-mix(in srgb, var(--accent) 26%, var(--chrome));
+  font-size: 12.5px;
+  color: var(--chrome-text);
+  animation: drop-in var(--medium) var(--ease);
+}
+
+.conflict-bar[hidden] {
+  display: none;
+}
+
+@keyframes drop-in {
+  from {
+    opacity: 0;
+    transform: translateY(-100%);
+  }
+}
+
+.conflict-text {
+  flex: 1;
+  min-width: 0;
+}
+
+.conflict-action {
+  flex: none;
+  height: 26px;
+  padding: 0 0.75rem;
+  border: none;
+  border-radius: 6px;
+  background: var(--accent);
+  color: #fff;
+  font-family: inherit;
+  font-size: 12px;
+  cursor: pointer;
+  transition:
+    filter var(--fast) var(--ease),
+    transform var(--fast) var(--ease);
+}
+
+.conflict-action:hover {
+  filter: brightness(1.08);
+}
+
+.conflict-action:active {
+  transform: scale(0.97);
+}
+
+.conflict-action.is-quiet {
+  background: transparent;
+  color: var(--chrome-soft);
+}
+
+.conflict-action.is-quiet:hover {
+  background: var(--chrome-hover);
+  color: var(--chrome-text);
+  filter: none;
+}
+
+/* --- Panel de búsqueda ------------------------------------------------------ */
+
+.cm-panels {
+  background: transparent !important;
+  border: none !important;
+}
+
+.search-panel {
+  display: flex;
+  flex-direction: column;
+  gap: 5px;
+  padding: 9px 12px;
+  font-family: var(--font-ui);
+  background: var(--canvas);
+  animation: drop-in var(--fast) var(--ease);
+}
+
+.search-row {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.search-field {
+  flex: 1;
+  min-width: 0;
+  height: 29px;
+  padding: 0 10px;
+  border: none;
+  border-radius: 7px;
+  background: var(--wash);
+  color: var(--text-body);
+  font-family: inherit;
+  font-size: 13px;
+  outline: none;
+  transition: background var(--fast) var(--ease), box-shadow var(--fast) var(--ease);
+}
+
+.search-field:focus {
+  background: var(--code-bg);
+  /* Un halo en vez de un borde: no añade una línea a la composición. */
+  box-shadow: 0 0 0 2px var(--accent-edge);
+}
+
+.search-field::placeholder {
+  color: var(--text-faint);
+}
+
+.search-count {
+  flex: none;
+  min-width: 5.5em;
+  text-align: right;
+  font-size: 11px;
+  color: var(--text-faint);
+  font-variant-numeric: tabular-nums;
+}
+
+.search-toggles {
+  display: flex;
+  gap: 1px;
+}
+
+.search-toggle {
+  height: 24px;
+  min-width: 26px;
+  padding: 0 5px;
+  border: none;
+  border-radius: 6px;
+  background: transparent;
+  color: var(--text-faint);
+  font-family: var(--font-mono);
+  font-size: 11px;
+  cursor: pointer;
+  transition: background var(--fast) var(--ease), color var(--fast) var(--ease);
+}
+
+.search-toggle:hover {
+  background: var(--wash);
+  color: var(--text);
+}
+
+.search-toggle.is-on {
+  background: var(--accent-wash);
+  color: var(--accent);
+}
+
+.search-action {
+  height: 29px;
+  padding: 0 12px;
+  border: none;
+  border-radius: 7px;
+  background: var(--wash);
+  color: var(--text-soft);
+  font-family: inherit;
+  font-size: 12.5px;
+  cursor: pointer;
+  white-space: nowrap;
+  transition: background var(--fast) var(--ease), color var(--fast) var(--ease);
+}
+
+.search-action:hover {
+  background: var(--wash-strong);
+  color: var(--text);
+}
+
+/* --- Modo enfoque ----------------------------------------------------------- */
+
+body.focus-mode .titlebar-actions,
+body.focus-mode .titlebar-file,
+body.focus-mode .statusbar,
+body.focus-mode .outline {
+  opacity: 0;
+}
+
+body.focus-mode .titlebar:hover .titlebar-actions,
+body.focus-mode .titlebar:hover .titlebar-file,
+body.focus-mode .statusbar:hover,
+body.focus-mode .outline:hover {
+  opacity: 1;
+}
+
+body.focus-mode .outline {
+  transition: opacity var(--medium) var(--ease);
+}
+
+/* --- Modo máquina de escribir ----------------------------------------------- */
+
+body.typewriter-mode .cm-content {
+  padding-top: 42vh;
+  padding-bottom: 45vh;
+}
+
+/* --- Barra de desplazamiento ------------------------------------------------ */
+
+.cm-scroller::-webkit-scrollbar,
+.outline-inner::-webkit-scrollbar {
+  width: 11px;
+}
+
+.cm-scroller::-webkit-scrollbar-thumb,
+.outline-inner::-webkit-scrollbar-thumb {
+  background: transparent;
+  border: 3px solid transparent;
+  border-radius: 999px;
+  background-clip: content-box;
+  transition: background-color var(--medium) var(--ease);
+}
+
+.editor-host:hover .cm-scroller::-webkit-scrollbar-thumb,
+.outline-inner:hover::-webkit-scrollbar-thumb {
+  background-color: var(--chrome-rule);
+  background-clip: content-box;
+}
+
+/* Quien haya pedido menos movimiento al sistema, que no lo tenga. */
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.01ms !important;
+    transition-duration: 0.01ms !important;
+  }
+}
+
+/*
+ * Parpadeo del cursor. CodeMirror usa `steps(1)`, que enciende y apaga en seco;
+ * esta curva lo hace desvanecerse y volver, que es lo que quita la sensación de
+ * intermitencia agresiva al mirar fijamente el texto.
+ */
+@keyframes unfold-blink {
+  0%,
+  42% {
+    opacity: 1;
+  }
+  58%,
+  92% {
+    opacity: 0;
+  }
+  100% {
+    opacity: 1;
+  }
+}
+
+/* --- Panel de apariencia ---------------------------------------------------- */
+
+/*
+ * Se despliega desde la derecha con la misma técnica que el esquema: animando
+ * el ancho, con el contenido a ancho fijo dentro para que no se reajuste.
+ */
+.settings {
+  --settings-width: 275px;
+  width: 0;
+  flex: none;
+  overflow: hidden;
+  background: var(--chrome);
+  user-select: none;
+  transition: width var(--medium) var(--ease);
+}
+
+.settings.is-open {
+  width: var(--settings-width);
+}
+
+.settings-inner {
+  width: var(--settings-width);
+  height: 100%;
+  overflow-y: auto;
+  padding: 0.35rem 1rem 2rem;
+  opacity: 0;
+  transition: opacity var(--fast) var(--ease);
+}
+
+.settings.is-open .settings-inner {
+  opacity: 1;
+}
+
+.settings-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 0.3rem 0 0.9rem;
+}
+
+.settings-title {
+  font-size: 10px;
+  font-weight: 640;
+  letter-spacing: 0.09em;
+  text-transform: uppercase;
+  color: var(--chrome-faint);
+}
+
+.settings-group {
+  margin-bottom: 1.35rem;
+}
+
+.settings-row {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 0.5rem;
+}
+
+.settings-label {
+  display: block;
+  margin-bottom: 0.4rem;
+  font-size: 12.5px;
+  color: var(--chrome-text);
+}
+
+.settings-value {
+  font-size: 11px;
+  color: var(--chrome-faint);
+  font-variant-numeric: tabular-nums;
+}
+
+.settings-hint {
+  margin: 0.45rem 0 0;
+  font-size: 11px;
+  line-height: 1.5;
+  color: var(--chrome-faint);
+}
+
+.settings-select {
+  width: 100%;
+  height: 30px;
+  padding: 0 0.55rem;
+  border: none;
+  border-radius: 7px;
+  background: var(--chrome-hover);
+  color: var(--chrome-text);
+  font-family: inherit;
+  font-size: 12.5px;
+  cursor: pointer;
+  outline: none;
+  transition: background var(--fast) var(--ease), box-shadow var(--fast) var(--ease);
+}
+
+.settings-select:hover {
+  background: var(--chrome-pressed);
+}
+
+.settings-select:focus-visible {
+  box-shadow: 0 0 0 2px var(--accent-chrome);
+}
+
+/* --- Deslizadores ----------------------------------------------------------- */
+
+.settings-range {
+  width: 100%;
+  height: 18px;
+  margin: 0;
+  appearance: none;
+  background: transparent;
+  cursor: pointer;
+  outline: none;
+}
+
+.settings-range::-webkit-slider-runnable-track {
+  height: 4px;
+  border-radius: 999px;
+  background: var(--chrome-hover);
+}
+
+.settings-range::-webkit-slider-thumb {
+  appearance: none;
+  width: 14px;
+  height: 14px;
+  margin-top: -5px;
+  border: none;
+  border-radius: 50%;
+  background: var(--accent-chrome);
+  transition: transform var(--fast) var(--ease);
+}
+
+.settings-range:hover::-webkit-slider-thumb {
+  transform: scale(1.15);
+}
+
+.settings-range:active::-webkit-slider-thumb {
+  transform: scale(0.95);
+}
+
+.settings-range:focus-visible::-webkit-slider-thumb {
+  box-shadow: 0 0 0 3px var(--accent-edge);
+}
+
+/* --- Muestras de color ------------------------------------------------------ */
+
+.settings-swatches {
+  display: flex;
+  gap: 6px;
+}
+
+.settings-swatch {
+  display: grid;
+  place-items: center;
+  width: 30px;
+  height: 30px;
+  padding: 0;
+  border: none;
+  border-radius: 50%;
+  background: transparent;
+  cursor: pointer;
+  transition: background var(--fast) var(--ease);
+}
+
+.settings-swatch span {
+  width: 18px;
+  height: 18px;
+  border-radius: 50%;
+  background: var(--swatch);
+  /*
+   * Un aro tenue para que la muestra siga viéndose cuando su color coincide
+   * con el de la barra, que es precisamente cuando está elegida.
+   */
+  box-shadow: inset 0 0 0 1px rgb(var(--on-chrome) / 0.28);
+  transition: transform var(--fast) var(--ease);
+}
+
+.settings-swatch:hover span {
+  transform: scale(1.12);
+}
+
+/*
+ * El elegido se marca con un anillo. Va en el color de la tinta y no en el de
+ * la muestra: con el suyo, la muestra elegida se volvía invisible justo al
+ * teñir la barra de ese mismo color.
+ */
+.settings-swatch.is-on {
+  box-shadow: inset 0 0 0 2px var(--chrome-text);
+}
+
+.settings-swatch.is-on span {
+  transform: scale(0.72);
+}
+
+.settings-reset {
+  width: 100%;
+  height: 30px;
+  border: none;
+  border-radius: 7px;
+  background: var(--chrome-hover);
+  color: var(--chrome-soft);
+  font-family: inherit;
+  font-size: 12.5px;
+  cursor: pointer;
+  transition: background var(--fast) var(--ease), color var(--fast) var(--ease);
+}
+
+.settings-reset:hover {
+  background: var(--chrome-pressed);
+  color: var(--chrome-text);
+}
+
+.settings-inner::-webkit-scrollbar {
+  width: 11px;
+}
+
+.settings-inner::-webkit-scrollbar-thumb {
+  background: transparent;
+  border: 3px solid transparent;
+  border-radius: 999px;
+  background-clip: content-box;
+}
+
+.settings-inner:hover::-webkit-scrollbar-thumb {
+  background-color: var(--chrome-rule);
+  background-clip: content-box;
+}
+
+/* Las once barras no caben en una fila. */
+.settings-swatches.is-wrapped {
+  flex-wrap: wrap;
+  gap: 5px;
+}
+
+/* La barra neutra no tiene color: se dibuja como el papel del editor. */
+.settings-swatch.is-neutral span {
+  background: var(--canvas);
+}
