@@ -58,7 +58,9 @@ La salida queda en `src-tauri/target/release/`, y el instalador en
 
 | Acción | Atajo |
 | --- | --- |
+| Nuevo documento | `Ctrl+N` |
 | Abrir / Guardar / Guardar como | `Ctrl+O` / `Ctrl+S` / `Ctrl+Shift+S` |
+| Seguir un enlace | `Ctrl` + clic |
 | Negrita / Cursiva | `Ctrl+B` / `Ctrl+I` |
 | Código en línea / Tachado | `Ctrl+E` / `Ctrl+Shift+X` |
 | Enlace | `Ctrl+K` |
@@ -244,8 +246,27 @@ Markdown (al pegar) y Markdown a HTML (al exportar). Corren en dos segundos sin
 abrir la aplicación, así que conviene ejecutarlos antes de tocar cualquiera de
 los dos.
 
+## Enlaces y cierre
+
+`Ctrl` + clic sigue un enlace. El puntero sólo se vuelve mano mientras se
+mantiene Ctrl, porque con clic normal hay que poder colocar el cursor: la
+dirección está oculta por la vista previa.
+
+Un ancla salta al encabezado del propio documento, otro Markdown se abre en el
+editor, y el resto va al navegador del sistema. Sólo `http`, `https` y
+`mailto`: abrir cualquier esquema desde un documento ajeno sería una vía de
+entrada.
+
+Cerrar la ventana con cambios sin guardar pregunta antes. Si el documento ya
+tiene archivo y no hay conflicto no se pregunta: se guarda, que es lo que el
+autoguardado ya promete.
+
+El instalador asocia `.md`, `.markdown` y `.mdx`, y los limpia al desinstalar.
+Ejecutando el `.exe` suelto no hay nada que registrar.
+
 ## Pendiente
 
+- Pestañas para tener varios documentos abiertos
 - Restaurar la última sesión y lista de archivos recientes
 - Bloques matemáticos con `$…$` y `$$…$$`, y diagramas Mermaid
 - Frontmatter YAML, notas al pie y enlaces automáticos
