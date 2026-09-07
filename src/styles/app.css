@@ -184,7 +184,7 @@ body {
 
 #app {
   display: grid;
-  grid-template-rows: auto auto auto 1fr auto;
+  grid-template-rows: auto auto 1fr auto;
   height: 100vh;
   background: var(--chrome);
   overflow: hidden;
@@ -356,6 +356,19 @@ body {
 
 /* --- Editor ---------------------------------------------------------------- */
 
+/*
+ * Pestañas y hoja comparten columna. Antes la barra ocupaba todo el ancho de
+ * la ventana, así que la pestaña activa —del color del papel— caía sobre la
+ * columna del esquema y no sobre el papel al que pertenece.
+ */
+.editor-column {
+  display: flex;
+  flex-direction: column;
+  flex: 1;
+  min-width: 0;
+  min-height: 0;
+}
+
 .editor-host {
   flex: 1;
   min-width: 0;
@@ -367,8 +380,21 @@ body {
   transition: border-radius var(--medium) var(--ease);
 }
 
-.outline.is-collapsed + .editor-host {
+/*
+ * Con pestañas visibles el borde superior lo dibujan ellas: la hoja sigue
+ * recta por arriba y la esquina redondeada la pone la pestaña activa, como en
+ * la carpeta de un archivador.
+ */
+.editor-column:has(.tab-bar:not([hidden])) .editor-host {
+  border-radius: 0;
+}
+
+.outline.is-collapsed + .editor-column .editor-host {
   border-radius: 10px 10px 0 0;
+}
+
+.outline.is-collapsed + .editor-column:has(.tab-bar:not([hidden])) .editor-host {
+  border-radius: 0;
 }
 
 .editor-host .cm-editor {
@@ -1111,7 +1137,9 @@ body.typewriter-mode .cm-content {
 .tab-bar {
   display: flex;
   gap: 2px;
-  padding: 0 0.4rem 0.3rem;
+  /* Sin relleno inferior: la pestaña activa tiene que apoyarse en la hoja, no
+     flotar por encima de ella. */
+  padding: 0;
   background: var(--chrome);
   overflow-x: auto;
   scrollbar-width: none;
@@ -1133,9 +1161,10 @@ body.typewriter-mode .cm-content {
   gap: 0.35rem;
   flex: 0 1 13rem;
   min-width: 5.5rem;
-  height: 28px;
-  padding: 0 0.3rem 0 0.65rem;
-  border-radius: 7px;
+  height: 32px;
+  padding: 0 0.3rem 0 0.7rem;
+  /* Sólo por arriba: por abajo se funde con el papel. */
+  border-radius: 9px 9px 0 0;
   color: var(--chrome-soft);
   font-size: 12.5px;
   cursor: pointer;

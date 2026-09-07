@@ -255,7 +255,13 @@ volver a ella se recuperan la selección, el scroll y el historial de deshacer.
 Se comparte una única vista: cambiar de pestaña es un `setState`, mucho más
 barato que mantener un editor por documento.
 
-La barra sólo aparece con dos o más abiertos; con uno repetiría el nombre que
+La barra vive dentro de la columna del editor, no en todo el ancho de la
+ventana: la pestaña activa lleva el color del papel, y desde fuera de esa
+columna caía sobre el esquema en vez de sobre la hoja a la que pertenece. Ahora
+comparten borde izquierdo y la pestaña se apoya en la hoja, con las esquinas
+redondeadas sólo por arriba.
+
+Sólo aparece con dos o más abiertos; con uno repetiría el nombre que
 ya está en la barra de título. Un documento sin guardar toma su nombre de la
 primera línea, porque «Sin título» repetido no distingue ninguno.
 

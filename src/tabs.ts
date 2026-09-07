@@ -23,12 +23,29 @@ export class Tabs {
   private items: Tab[] = [];
   private activeId = 0;
   private nextId = 1;
+  private repaintPending = false;
 
   constructor(
     private readonly makeState: (doc: string) => EditorState,
     /** Se llama cuando cambia la lista o la pestaña activa. */
     private readonly onChange: () => void,
   ) {}
+
+  /**
+   * Pide repintar la barra.
+   *
+   * Se agrupa en un microtask porque una sola pulsación puede tocar varias
+   * cosas de la pestaña —marcarla como modificada y renombrarla— y con un
+   * repintado por cambio la barra mostraba el estado de la pulsación anterior.
+   */
+  touch(): void {
+    if (this.repaintPending) return;
+    this.repaintPending = true;
+    queueMicrotask(() => {
+      this.repaintPending = false;
+      this.onChange();
+    });
+  }
 
   list(): readonly Tab[] {
     return this.items;
@@ -64,7 +81,7 @@ export class Tabs {
       },
     });
     this.activeId = tab.id;
-    this.onChange();
+    this.touch();
   }
 
   /** Primera pestaña de la sesión, con el estado que ya tiene la vista. */
@@ -79,7 +96,7 @@ export class Tabs {
     };
     this.items.push(tab);
     this.activeId = tab.id;
-    this.onChange();
+    this.touch();
     return tab;
   }
 
@@ -165,17 +182,8 @@ export class Tabs {
       // Se pasa a la de la derecha, y si no la hay, a la de la izquierda.
       this.show(view, this.items[Math.min(index, this.items.length - 1)]);
     } else {
-      this.onChange();
+      this.touch();
     }
     return true;
-  }
-
-  /** Trae al frente la pestaña indicada sin tocar la vista (para preguntar por ella). */
-  focusFor(view: EditorView, tab: Tab): void {
-    this.activate(view, tab.id);
-  }
-
-  touch(): void {
-    this.onChange();
   }
 }

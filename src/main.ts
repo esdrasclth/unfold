@@ -89,6 +89,7 @@ const session = {
   },
   set name(value: string) {
     tabs.active().name = value;
+    tabs.touch();
   },
   get dirty(): boolean {
     return tabs.active().dirty;
@@ -133,7 +134,6 @@ app.innerHTML = `
     </div>
     <div class="window-controls" id="window-controls"></div>
   </header>
-  <div class="tab-bar" id="tab-bar" hidden></div>
   <div class="conflict-bar" id="conflict" hidden>
     <span class="conflict-text">Este archivo ha cambiado fuera de Unfold y tienes cambios sin guardar.</span>
     <button class="conflict-action" id="conflict-reload">Cargar la versión del disco</button>
@@ -141,7 +141,10 @@ app.innerHTML = `
   </div>
   <div class="workspace">
     <aside class="outline is-collapsed" id="outline" inert></aside>
-    <main class="editor-host" id="editor-host"></main>
+    <div class="editor-column">
+      <div class="tab-bar" id="tab-bar" hidden></div>
+      <main class="editor-host" id="editor-host"></main>
+    </div>
     <aside class="settings" id="settings" inert></aside>
   </div>
   <footer class="statusbar">
