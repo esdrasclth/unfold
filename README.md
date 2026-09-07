@@ -59,6 +59,51 @@ La aplicación queda en `src-tauri/target/release/`, el instalador NSIS en
 El orden importa: el instalador con interfaz **empotra** el NSIS con
 `include_bytes!`, así que la aplicación tiene que estar compilada antes.
 
+## Actualizaciones
+
+La aplicación consulta un manifiesto firmado unos segundos después de arrancar
+—no al abrir la ventana: la red no debe retrasar que el editor esté listo— y,
+si hay versión nueva, muestra una franja con «Actualizar» y «Más tarde». Al
+aceptar, descarga, instala y se reinicia sola.
+
+La comprobación se hace **una vez al día** y «Más tarde» silencia esa versión
+concreta: un aviso que reaparece en cada arranque deja de ser un aviso.
+
+### Publicar una versión
+
+```powershell
+$env:TAURI_SIGNING_PRIVATE_KEY = Get-Content "$HOME\.unfold\updater.key" -Raw
+npm run release
+```
+
+Salen `Unfold_x.y.z_x64-setup.exe` y su `.sig`. Se publican los dos junto a un
+`latest.json`:
+
+```json
+{
+  "version": "0.2.0",
+  "notes": "Qué ha cambiado",
+  "pub_date": "2026-09-07T19:45:46Z",
+  "platforms": {
+    "windows-x86_64": {
+      "signature": "<contenido del .sig>",
+      "url": "<url del .exe>"
+    }
+  }
+}
+```
+
+Tres cosas que conviene tener claras:
+
+- **La clave privada vive en `~/.unfold/updater.key` y no puede subirse al
+  repositorio.** Si se pierde, ninguna instalación existente podrá volver a
+  actualizarse: la firma dejaría de validar y no hay forma de recuperarla.
+- **El endpoint tiene que ser HTTPS.** Con `http` la aplicación ni siquiera
+  arranca: se aborta al inicio. Es deliberado, porque un canal en claro
+  permitiría a cualquiera en la red servir una actualización falsa.
+- `plugins.updater.endpoints` lleva un marcador `TU-USUARIO`. Hay que
+  cambiarlo por el repositorio real antes de publicar.
+
 ## El instalador
 
 `setup/` es una segunda aplicación Tauri: una ventana de 940×600 sin
