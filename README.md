@@ -400,3 +400,8 @@ Ejecutando el `.exe` suelto no hay nada que registrar.
 `**`, es decir, cualquier ruta. Es lo que hace que puedas abrir un `.md` esté
 donde esté, y equivale a lo que hace cualquier editor de escritorio. Si prefieres
 acotarlo, cambia el ámbito a rutas concretas como `$HOME/**` o `$DOCUMENT/**`.
+
+## Licencia
+
+MIT. Puedes usar, modificar y distribuir el código, incluso comercialmente,
+conservando el aviso de copyright. Ver [LICENSE](LICENSE).
