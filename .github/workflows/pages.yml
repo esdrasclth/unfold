@@ -1,0 +1,36 @@
+name: Publicar la web
+
+# La web es HTML, CSS y JavaScript estáticos: no hay nada que compilar, así
+# que se sube la carpeta tal cual. Sólo se despliega cuando cambia algo suyo.
+on:
+  push:
+    branches: [main]
+    paths:
+      - "web/**"
+      - ".github/workflows/pages.yml"
+  workflow_dispatch:
+
+permissions:
+  contents: read
+  pages: write
+  id-token: write
+
+# Si se empuja dos veces seguidas, se publica la última y se descarta la otra.
+concurrency:
+  group: pages
+  cancel-in-progress: true
+
+jobs:
+  publicar:
+    runs-on: ubuntu-latest
+    environment:
+      name: github-pages
+      url: ${{ steps.desplegar.outputs.page_url }}
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/configure-pages@v5
+      - uses: actions/upload-pages-artifact@v3
+        with:
+          path: web
+      - id: desplegar
+        uses: actions/deploy-pages@v4
