@@ -22,6 +22,9 @@
     "core:window:allow-close",
     "core:window:allow-is-maximized",
     "core:window:allow-set-focus",
+    "opener:allow-open-url",
+    "opener:allow-default-urls",
+    "core:window:allow-destroy",
     {
       "identifier": "fs:scope",
       "allow": [

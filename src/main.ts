@@ -13,6 +13,7 @@ import {
   saveImageBeside,
   type OpenedFile,
 } from "./files.ts";
+import { confirmDialog } from "./ui/confirmDialog.ts";
 import { icon } from "./ui/icons.ts";
 import { Outline } from "./ui/outline.ts";
 import { SettingsPanel } from "./ui/settings.ts";
@@ -46,12 +47,13 @@ Sácalo de ahí y vuelve a *renderizarse*.
 
 | Acción | Atajo |
 | --- | --- |
-| Abrir / Guardar | \`Ctrl+O\` / \`Ctrl+S\` |
+| Nuevo / Abrir / Guardar | \`Ctrl+N\` / \`Ctrl+O\` / \`Ctrl+S\` |
 | Negrita / Cursiva | \`Ctrl+B\` / \`Ctrl+I\` |
 | Encabezado 1..6 | \`Ctrl+1\` … \`Ctrl+6\` |
 | Buscar | \`Ctrl+F\` |
 | Esquema | \`Ctrl+Shift+O\` |
 | Exportar HTML / Imprimir | \`Ctrl+Shift+E\` / \`Ctrl+P\` |
+| Seguir un enlace | \`Ctrl\` + clic |
 
 \`\`\`ts
 // El resaltado de código va por lenguaje, cargado bajo demanda.
@@ -231,6 +233,7 @@ function applyFile(file: OpenedFile): void {
 }
 
 async function load(): Promise<void> {
+  if (!(await confirmDiscard("abrir otro"))) return;
   const file = await openFile();
   if (file) applyFile(file);
 }
@@ -247,6 +250,54 @@ async function loadPath(path: string): Promise<void> {
     console.error("No se pudo abrir", path, error);
     notify("No se pudo abrir el archivo");
   }
+}
+
+/**
+ * Guarda si hace falta antes de una acción que descarta el documento.
+ * Devuelve false si el usuario decide quedarse donde está.
+ */
+async function confirmDiscard(accion: string): Promise<boolean> {
+  if (!session.dirty) return true;
+
+  // Con archivo y sin conflicto, guardar es lo que el autoguardado ya promete:
+  // no hay nada que preguntar.
+  if (session.path && conflictContent === null) {
+    await persist(false);
+    return true;
+  }
+
+  const choice = await confirmDialog(
+    "Cambios sin guardar",
+    `«${session.name}» tiene cambios que aún no están en disco. ¿Qué hacemos antes de ${accion}?`,
+    [
+      { label: "Guardar", value: "guardar", primary: true },
+      { label: "Descartar", value: "descartar" },
+      { label: "Cancelar", value: "cancelar", cancel: true },
+    ],
+  );
+
+  if (choice === "cancelar") return false;
+  if (choice === "guardar") {
+    await persist(false);
+    // Si el diálogo de guardar se cerró sin elegir sitio, no se sigue.
+    return !session.dirty;
+  }
+  return true;
+}
+
+async function newDocument(): Promise<void> {
+  if (!(await confirmDiscard("empezar uno nuevo"))) return;
+  watcher.close();
+  session.path = null;
+  session.name = "Sin título";
+  session.dirty = false;
+  conflictContent = null;
+  el.conflict.hidden = true;
+  replaceDocument(view, "");
+  renderHeader();
+  renderStats("");
+  outline.refresh();
+  view.focus();
 }
 
 function exportContext(): ExportContext {
@@ -337,6 +388,11 @@ view = createEditor({
     scheduleAutosave();
     if (outlineOn) outline.refresh();
   },
+  links: {
+    notify,
+    documentPath: () => session.path,
+    openDocument: (path) => void loadPath(path),
+  },
   paste: {
     notify,
     saveImage: async (data, mime) => {
@@ -395,6 +451,23 @@ if (isTauri) {
       import("@tauri-apps/api/webview"),
     ]);
 
+    // Cerrar la ventana pasa antes por aquí: sin esto, un documento nuevo sin
+    // guardar se perdía en silencio (el autoguardado sólo actúa si ya hay
+    // archivo). Se cancela el cierre y se destruye después de decidir, porque
+    // volver a llamar a close() dispararía este mismo manejador otra vez.
+    const { getCurrentWindow } = await import("@tauri-apps/api/window");
+    const appWindow = getCurrentWindow();
+    let closing = false;
+
+    await appWindow.onCloseRequested(async (event) => {
+      if (closing) return;
+      event.preventDefault();
+      if (await confirmDiscard("cerrar")) {
+        closing = true;
+        await appWindow.destroy();
+      }
+    });
+
     const startup = await invoke<string | null>("startup_file");
     if (startup) await loadPath(startup);
 
@@ -405,6 +478,20 @@ if (isTauri) {
     });
   })();
 }
+
+// El puntero sólo se vuelve mano sobre los enlaces mientras se mantiene Ctrl:
+// con clic normal hay que poder colocar el cursor para editarlos.
+window.addEventListener("keydown", (event) => {
+  if (event.key === "Control" || event.key === "Meta") {
+    document.body.classList.add("following-links");
+  }
+});
+window.addEventListener("keyup", (event) => {
+  if (event.key === "Control" || event.key === "Meta") {
+    document.body.classList.remove("following-links");
+  }
+});
+window.addEventListener("blur", () => document.body.classList.remove("following-links"));
 
 window.addEventListener("keydown", (event) => {
   // Escape cierra la apariencia sin necesidad de llegar al aspa.
@@ -429,6 +516,9 @@ window.addEventListener("keydown", (event) => {
   } else if (key === "o") {
     event.preventDefault();
     void load();
+  } else if (key === "n") {
+    event.preventDefault();
+    void newDocument();
   } else if (key === "s") {
     event.preventDefault();
     void persist(event.shiftKey);
