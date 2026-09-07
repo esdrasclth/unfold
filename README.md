@@ -74,7 +74,12 @@ reescribirla.
 El NSIS viaja empotrado en el binario y se extrae a la carpeta temporal al
 instalar, de modo que lo que se descarga es **un único `.exe` de 7 MB**.
 
-Dos detalles del NSIS que hubo que añadir a su plantilla:
+La plantilla del NSIS se extrajo del binario del CLI de Tauri y se conserva sin
+tocar salvo dos añadidos funcionales. Su interfaz sigue siendo la de serie: al
+ejecutarse siempre con `/S` nadie la ve, y mantener una a medias habría sido
+código muerto que además podía romperse sin que nos enterásemos.
+
+Los dos añadidos:
 
 - **`/DESKTOP`**: en modo silencioso no hay página final donde marcar el acceso
   directo, así que se acepta por línea de órdenes.

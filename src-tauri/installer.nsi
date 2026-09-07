@@ -20,7 +20,6 @@ ManifestDPIAwareness PerMonitorV2
 {{/if}}
 
 !include MUI2.nsh
-!include nsDialogs.nsh
 !include FileFunc.nsh
 !include x64.nsh
 !include WordFunc.nsh
@@ -165,183 +164,10 @@ VIAddVersionKey "ProductVersion" "${VERSION}"
 !define MUI_LANGDLL_REGISTRY_KEY "${MANUPRODUCTKEY}"
 !define MUI_LANGDLL_REGISTRY_VALUENAME "Installer Language"
 
-
-; ============================================================================
-; Aspecto propio de Unfold
-;
-; La plantilla de Tauri se conserva entera; aqui solo se sustituye la interfaz.
-; La logica de instalacion, WebView2, asociaciones y desinstalacion previa
-; queda intacta, que es lo que no conviene reescribir.
-;
-; NSIS dibuja controles nativos de Win32: no hay CSS ni esquinas redondeadas.
-; Lo que si se puede es unificar el color de todo el marco, esconder el
-; cromo del asistente y poner tipografia y boton propios.
-; ============================================================================
-
-!define UNFOLD_FONDO   0xFDFCFA   ; el papel del editor
-!define UNFOLD_TINTA   0x17150F   ; titulos
-!define UNFOLD_CUERPO  0x35312A
-!define UNFOLD_SUAVE   0x6F6A60
-!define UNFOLD_ACENTO  0xB4572A
-!define UNFOLD_BLANCO  0xFFFFFF
-; Los BMP se resuelven desde el .nsi generado, que vive en
-; target/release/nsis/<arquitectura>/
-!define UNFOLD_LOGO "..\..\..\..\installer\logo.bmp"
-
-Var UnfoldDialogo
-Var UnfoldFuenteTitulo
-Var UnfoldFuenteCuerpo
-Var UnfoldFuenteBoton
-Var UnfoldBoton
-Var UnfoldCancelar
-Var UnfoldLogoHandle
-
-; Tipografias propias. Se crean una vez y se reparten a los controles.
-Function UnfoldCrearFuentes
-  ${If} $UnfoldFuenteTitulo == ""
-    CreateFont $UnfoldFuenteTitulo "Segoe UI Variable Display" "22" "600"
-    ${If} $UnfoldFuenteTitulo == ""
-      CreateFont $UnfoldFuenteTitulo "Segoe UI" "22" "600"
-    ${EndIf}
-    CreateFont $UnfoldFuenteCuerpo "Segoe UI" "10"
-    CreateFont $UnfoldFuenteBoton "Segoe UI" "10" "600"
-  ${EndIf}
-FunctionEnd
-
-; Pinta el marco del asistente con el color del editor y esconde su cromo:
-; la franja blanca de cabecera, el titulo, el icono y la linea separadora.
-!macro UnfoldPintarMarco
-  Push $0
-  SetCtlColors $HWNDPARENT ${UNFOLD_CUERPO} ${UNFOLD_FONDO}
-  ; 1034 es el rectangulo blanco de cabecera. Se esconde en lugar de tenirlo:
-  ; MUI lo repinta de blanco por su cuenta y el color no se sostiene.
-  GetDlgItem $0 $HWNDPARENT 1034
-  ShowWindow $0 ${SW_HIDE}
-  GetDlgItem $0 $HWNDPARENT 1028
-  ShowWindow $0 ${SW_HIDE}
-  GetDlgItem $0 $HWNDPARENT 1029
-  ShowWindow $0 ${SW_HIDE}
-  GetDlgItem $0 $HWNDPARENT 1035
-  ShowWindow $0 ${SW_HIDE}
-  ; 1256 es la linea que separa los botones del contenido.
-  GetDlgItem $0 $HWNDPARENT 1256
-  ShowWindow $0 ${SW_HIDE}
-  Pop $0
-!macroend
-
 ; Installer pages, must be ordered as they appear
-; 1. Pagina de bienvenida propia
-;
-; Sustituye a la de MUI y tambien a la de carpeta de destino: se instala en la
-; ruta por defecto del usuario y se muestra cual es, como hacen los
-; instaladores de una sola pantalla. Se gana claridad y se pierde poder
-; elegir carpeta; para eso queda la instalacion silenciosa con /D.
-Page custom UnfoldPaginaInicio
-
-Function UnfoldPaginaInicio
-  Call SkipIfPassive
-  Call UnfoldCrearFuentes
-
-  nsDialogs::Create 1018
-  Pop $UnfoldDialogo
-  ${If} $UnfoldDialogo == error
-    Abort
-  ${EndIf}
-  ${IfThen} $(^RTL) = 1 ${|} nsDialogs::SetRTL $(^RTL) ${|}
-
-  SetCtlColors $UnfoldDialogo ${UNFOLD_CUERPO} ${UNFOLD_FONDO}
-  !insertmacro UnfoldPintarMarco
-
-  ; El dialogo interior se estira sobre toda la ventana. Esconder la franja de
-  ; cabecera no basta porque MUI la vuelve a pintar, pero taparla si, y de paso
-  ; se gana el alto que faltaba: el interior de serie mide 140 unidades de
-  ; dialogo y ahi no cabian ni el pie ni la ruta de instalacion.
-  Push $1
-  Push $2
-  Push $3
-  System::Call "*(i 0, i 0, i 0, i 0) p .r1"
-  System::Call "user32::GetClientRect(p $HWNDPARENT, p r1)"
-  System::Call "*$1(i, i, i .r2, i .r3)"
-  System::Free $1
-  ; 0x0014 = sin tocar el orden Z ni robar el foco
-  System::Call "user32::SetWindowPos(p $UnfoldDialogo, p 0, i 0, i 0, i r2, i r3, i 0x0014)"
-  Pop $3
-  Pop $2
-  Pop $1
-
-  ; Los botones del asistente se esconden: abajo va el nuestro.
-  Push $0
-  GetDlgItem $0 $HWNDPARENT 1
-  ShowWindow $0 ${SW_HIDE}
-  GetDlgItem $0 $HWNDPARENT 2
-  ShowWindow $0 ${SW_HIDE}
-  GetDlgItem $0 $HWNDPARENT 3
-  ShowWindow $0 ${SW_HIDE}
-  Pop $0
-
-  ; Logotipo. Se estira desde un BMP de 192 px para que no se quede pequeno
-  ; en pantallas con escalado.
-  InitPluginsDir
-  File "/oname=$PLUGINSDIR\unfold-logo.bmp" "${UNFOLD_LOGO}"
-  ; Ancho completo con la imagen centrada por el propio control: centrar por
-  ; coordenadas exigiria saber el ancho en unidades de dialogo, que depende
-  ; de la tipografia del sistema.
-  ${NSD_CreateBitmap} 0 34u 100% 50u ""
-  Pop $0
-  ${NSD_AddStyle} $0 ${SS_CENTERIMAGE}
-  ; El tercer parametro recoge el manejador de la imagen, que la macro
-  ; devuelve para poder liberarla despues.
-  ${NSD_SetBitmap} $0 "$PLUGINSDIR\unfold-logo.bmp" $UnfoldLogoHandle
-  SetCtlColors $0 ${UNFOLD_CUERPO} ${UNFOLD_FONDO}
-
-  ${NSD_CreateLabel} 0 92u 100% 22u "${PRODUCTNAME}"
-  Pop $0
-  SetCtlColors $0 ${UNFOLD_TINTA} ${UNFOLD_FONDO}
-  SendMessage $0 ${WM_SETFONT} $UnfoldFuenteTitulo 1
-  ${NSD_AddStyle} $0 ${SS_CENTER}
-
-  ${NSD_CreateLabel} 12% 118u 76% 24u "$(unfoldLema)"
-  Pop $0
-  SetCtlColors $0 ${UNFOLD_SUAVE} ${UNFOLD_FONDO}
-  SendMessage $0 ${WM_SETFONT} $UnfoldFuenteCuerpo 1
-  ${NSD_AddStyle} $0 ${SS_CENTER}
-
-  ; Boton de accion: una etiqueta con color de acento y aviso de clic. Un
-  ; boton nativo no se puede tenir en Windows con tema activo.
-  ${NSD_CreateLabel} 33% 152u 34% 22u "$(unfoldInstalar)"
-  Pop $UnfoldBoton
-  SetCtlColors $UnfoldBoton ${UNFOLD_BLANCO} ${UNFOLD_ACENTO}
-  SendMessage $UnfoldBoton ${WM_SETFONT} $UnfoldFuenteBoton 1
-  ${NSD_AddStyle} $UnfoldBoton "${SS_CENTER}|${SS_CENTERIMAGE}|${SS_NOTIFY}"
-  ${NSD_OnClick} $UnfoldBoton UnfoldInstalar
-
-  ${NSD_CreateLabel} 33% 180u 34% 12u "$(unfoldCancelar)"
-  Pop $UnfoldCancelar
-  SetCtlColors $UnfoldCancelar ${UNFOLD_SUAVE} ${UNFOLD_FONDO}
-  SendMessage $UnfoldCancelar ${WM_SETFONT} $UnfoldFuenteCuerpo 1
-  ${NSD_AddStyle} $UnfoldCancelar "${SS_CENTER}|${SS_NOTIFY}"
-  ${NSD_OnClick} $UnfoldCancelar UnfoldCancelarInstalacion
-
-  ${NSD_CreateLabel} 6% 200u 88% 12u "$(unfoldDestino) $INSTDIR"
-  Pop $0
-  SetCtlColors $0 ${UNFOLD_SUAVE} ${UNFOLD_FONDO}
-  SendMessage $0 ${WM_SETFONT} $UnfoldFuenteCuerpo 1
-  ${NSD_AddStyle} $0 ${SS_CENTER}
-
-  nsDialogs::Show
-FunctionEnd
-
-; Pulsar el boton equivale a pulsar Siguiente en el asistente escondido.
-Function UnfoldInstalar
-  Pop $0
-  SendMessage $HWNDPARENT ${WM_COMMAND} 1 0
-FunctionEnd
-
-Function UnfoldCancelarInstalacion
-  Pop $0
-  SendMessage $HWNDPARENT ${WM_COMMAND} 2 0
-FunctionEnd
-
+; 1. Welcome Page
+!define MUI_PAGE_CUSTOMFUNCTION_PRE SkipIfPassive
+!insertmacro MUI_PAGE_WELCOME
 
 ; 2. License Page (if defined)
 !if "${LICENSE}" != ""
@@ -558,8 +384,8 @@ Function PageLeaveReinstall
   reinst_done:
 FunctionEnd
 
-; 5. Pagina de carpeta: se omite, la ruta ya se enseña en la de inicio.
-!define MUI_PAGE_CUSTOMFUNCTION_PRE Skip
+; 5. Choose install directory page
+!define MUI_PAGE_CUSTOMFUNCTION_PRE SkipIfPassive
 !insertmacro MUI_PAGE_DIRECTORY
 
 ; 6. Start menu shortcut page
@@ -572,20 +398,8 @@ Var AppStartMenuFolder
 !endif
 !insertmacro MUI_PAGE_STARTMENU Application $AppStartMenuFolder
 
-; 7. Pagina de progreso, con el marco propio
-!define MUI_PAGE_CUSTOMFUNCTION_SHOW UnfoldMarcoProgreso
+; 7. Installation page
 !insertmacro MUI_PAGE_INSTFILES
-
-Function UnfoldMarcoProgreso
-  !insertmacro UnfoldPintarMarco
-  Push $0
-  ; La lista de detalles se oculta: durante la instalacion solo interesa la
-  ; barra, no el registro de cada archivo copiado.
-  FindWindow $0 "#32770" "" $HWNDPARENT
-  GetDlgItem $0 $0 1016
-  ShowWindow $0 ${SW_HIDE}
-  Pop $0
-FunctionEnd
 
 ; 8. Finish page
 ;
@@ -600,12 +414,7 @@ FunctionEnd
 !define MUI_FINISHPAGE_RUN
 !define MUI_FINISHPAGE_RUN_FUNCTION RunMainBinary
 !define MUI_PAGE_CUSTOMFUNCTION_PRE SkipIfPassive
-!define MUI_PAGE_CUSTOMFUNCTION_SHOW UnfoldMarcoFinal
 !insertmacro MUI_PAGE_FINISH
-
-Function UnfoldMarcoFinal
-  !insertmacro UnfoldPintarMarco
-FunctionEnd
 
 Function RunMainBinary
   nsis_tauri_utils::RunAsUser "$INSTDIR\${MAINBINARYNAME}.exe" ""
@@ -661,18 +470,6 @@ FunctionEnd
 !insertmacro MUI_LANGUAGE "{{this}}"
 {{/each}}
 !insertmacro MUI_RESERVEFILE_LANGDLL
-
-; Textos propios de la pagina de bienvenida
-LangString unfoldLema ${LANG_SPANISH} "El editor Markdown que se ve como el documento final mientras escribes."
-LangString unfoldInstalar ${LANG_SPANISH} "Instalar"
-LangString unfoldCancelar ${LANG_SPANISH} "Ahora no"
-LangString unfoldDestino ${LANG_SPANISH} "Se instalara en"
-
-LangString unfoldLema ${LANG_ENGLISH} "The Markdown editor that looks like the finished document while you type."
-LangString unfoldInstalar ${LANG_ENGLISH} "Install"
-LangString unfoldCancelar ${LANG_ENGLISH} "Not now"
-LangString unfoldDestino ${LANG_ENGLISH} "Will be installed in"
-
 {{#each language_files}}
   !include "{{this}}"
 {{/each}}
