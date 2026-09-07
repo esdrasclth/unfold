@@ -55,6 +55,18 @@
       "nsis": {
         "installMode": "currentUser"
       }
-    }
+    },
+    "fileAssociations": [
+      {
+        "ext": [
+          "md",
+          "markdown",
+          "mdx"
+        ],
+        "name": "Markdown",
+        "description": "Documento Markdown",
+        "role": "Editor"
+      }
+    ]
   }
 }
