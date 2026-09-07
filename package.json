@@ -9,7 +9,8 @@
     "start": "tauri dev",
     "release": "tauri build",
     "tauri": "tauri",
-    "test": "node --experimental-strip-types scripts/test-markdown.mjs && node --experimental-strip-types scripts/test-export.mjs && node --experimental-strip-types scripts/test-math.mjs"
+    "test": "node --experimental-strip-types scripts/test-markdown.mjs && node --experimental-strip-types scripts/test-export.mjs && node --experimental-strip-types scripts/test-math.mjs",
+    "release:setup": "npm run release && npm --prefix setup run release"
   },
   "dependencies": {
     "@codemirror/commands": "^6.11.0",

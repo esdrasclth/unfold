@@ -48,11 +48,40 @@ sistema de archivos nativo, de modo que el flujo completo se puede probar ahí.
 ## Compilar
 
 ```powershell
-npm run release    # genera el .exe y el instalador NSIS
+npm run release        # el .exe y el instalador NSIS
+npm run release:setup  # ademas, el instalador con interfaz propia
 ```
 
-La salida queda en `src-tauri/target/release/`, y el instalador en
-`src-tauri/target/release/bundle/nsis/`.
+La aplicación queda en `src-tauri/target/release/`, el instalador NSIS en
+`src-tauri/target/release/bundle/nsis/`, y el instalador que se distribuye en
+`setup/src-tauri/target/release/unfold-setup.exe`.
+
+El orden importa: el instalador con interfaz **empotra** el NSIS con
+`include_bytes!`, así que la aplicación tiene que estar compilada antes.
+
+## El instalador
+
+`setup/` es una segunda aplicación Tauri: una ventana de 940×600 sin
+decoración, con la paleta del editor, que por debajo ejecuta el instalador NSIS
+en modo silencioso.
+
+Se hizo así porque NSIS dibuja controles nativos de Win32 y Windows los pinta
+con su propio tema: los campos y las casillas no se pueden redondear ni teñir.
+Con un WebView el diseño es libre, y la maquinaria probada —registro,
+desinstalador, WebView2, asociaciones— se conserva intacta en lugar de
+reescribirla.
+
+El NSIS viaja empotrado en el binario y se extrae a la carpeta temporal al
+instalar, de modo que lo que se descarga es **un único `.exe` de 7 MB**.
+
+Dos detalles del NSIS que hubo que añadir a su plantilla:
+
+- **`/DESKTOP`**: en modo silencioso no hay página final donde marcar el acceso
+  directo, así que se acepta por línea de órdenes.
+- **`OpenWithProgids`**: desde Windows 10 una aplicación no puede quedarse con
+  una extensión por su cuenta —la elección vive en `UserChoice`, protegida—.
+  Sin esta clave, Unfold ni siquiera aparecía en la lista de «Abrir con» para
+  un `.md`. Ponerla como predeterminada sigue siendo cosa del usuario.
 
 ## Atajos
 

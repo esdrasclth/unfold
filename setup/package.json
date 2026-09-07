@@ -1,0 +1,23 @@
+{
+  "name": "unfold-setup",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "description": "Instalador de Unfold con interfaz propia",
+  "scripts": {
+    "dev": "vite",
+    "build": "tsc --noEmit && vite build",
+    "start": "tauri dev",
+    "release": "tauri build",
+    "tauri": "tauri"
+  },
+  "devDependencies": {
+    "@tauri-apps/cli": "^2.11.4",
+    "typescript": "^7.0.2",
+    "vite": "^8.2.2"
+  },
+  "dependencies": {
+    "@tauri-apps/api": "^2.11.1",
+    "@tauri-apps/plugin-dialog": "^2.7.3"
+  }
+}

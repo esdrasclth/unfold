@@ -1,0 +1,522 @@
+/**
+ * Instalador de Unfold.
+ *
+ * La misma paleta y las mismas curvas que la aplicación: quien instala ya está
+ * viendo el producto. Aquí sí se puede usar CSS, que es justo lo que NSIS no
+ * permitía: campos redondeados, casillas propias, sombras y espaciado fino.
+ */
+
+:root {
+  --ease: cubic-bezier(0.22, 0.8, 0.28, 1);
+  --fast: 120ms;
+  --medium: 220ms;
+
+  --canvas: #fdfcfa;
+  --panel: #1b1a18;
+  --panel-soft: rgba(255, 255, 255, 0.62);
+  --panel-faint: rgba(255, 255, 255, 0.38);
+
+  --text: #17150f;
+  --text-body: #35312a;
+  --text-soft: #6f6a60;
+  --text-faint: #a8a298;
+
+  --accent: #b4572a;
+  --accent-hover: #c46333;
+  --wash: rgba(32, 26, 16, 0.055);
+  --wash-strong: rgba(32, 26, 16, 0.09);
+
+  --serif: Georgia, "Cambria", "Times New Roman", serif;
+  --sans: "Segoe UI Variable Text", "Segoe UI", system-ui, sans-serif;
+
+  color-scheme: light;
+}
+
+* {
+  box-sizing: border-box;
+}
+
+html,
+body {
+  height: 100%;
+  margin: 0;
+  overflow: hidden;
+  background: transparent;
+}
+
+body {
+  font-family: var(--sans);
+  color: var(--text-body);
+  -webkit-font-smoothing: antialiased;
+  user-select: none;
+  cursor: default;
+}
+
+#app {
+  display: grid;
+  grid-template-columns: 340px 1fr;
+  height: 100vh;
+  background: var(--canvas);
+  overflow: hidden;
+}
+
+/* --- Panel izquierdo -------------------------------------------------------- */
+
+.panel {
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  padding: 2.6rem 2.2rem 2rem;
+  background: var(--panel);
+  color: #fff;
+  overflow: hidden;
+}
+
+.panel-name {
+  margin: 0;
+  font-family: var(--serif);
+  font-size: 2.5rem;
+  font-weight: 400;
+  line-height: 1.06;
+  letter-spacing: -0.015em;
+}
+
+.panel-tagline {
+  margin: 0.9rem 0 0;
+  font-size: 0.9rem;
+  line-height: 1.55;
+  color: var(--panel-soft);
+}
+
+.panel-rule {
+  width: 40px;
+  height: 2px;
+  margin: 1.5rem 0 0;
+  border-radius: 2px;
+  background: var(--accent);
+}
+
+.panel-art {
+  flex: 1;
+  display: grid;
+  place-items: center;
+  margin: 1.2rem -0.6rem 0;
+  min-height: 0;
+}
+
+.panel-art svg {
+  width: 100%;
+  max-width: 260px;
+  height: auto;
+}
+
+.panel-foot {
+  margin-top: 1.4rem;
+  font-size: 0.66rem;
+  font-weight: 600;
+  line-height: 1.7;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+  color: var(--panel-faint);
+}
+
+/* --- Panel derecho ---------------------------------------------------------- */
+
+.main {
+  display: flex;
+  flex-direction: column;
+  padding: 2.4rem 2.8rem 1.6rem;
+  min-width: 0;
+}
+
+.titlebar {
+  position: absolute;
+  top: 0;
+  right: 0;
+  left: 340px;
+  height: 44px;
+  display: flex;
+  justify-content: flex-end;
+  align-items: flex-start;
+  /* Toda la franja arrastra la ventana; el botón se excluye aparte. */
+  -webkit-app-region: drag;
+}
+
+.close {
+  -webkit-app-region: no-drag;
+  display: grid;
+  place-items: center;
+  width: 44px;
+  height: 36px;
+  border: none;
+  border-radius: 0 12px 0 10px;
+  background: transparent;
+  color: var(--text-soft);
+  cursor: pointer;
+  transition: background var(--fast) var(--ease), color var(--fast) var(--ease);
+}
+
+.close:hover {
+  background: #c42b1c;
+  color: #fff;
+}
+
+.close svg {
+  width: 11px;
+  height: 11px;
+}
+
+/* --- Pasos ------------------------------------------------------------------ */
+
+.steps {
+  display: flex;
+  gap: 1.6rem;
+  margin-bottom: 2.2rem;
+}
+
+.step {
+  position: relative;
+  padding-bottom: 0.5rem;
+  font-size: 0.82rem;
+  font-weight: 600;
+  font-variant-numeric: tabular-nums;
+  color: var(--text-faint);
+  transition: color var(--medium) var(--ease);
+}
+
+.step::after {
+  content: "";
+  position: absolute;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  height: 2px;
+  border-radius: 2px;
+  background: var(--accent);
+  transform: scaleX(0);
+  transform-origin: left;
+  transition: transform var(--medium) var(--ease);
+}
+
+.step.is-active {
+  color: var(--accent);
+}
+
+.step.is-active::after {
+  transform: scaleX(1);
+}
+
+.step.is-done {
+  color: var(--text-soft);
+}
+
+/* --- Contenido -------------------------------------------------------------- */
+
+.pane {
+  flex: 1;
+  min-height: 0;
+  display: none;
+  flex-direction: column;
+  animation: enter var(--medium) var(--ease);
+}
+
+.pane.is-current {
+  display: flex;
+}
+
+@keyframes enter {
+  from {
+    opacity: 0;
+    transform: translateY(8px);
+  }
+}
+
+h1 {
+  margin: 0;
+  font-family: var(--serif);
+  font-size: 2.15rem;
+  font-weight: 400;
+  line-height: 1.15;
+  letter-spacing: -0.015em;
+  color: var(--text);
+}
+
+.lead {
+  margin: 0.7rem 0 0;
+  font-size: 0.95rem;
+  line-height: 1.6;
+  color: var(--text-soft);
+}
+
+.points {
+  margin: 1.8rem 0 0;
+  padding: 0;
+  list-style: none;
+  display: grid;
+  gap: 0.85rem;
+}
+
+.points li {
+  display: grid;
+  grid-template-columns: 20px 1fr;
+  gap: 0.7rem;
+  align-items: start;
+  font-size: 0.9rem;
+  line-height: 1.5;
+  color: var(--text-body);
+}
+
+.points svg {
+  width: 18px;
+  height: 18px;
+  margin-top: 1px;
+  color: var(--accent);
+}
+
+.field {
+  margin-top: 1.9rem;
+}
+
+.field-label {
+  display: block;
+  margin-bottom: 0.5rem;
+  font-size: 0.85rem;
+  font-weight: 500;
+  color: var(--text-body);
+}
+
+.field-row {
+  display: flex;
+  gap: 8px;
+}
+
+.field-row input {
+  flex: 1;
+  min-width: 0;
+  height: 42px;
+  padding: 0 0.9rem;
+  border: none;
+  border-radius: 10px;
+  background: var(--wash);
+  color: var(--text-body);
+  font-family: inherit;
+  font-size: 0.88rem;
+  outline: none;
+  user-select: text;
+  cursor: text;
+  transition: box-shadow var(--fast) var(--ease), background var(--fast) var(--ease);
+}
+
+.field-row input:focus {
+  background: var(--wash-strong);
+  box-shadow: 0 0 0 2px color-mix(in srgb, var(--accent) 32%, transparent);
+}
+
+.browse {
+  display: grid;
+  place-items: center;
+  width: 42px;
+  height: 42px;
+  border: none;
+  border-radius: 10px;
+  background: var(--wash);
+  color: var(--text-soft);
+  cursor: pointer;
+  transition: background var(--fast) var(--ease), color var(--fast) var(--ease);
+}
+
+.browse:hover {
+  background: var(--wash-strong);
+  color: var(--text);
+}
+
+.browse svg {
+  width: 17px;
+  height: 17px;
+}
+
+/* --- Casillas propias ------------------------------------------------------- */
+
+.options {
+  margin-top: 1.5rem;
+  display: grid;
+  gap: 0.85rem;
+}
+
+.check {
+  display: flex;
+  align-items: center;
+  gap: 0.7rem;
+  font-size: 0.88rem;
+  color: var(--text-body);
+  cursor: pointer;
+}
+
+.check input {
+  position: absolute;
+  opacity: 0;
+  pointer-events: none;
+}
+
+.box {
+  display: grid;
+  place-items: center;
+  width: 21px;
+  height: 21px;
+  flex: none;
+  border-radius: 6px;
+  background: var(--wash);
+  transition:
+    background var(--fast) var(--ease),
+    transform var(--fast) var(--ease);
+}
+
+.check:hover .box {
+  background: var(--wash-strong);
+}
+
+.box svg {
+  width: 12px;
+  height: 12px;
+  color: #fff;
+  opacity: 0;
+  transform: scale(0.7);
+  transition: opacity var(--fast) var(--ease), transform var(--fast) var(--ease);
+}
+
+.check input:checked + .box {
+  background: var(--accent);
+}
+
+.check input:checked + .box svg {
+  opacity: 1;
+  transform: scale(1);
+}
+
+.check input:focus-visible + .box {
+  box-shadow: 0 0 0 2px color-mix(in srgb, var(--accent) 40%, transparent);
+}
+
+/* --- Progreso --------------------------------------------------------------- */
+
+.progress {
+  margin-top: 2.2rem;
+  height: 5px;
+  border-radius: 999px;
+  background: var(--wash);
+  overflow: hidden;
+}
+
+.progress span {
+  display: block;
+  height: 100%;
+  width: 35%;
+  border-radius: 999px;
+  background: var(--accent);
+  animation: sweep 1.35s var(--ease) infinite;
+}
+
+/* Barra indeterminada: NSIS en modo silencioso no informa del avance, y una
+   barra que fingiera porcentajes exactos estaría mintiendo. */
+@keyframes sweep {
+  from {
+    transform: translateX(-110%);
+  }
+  to {
+    transform: translateX(320%);
+  }
+}
+
+.progress.is-done span {
+  width: 100%;
+  animation: none;
+  transform: none;
+}
+
+.status {
+  margin-top: 0.9rem;
+  font-size: 0.85rem;
+  color: var(--text-soft);
+}
+
+.error {
+  margin-top: 1.2rem;
+  padding: 0.8rem 1rem;
+  border-radius: 10px;
+  background: color-mix(in srgb, #c0392b 12%, transparent);
+  font-size: 0.84rem;
+  line-height: 1.5;
+  color: #8f2b1f;
+  user-select: text;
+}
+
+/* --- Pie -------------------------------------------------------------------- */
+
+.actions {
+  display: flex;
+  justify-content: flex-end;
+  gap: 10px;
+  margin-top: auto;
+  padding-top: 1.6rem;
+}
+
+.btn {
+  height: 44px;
+  padding: 0 1.7rem;
+  border: none;
+  border-radius: 11px;
+  font-family: inherit;
+  font-size: 0.9rem;
+  font-weight: 550;
+  cursor: pointer;
+  transition:
+    background var(--fast) var(--ease),
+    transform var(--fast) var(--ease),
+    opacity var(--fast) var(--ease);
+}
+
+.btn.is-quiet {
+  background: transparent;
+  color: var(--text-soft);
+}
+
+.btn.is-quiet:hover {
+  background: var(--wash);
+  color: var(--text);
+}
+
+.btn.is-primary {
+  background: var(--accent);
+  color: #fff;
+}
+
+.btn.is-primary:hover {
+  background: var(--accent-hover);
+}
+
+.btn:active {
+  transform: scale(0.98);
+}
+
+.btn[disabled] {
+  opacity: 0.45;
+  cursor: default;
+  transform: none;
+}
+
+.footnote {
+  margin-top: 1.1rem;
+  padding-top: 0.9rem;
+  font-size: 0.75rem;
+  color: var(--text-faint);
+  border-top: 1px solid var(--wash);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.01ms !important;
+    transition-duration: 0.01ms !important;
+  }
+}

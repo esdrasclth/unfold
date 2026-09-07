@@ -53,7 +53,13 @@
     "shortDescription": "Editor Markdown con vista previa en vivo",
     "windows": {
       "nsis": {
-        "installMode": "currentUser"
+        "installMode": "currentUser",
+        "template": "installer.nsi",
+        "languages": [
+          "Spanish",
+          "English"
+        ],
+        "installerIcon": "icons/icon.ico"
       }
     },
     "fileAssociations": [
