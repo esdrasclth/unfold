@@ -1,11 +1,16 @@
 /*
- * Los colores, las tipografías y las curvas son los mismos que los de la
- * aplicación (src/styles/app.css). Si allí cambia la paleta, aquí también.
+ * Los colores, las tipografías y las curvas son los de la aplicación
+ * (src/styles/app.css). Si allí cambia la paleta, aquí también.
  *
- * No hay fuentes externas a propósito: la página presume de que la aplicación
- * arranca en 250 ms, así que no puede permitirse una petición bloqueante a un
- * servidor de tipografías. Se usa la misma pila que el editor, que en Windows
- * cae en Segoe UI: lo que el visitante verá de verdad al instalarla.
+ * La página es clara siempre, a propósito. No sigue al tema del sistema: el
+ * producto es una hoja de papel y el sitio que lo presenta también lo es. El
+ * contraste sale de la tinta sobre el papel, como en el editor, y no de
+ * invertir el fondo.
+ *
+ * Tampoco hay fuentes externas. Una página que presume de que la aplicación
+ * arranca en 250 ms no puede quedarse esperando a un servidor de tipografías,
+ * y la pila que se usa es la misma del editor: en Windows cae en Segoe UI, que
+ * es lo que el visitante verá de verdad al instalarla.
  */
 
 :root {
@@ -15,6 +20,7 @@
   --ease: cubic-bezier(0.22, 0.8, 0.28, 1);
   --fast: 110ms;
   --medium: 190ms;
+  --lento: 420ms;
 
   color-scheme: light;
 
@@ -30,35 +36,13 @@
 
   --accent: #b4572a;
   --accent-wash: color-mix(in srgb, var(--accent) 11%, transparent);
+  --accent-tenue: color-mix(in srgb, var(--accent) 6%, transparent);
   --code-bg: rgba(32, 26, 16, 0.045);
   --rule: rgba(32, 26, 16, 0.11);
+  --rule-suave: rgba(32, 26, 16, 0.07);
 
   --sombra: 0 1px 2px rgba(32, 26, 16, 0.04), 0 12px 32px rgba(32, 26, 16, 0.07);
-  --sombra-alta: 0 2px 6px rgba(32, 26, 16, 0.05), 0 30px 70px rgba(32, 26, 16, 0.13);
-}
-
-@media (prefers-color-scheme: dark) {
-  :root {
-    color-scheme: dark;
-
-    --canvas: #1b1a18;
-    --chrome: #141312;
-    --wash: rgba(255, 255, 255, 0.062);
-    --wash-strong: rgba(255, 255, 255, 0.1);
-
-    --text: #f2eee6;
-    --text-body: #d6d1c8;
-    --text-soft: #948e85;
-    --text-faint: #6b665e;
-
-    --accent: #e0905e;
-    --accent-wash: color-mix(in srgb, var(--accent) 15%, transparent);
-    --code-bg: rgba(255, 255, 255, 0.055);
-    --rule: rgba(255, 255, 255, 0.1);
-
-    --sombra: 0 1px 2px rgba(0, 0, 0, 0.3), 0 12px 32px rgba(0, 0, 0, 0.36);
-    --sombra-alta: 0 2px 6px rgba(0, 0, 0, 0.34), 0 30px 70px rgba(0, 0, 0, 0.5);
-  }
+  --sombra-alta: 0 2px 6px rgba(32, 26, 16, 0.05), 0 34px 80px rgba(32, 26, 16, 0.14);
 }
 
 *, *::before, *::after { box-sizing: border-box; }
@@ -72,39 +56,71 @@ body {
   line-height: 1.65;
   -webkit-font-smoothing: antialiased;
   text-rendering: optimizeLegibility;
+  overflow-x: hidden;
 }
 
-h1, h2, h3 { color: var(--text); font-weight: 620; letter-spacing: -0.021em; margin: 0; }
+h1, h2, h3 { color: var(--text); font-weight: 620; letter-spacing: -0.022em; margin: 0; }
 p { margin: 0; }
-
 a { color: inherit; }
 
-code, kbd {
+code, kbd, .cod {
   font-family: var(--font-mono);
-  font-size: 0.88em;
+  font-size: 0.86em;
   background: var(--code-bg);
-  padding: 0.12em 0.38em;
+  padding: 0.12em 0.4em;
   border-radius: 5px;
 }
 
-kbd { font-size: 0.8em; padding: 0.1em 0.42em; }
+kbd { font-size: 0.78em; }
 
 .logo { width: 26px; height: 26px; display: block; flex: none; }
 .logo-xs { width: 15px; height: 15px; }
+
+/* ── Los títulos se despliegan solos ────────────────────────────────────────
+ *
+ * El marcador vive en el margen izquierdo y no en el flujo del texto: al
+ * desvanecerse no mueve ni un píxel de la línea, que es justo lo que hace el
+ * editor. Y vuelve al pasar el ratón por encima, como cuando el cursor entra
+ * en la línea y la sintaxis reaparece atenuada para poder tocarla.
+ */
+
+.titulo { position: relative; }
+
+.titulo .mk {
+  position: absolute;
+  right: 100%;
+  margin-right: 0.3em;
+  font-family: var(--font-mono);
+  font-weight: 400;
+  font-size: 0.72em;
+  color: var(--accent);
+  opacity: 0.42;
+  white-space: pre;
+  pointer-events: none;
+  transition: opacity var(--lento) var(--ease);
+}
+
+.titulo.plegado .mk { opacity: 0; }
+.titulo:hover .mk { opacity: 0.42; }
+
+/* En pantallas estrechas no hay margen donde ponerlo. */
+@media (max-width: 780px) {
+  .titulo .mk { display: none; }
+}
 
 /* ── Navegación ─────────────────────────────────────────────────────────── */
 
 .nav {
   position: sticky;
   top: 0;
-  z-index: 10;
+  z-index: 20;
   display: flex;
   align-items: center;
   justify-content: space-between;
   gap: 1.5rem;
   padding: 0.85rem clamp(1.25rem, 5vw, 3.5rem);
-  background: color-mix(in srgb, var(--canvas) 82%, transparent);
-  backdrop-filter: saturate(1.6) blur(14px);
+  background: color-mix(in srgb, var(--canvas) 80%, transparent);
+  backdrop-filter: saturate(1.7) blur(16px);
 }
 
 .nav-marca {
@@ -117,7 +133,7 @@ kbd { font-size: 0.8em; padding: 0.1em 0.42em; }
   letter-spacing: -0.015em;
 }
 
-.nav-links { display: flex; gap: 1.6rem; font-size: 0.92rem; }
+.nav-links { display: flex; align-items: center; gap: 1.5rem; font-size: 0.92rem; }
 
 .nav-links a {
   color: var(--text-soft);
@@ -127,32 +143,76 @@ kbd { font-size: 0.8em; padding: 0.1em 0.42em; }
 
 .nav-links a:hover { color: var(--text); }
 
-@media (max-width: 640px) {
-  .nav-links a:not(:last-child) { display: none; }
+.nav-cta {
+  color: var(--text) !important;
+  background: var(--wash);
+  padding: 0.36rem 0.85rem;
+  border-radius: 9px;
+  transition: background var(--fast) var(--ease);
 }
 
-/* ── Portada ────────────────────────────────────────────────────────────── */
+.nav-cta:hover { background: var(--wash-strong); }
+
+@media (max-width: 720px) {
+  .nav-links a:not(.nav-cta) { display: none; }
+}
+
+/* ── Estructura ─────────────────────────────────────────────────────────── */
 
 main { max-width: 1280px; margin: 0 auto; padding: 0 clamp(1.25rem, 5vw, 3.5rem); }
 
+section + section { box-shadow: inset 0 1px 0 var(--rule-suave); }
+
+h2.titulo { font-size: clamp(1.55rem, 3vw, 2.15rem); letter-spacing: -0.03em; }
+
+/* ── Portada ────────────────────────────────────────────────────────────── */
+
 .hero {
+  position: relative;
   display: grid;
   grid-template-columns: minmax(0, 1.02fr) minmax(0, 1fr);
   gap: clamp(2rem, 5vw, 4.5rem);
   align-items: center;
-  padding: clamp(3rem, 8vw, 6.5rem) 0 clamp(3rem, 7vw, 5.5rem);
+  padding: clamp(3rem, 8vw, 6rem) 0 clamp(3.5rem, 8vw, 6rem);
 }
 
+/*
+ * Un calor de fondo, para que el papel no quede plano. Nada de fondo oscuro.
+ * Sin `filter: blur`: sobre un gradiente radial no se nota y obliga al
+ * navegador a rasterizar una capa enorme en cada repintado.
+ */
+.hero-wash {
+  position: absolute;
+  z-index: -1;
+  top: -25%;
+  right: -28%;
+  width: 95%;
+  height: 155%;
+  background: radial-gradient(closest-side, var(--accent-wash), transparent 70%);
+  pointer-events: none;
+}
+
+.sobretitulo {
+  font-family: var(--font-mono);
+  font-size: 0.76rem;
+  letter-spacing: 0.09em;
+  text-transform: uppercase;
+  color: var(--text-faint);
+  margin-bottom: 1.4rem;
+}
+
+.sobretitulo span { color: var(--accent); }
+
 .hero h1 {
-  font-size: clamp(2.05rem, 3.4vw, 2.8rem);
+  font-size: clamp(2.05rem, 3.4vw, 2.85rem);
   line-height: 1.1;
-  letter-spacing: -0.035em;
+  letter-spacing: -0.036em;
   font-weight: 660;
 }
 
 .entradilla {
   margin-top: 1.15rem;
-  font-size: clamp(1.02rem, 1.6vw, 1.18rem);
+  font-size: clamp(1.02rem, 1.6vw, 1.16rem);
   color: var(--text-soft);
   max-width: 34ch;
 }
@@ -163,7 +223,7 @@ main { max-width: 1280px; margin: 0 auto; padding: 0 clamp(1.25rem, 5vw, 3.5rem)
   display: inline-flex;
   align-items: center;
   gap: 0.55rem;
-  padding: 0.72rem 1.3rem;
+  padding: 0.75rem 1.35rem;
   border-radius: 11px;
   font-size: 0.96rem;
   font-weight: 560;
@@ -173,26 +233,33 @@ main { max-width: 1280px; margin: 0 auto; padding: 0 clamp(1.25rem, 5vw, 3.5rem)
 }
 
 .btn:active { transform: translateY(1px); }
-.btn-icono { width: 18px; height: 18px; flex: none; }
+
+/* El galón de la marca hace de flecha de descarga; al pasar el ratón, baja. */
+.btn-galon {
+  width: 19px;
+  height: 19px;
+  flex: none;
+  transition: transform var(--medium) var(--ease);
+}
+
+.btn:hover .btn-galon { transform: translateY(2px); }
 
 .btn-primario {
   background: var(--accent);
   color: #fff;
-  box-shadow: 0 1px 2px rgba(32, 26, 16, 0.1), 0 8px 20px var(--accent-wash);
+  box-shadow: 0 1px 2px rgba(32, 26, 16, 0.12), 0 10px 24px var(--accent-wash);
 }
 
 .btn-primario:hover {
   background: color-mix(in srgb, var(--accent) 88%, #000);
-  box-shadow: 0 2px 4px rgba(32, 26, 16, 0.12), 0 12px 28px var(--accent-wash);
-}
-
-@media (prefers-color-scheme: dark) {
-  .btn-primario { color: #1b1a18; }
-  .btn-primario:hover { background: color-mix(in srgb, var(--accent) 88%, #fff); }
+  box-shadow: 0 2px 5px rgba(32, 26, 16, 0.14), 0 16px 34px var(--accent-wash);
 }
 
 .btn-suave { background: var(--wash); color: var(--text); }
 .btn-suave:hover { background: var(--wash-strong); }
+
+.btn-grande { padding: 0.95rem 1.9rem; font-size: 1.04rem; border-radius: 13px; }
+.btn-grande .btn-galon { width: 22px; height: 22px; }
 
 .meta { margin-top: 1.1rem; font-size: 0.86rem; color: var(--text-faint); }
 
@@ -201,18 +268,27 @@ main { max-width: 1280px; margin: 0 auto; padding: 0 clamp(1.25rem, 5vw, 3.5rem)
 .hero-demo { min-width: 0; }
 
 .ventana {
-  border-radius: 13px;
+  border-radius: 14px;
   overflow: hidden;
   background: var(--canvas);
   box-shadow: var(--sombra-alta);
-  transform: perspective(1400px) rotateY(-3.5deg) rotateX(1.2deg);
-  transition: transform 600ms var(--ease);
+  transform: perspective(1600px) rotateY(-4deg) rotateX(1.4deg);
+  transition: transform 700ms var(--ease);
 }
 
-.ventana:hover { transform: perspective(1400px) rotateY(0deg) rotateX(0deg); }
+.ventana:hover { transform: perspective(1600px) rotateY(0deg) rotateX(0deg); }
+
+.pie-demo {
+  margin-top: 1.1rem;
+  text-align: center;
+  font-size: 0.8rem;
+  color: var(--text-faint);
+}
 
 @media (max-width: 900px) {
   .ventana, .ventana:hover { transform: none; }
+  .hero { grid-template-columns: 1fr; padding-top: 2.5rem; }
+  .entradilla { max-width: none; }
 }
 
 .ventana-barra {
@@ -233,12 +309,7 @@ main { max-width: 1280px; margin: 0 auto; padding: 0 clamp(1.25rem, 5vw, 3.5rem)
 }
 
 .ventana-botones { display: flex; height: 100%; }
-
-.ventana-botones i {
-  width: 40px;
-  display: grid;
-  place-items: center;
-}
+.ventana-botones i { width: 40px; display: grid; place-items: center; }
 
 /* Los glifos de minimizar, maximizar y cerrar, dibujados con bordes. */
 .ventana-botones i::before {
@@ -250,6 +321,7 @@ main { max-width: 1280px; margin: 0 auto; padding: 0 clamp(1.25rem, 5vw, 3.5rem)
 }
 
 .ventana-botones i:first-child::before { height: 0; border-width: 0 0 1px; width: 10px; }
+
 .ventana-botones i.cerrar::before {
   border: 0;
   height: 10px;
@@ -273,19 +345,18 @@ main { max-width: 1280px; margin: 0 auto; padding: 0 clamp(1.25rem, 5vw, 3.5rem)
 
 .ventana-hoja {
   background: var(--canvas);
-  padding: 1.7rem clamp(1.1rem, 3vw, 2.2rem) 2.2rem;
-  min-height: 310px;
+  padding: 1.6rem clamp(1.1rem, 3vw, 2rem) 1.8rem;
+  min-height: 340px;
 }
 
 .lineas { font-size: 0.95rem; line-height: 1.75; color: var(--text-body); }
-
 .ln { min-height: 1.75em; }
 
 /*
- * Los marcadores. Al plegarse no se limitan a desaparecer: se encogen hasta
- * ocupar cero, que es lo que hace que el texto se reacomode como en el editor.
+ * Aquí sí, en el flujo: al plegarse los marcadores se encogen hasta ocupar
+ * cero y el texto se reacomoda, que es lo que se ve en el editor.
  */
-.mk {
+.ln .mk {
   display: inline-block;
   color: var(--text-faint);
   font-family: var(--font-mono);
@@ -301,8 +372,8 @@ main { max-width: 1280px; margin: 0 auto; padding: 0 clamp(1.25rem, 5vw, 3.5rem)
 
 /*
  * La viñeta y la casilla que sustituyen al marcador. Se abren con `max-width`
- * y no con `width` porque así se detienen en su anchura natural, que es
- * distinta para el punto y para el cuadrado.
+ * y no con `width` para que se detengan en su anchura natural, distinta para
+ * el punto y para el cuadrado.
  */
 .pieza {
   display: inline-block;
@@ -314,8 +385,8 @@ main { max-width: 1280px; margin: 0 auto; padding: 0 clamp(1.25rem, 5vw, 3.5rem)
   transition: max-width 280ms var(--ease), opacity 260ms var(--ease) 60ms;
 }
 
-.ln.plegada .pieza { max-width: 3ch; opacity: 1; }
-.pieza.punto { color: var(--accent); font-weight: 700; }
+.ln.plegada .pieza { max-width: 5ch; opacity: 1; }
+.pieza .punto { color: var(--accent); font-weight: 700; }
 
 /* La misma casilla que dibuja la aplicación: cuadrado, y relleno al marcarse. */
 .caja {
@@ -333,8 +404,12 @@ main { max-width: 1280px; margin: 0 auto; padding: 0 clamp(1.25rem, 5vw, 3.5rem)
   border-color: var(--accent);
 }
 
-.ln.h1 { font-size: 1.72em; font-weight: 640; color: var(--text); line-height: 1.3; letter-spacing: -0.02em; }
-.ln.h2 { font-size: 1.3em; font-weight: 620; color: var(--text); line-height: 1.35; letter-spacing: -0.015em; }
+.ln.h1 { font-size: 1.7em; font-weight: 640; color: var(--text); line-height: 1.32; letter-spacing: -0.02em; }
+.ln.h2 { font-size: 1.28em; font-weight: 620; color: var(--text); line-height: 1.35; }
+.ln strong { font-weight: 660; color: var(--text); }
+.ln em { font-style: italic; }
+.ln .cod { font-size: 0.86em; }
+
 /* La cita gana su barra lateral al plegarse, igual que en el editor. */
 .ln.cita {
   position: relative;
@@ -358,9 +433,46 @@ main { max-width: 1280px; margin: 0 auto; padding: 0 clamp(1.25rem, 5vw, 3.5rem)
 
 .ln.cita.plegada { padding-left: 1.2em; }
 .ln.cita.plegada::before { opacity: 0.35; }
-.ln strong { font-weight: 660; color: var(--text); }
-.ln em { font-style: italic; }
-.ln .cod { font-family: var(--font-mono); font-size: 0.88em; background: var(--code-bg); border-radius: 5px; padding: 0.1em 0.3em; }
+
+/*
+ * La tabla. Mientras se escribe se ven las tuberías; al plegarse, la fuente se
+ * cierra y la tabla de verdad se abre en su sitio. Las filas de la rejilla van
+ * de 0fr a 1fr, que es lo que permite animar una altura desconocida sin
+ * medirla a mano.
+ */
+.bloque-tabla { display: grid; }
+
+.tabla-fuente,
+.tabla-hecha {
+  display: grid;
+  overflow: hidden;
+  transition: grid-template-rows 320ms var(--ease), opacity 240ms var(--ease);
+}
+
+.tabla-fuente { grid-template-rows: 1fr; opacity: 1; }
+.tabla-hecha { grid-template-rows: 0fr; opacity: 0; }
+
+.bloque-tabla.plegada .tabla-fuente { grid-template-rows: 0fr; opacity: 0; }
+.bloque-tabla.plegada .tabla-hecha { grid-template-rows: 1fr; opacity: 1; }
+
+.tabla-fuente > div,
+.tabla-hecha > div { min-height: 0; }
+
+.lineas table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 0.92em;
+  margin: 0.5em 0;
+}
+
+.lineas th,
+.lineas td {
+  text-align: left;
+  padding: 0.42em 0.7em;
+  box-shadow: inset 0 -1px 0 var(--rule-suave);
+}
+
+.lineas th { background: var(--wash); font-weight: 600; color: var(--text); }
 
 .cursor {
   display: inline-block;
@@ -374,36 +486,39 @@ main { max-width: 1280px; margin: 0 auto; padding: 0 clamp(1.25rem, 5vw, 3.5rem)
 
 @keyframes parpadeo { 0%, 55% { opacity: 1; } 56%, 100% { opacity: 0; } }
 
-@media (max-width: 900px) {
-  .hero { grid-template-columns: 1fr; padding-top: 2.5rem; }
-  .entradilla { max-width: none; }
-}
-
 /* ── Pilares ────────────────────────────────────────────────────────────── */
 
 .pilares {
   display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+  grid-template-columns: repeat(auto-fit, minmax(255px, 1fr));
   gap: clamp(1.6rem, 4vw, 3rem);
-  padding: clamp(2.5rem, 6vw, 4.5rem) 0;
+  padding: clamp(2.8rem, 6vw, 4.5rem) 0;
 }
 
-.pilares h3 { font-size: 1.06rem; margin-bottom: 0.55rem; }
+.pilar-num {
+  display: block;
+  font-family: var(--font-mono);
+  font-size: 0.78rem;
+  color: var(--accent);
+  margin-bottom: 0.7rem;
+}
+
+.pilares h3 { font-size: 1.08rem; margin-bottom: 0.5rem; }
 .pilares p { color: var(--text-soft); font-size: 0.95rem; }
 
 /* ── Captura ────────────────────────────────────────────────────────────── */
 
-.captura-seccion { padding: clamp(2rem, 5vw, 3.5rem) 0; }
+.captura-seccion { padding: clamp(2.8rem, 6vw, 4.5rem) 0; }
 
 .captura-cabecera {
   display: flex;
   align-items: center;
   justify-content: space-between;
   gap: 1rem;
-  margin-bottom: 1.6rem;
+  flex-wrap: wrap;
 }
 
-h2 { font-size: clamp(1.5rem, 3vw, 2rem); letter-spacing: -0.028em; }
+.bajada { margin-top: 0.6rem; color: var(--text-soft); font-size: 0.95rem; }
 
 .conmutador { display: flex; gap: 0.2rem; padding: 0.22rem; background: var(--wash); border-radius: 10px; }
 
@@ -413,7 +528,7 @@ h2 { font-size: clamp(1.5rem, 3vw, 2rem); letter-spacing: -0.028em; }
   color: var(--text-soft);
   font: inherit;
   font-size: 0.85rem;
-  padding: 0.34rem 0.85rem;
+  padding: 0.34rem 0.9rem;
   border-radius: 8px;
   cursor: pointer;
   transition: background var(--fast) var(--ease), color var(--fast) var(--ease);
@@ -421,46 +536,66 @@ h2 { font-size: clamp(1.5rem, 3vw, 2rem); letter-spacing: -0.028em; }
 
 .conmutador button.activo { background: var(--canvas); color: var(--text); box-shadow: var(--sombra); }
 
-.captura { margin: 0; border-radius: 13px; overflow: hidden; box-shadow: var(--sombra-alta); }
+.captura {
+  margin: 1.8rem 0 0;
+  border-radius: 14px;
+  overflow: hidden;
+  box-shadow: var(--sombra-alta);
+}
+
 .captura img { display: block; width: 100%; height: auto; }
 
 /* ── Características ────────────────────────────────────────────────────── */
 
-.caracteristicas { padding: clamp(2.5rem, 6vw, 4.5rem) 0; }
+.caracteristicas { padding: clamp(2.8rem, 6vw, 4.5rem) 0; }
 
-.rejilla {
+.lista-larga {
+  list-style: none;
+  margin: 2.2rem 0 0;
+  padding: 0;
   display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(255px, 1fr));
-  gap: 1px;
-  margin-top: 2rem;
-  background: var(--rule);
-  border-radius: 14px;
-  overflow: hidden;
+  grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+  gap: 0 clamp(2rem, 5vw, 4rem);
 }
 
-.rejilla article {
-  background: var(--canvas);
-  padding: 1.5rem 1.6rem;
-  transition: background var(--medium) var(--ease);
-}
-
-.rejilla article:hover { background: color-mix(in srgb, var(--wash) 55%, var(--canvas)); }
-.rejilla h3 { font-size: 0.99rem; margin-bottom: 0.4rem; }
-.rejilla p { font-size: 0.9rem; color: var(--text-soft); }
-
-/* ── Explicación ────────────────────────────────────────────────────────── */
-
-.explicacion { padding: clamp(2.5rem, 6vw, 4.5rem) 0; }
-
-.explicacion-cuerpo {
-  margin-top: 1.5rem;
-  max-width: 62ch;
+.lista-larga li {
   display: grid;
-  gap: 1.1rem;
-  color: var(--text-soft);
+  grid-template-columns: 2.6rem 1fr;
+  gap: 0 0.4rem;
+  padding: 1.35rem 0;
+  box-shadow: inset 0 1px 0 var(--rule-suave);
 }
 
-.explicacion-cuerpo strong { color: var(--text-body); }
+.idx {
+  grid-row: 1 / span 2;
+  font-family: var(--font-mono);
+  font-size: 0.78rem;
+  color: var(--text-faint);
+  padding-top: 0.28rem;
+  transition: color var(--medium) var(--ease);
+}
+
+.lista-larga li:hover .idx { color: var(--accent); }
+.lista-larga h3 { font-size: 1rem; margin-bottom: 0.28rem; }
+.lista-larga p { font-size: 0.92rem; color: var(--text-soft); }
+
+/* ── Cómo funciona ──────────────────────────────────────────────────────── */
+
+.explicacion {
+  display: grid;
+  grid-template-columns: minmax(0, 1.25fr) minmax(0, 1fr);
+  gap: clamp(2rem, 5vw, 4rem);
+  align-items: start;
+  padding: clamp(2.8rem, 6vw, 4.5rem) 0;
+}
+
+@media (max-width: 880px) {
+  .explicacion { grid-template-columns: 1fr; }
+}
+
+.explicacion-texto { display: grid; gap: 1.1rem; color: var(--text-soft); max-width: 62ch; }
+.explicacion-texto h2 { margin-bottom: 0.4rem; }
+.explicacion-texto strong { color: var(--text-body); }
 
 .nota {
   font-size: 0.92rem;
@@ -469,34 +604,66 @@ h2 { font-size: clamp(1.5rem, 3vw, 2rem); letter-spacing: -0.028em; }
   box-shadow: inset 2px 0 0 var(--rule);
 }
 
+.pares {
+  background: color-mix(in srgb, var(--chrome) 55%, var(--canvas));
+  border-radius: 14px;
+  padding: 0.4rem 1.3rem 1rem;
+  position: sticky;
+  top: 5rem;
+}
+
+.pares-cab,
+.par {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
+  gap: 1rem;
+  align-items: center;
+  padding: 0.62rem 0;
+}
+
+.pares-cab {
+  font-family: var(--font-mono);
+  font-size: 0.7rem;
+  letter-spacing: 0.09em;
+  text-transform: uppercase;
+  color: var(--text-faint);
+}
+
+.par { box-shadow: inset 0 1px 0 var(--rule-suave); }
+.par code { background: transparent; padding: 0; color: var(--text-soft); }
+.res { color: var(--text-body); }
+.res-h { font-size: 1.18em; font-weight: 620; color: var(--text); letter-spacing: -0.02em; }
+
+.res-cita {
+  position: relative;
+  padding-left: 0.85em;
+  font-style: italic;
+  color: var(--text-soft);
+  box-shadow: inset 2.5px 0 0 color-mix(in srgb, var(--accent) 35%, transparent);
+}
+
 /* ── Instalar ───────────────────────────────────────────────────────────── */
 
-.instalar { padding: clamp(2.5rem, 6vw, 4.5rem) 0 clamp(3.5rem, 8vw, 6rem); }
+.instalar { padding: clamp(2.8rem, 6vw, 4.5rem) 0; }
 
 .pasos {
   list-style: none;
-  margin: 2rem 0 0;
+  margin: 2.2rem 0 0;
   padding: 0;
   display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
+  grid-template-columns: repeat(auto-fit, minmax(245px, 1fr));
   gap: clamp(1.4rem, 3vw, 2.5rem);
 }
 
 .pasos li { display: flex; gap: 0.9rem; align-items: baseline; }
 
-.paso-num {
-  font-family: var(--font-mono);
-  font-size: 0.82rem;
-  color: var(--accent);
-  flex: none;
-}
-
+.paso-num { font-family: var(--font-mono); font-size: 0.82rem; color: var(--accent); flex: none; }
 .pasos h3 { font-size: 1rem; margin-bottom: 0.3rem; }
 .pasos p { font-size: 0.92rem; color: var(--text-soft); }
 
 .aviso {
   margin-top: 2.5rem;
-  padding: 1.15rem 1.35rem;
+  padding: 1.2rem 1.4rem;
   border-radius: 12px;
   background: var(--accent-wash);
   font-size: 0.92rem;
@@ -507,7 +674,24 @@ h2 { font-size: clamp(1.5rem, 3vw, 2rem); letter-spacing: -0.028em; }
 .aviso strong { color: var(--text); }
 .aviso a { color: var(--accent); text-underline-offset: 3px; }
 
-.cierre { margin-top: 2.5rem; }
+/* ── Cierre ─────────────────────────────────────────────────────────────── */
+
+.cierre {
+  text-align: center;
+  padding: clamp(3.5rem, 9vw, 7rem) 0;
+  background:
+    radial-gradient(ellipse 70% 120% at 50% 50%, var(--accent-tenue), transparent 70%);
+}
+
+.cierre-titulo {
+  font-size: clamp(1.7rem, 4vw, 2.9rem);
+  line-height: 1.15;
+  letter-spacing: -0.035em;
+  font-weight: 660;
+  margin-bottom: 2.2rem;
+}
+
+.cierre .meta { margin-top: 1rem; }
 
 /* ── Pie ────────────────────────────────────────────────────────────────── */
 

@@ -1,21 +1,30 @@
 /*
- * La animación de la portada, el conmutador de la captura y la versión real.
+ * La animación de la portada, los títulos que se pliegan, el conmutador de la
+ * captura y la versión real.
  *
  * La animación reproduce la mecánica del editor y no una idea aproximada de
  * ella: mientras el cursor está en la línea, sus marcadores se ven —atenuados,
  * en monoespaciada— y el texto ya lleva su formato. Cuando el cursor baja a la
- * línea siguiente, los marcadores se encogen hasta ocupar cero y en su sitio
- * aparecen la viñeta o la casilla. Ese es exactamente el orden de causas que
- * hay en la aplicación: la línea se pliega porque el cursor la ha dejado.
+ * siguiente, los marcadores se encogen hasta ocupar cero y en su sitio
+ * aparecen la viñeta, la casilla o la tabla. Ese es el orden de causas que hay
+ * en la aplicación: la línea se pliega porque el cursor la ha dejado.
  */
 
 const GUION = [
   "# Notas de la reunión",
   "Enviamos el informe el **viernes**.",
-  "- [x] Revisar los números",
+  "- [x] Repasar los números",
   "- [ ] Escribir el resumen",
+  {
+    tabla: {
+      cabecera: ["Tarea", "Quién", "Día"],
+      filas: [
+        ["Informe", "Ana", "vie"],
+        ["Resumen", "Leo", "lun"],
+      ],
+    },
+  },
   "> Sin prisa, pero sin pausa.",
-  "Se publica con `npm run release`.",
 ];
 
 const RITMO = 27; // milisegundos por carácter, más una pizca de azar
@@ -63,37 +72,41 @@ function analizarEnLinea(texto) {
 }
 
 /**
- * Monta la línea entera vacía y devuelve los huecos en orden de escritura.
- * Cada hueco lleva su propio nodo de texto, para poder ir añadiendo caracteres
- * sin borrar el cursor, que vive dentro del elemento.
+ * Monta una línea vacía y devuelve sus huecos en orden de escritura. Cada
+ * hueco lleva su propio nodo de texto, para ir añadiendo caracteres sin borrar
+ * el cursor, que vive dentro del elemento.
  */
-function construir(linea) {
+function construirLinea(fuente) {
+  const linea = analizarLinea(fuente);
   const div = document.createElement("div");
   div.className = linea.clase ? `ln ${linea.clase}` : "ln";
   const huecos = [];
 
-  const hueco = (el) => {
+  const hueco = (el, texto) => {
     const nodo = document.createTextNode("");
     el.appendChild(nodo);
     div.appendChild(el);
-    huecos.push({ el, nodo, texto: "" });
-    return huecos[huecos.length - 1];
+    huecos.push({ el, nodo, texto });
   };
 
   if (linea.marca) {
     const mk = document.createElement("span");
     mk.className = "mk";
-    hueco(mk).texto = linea.marca;
+    hueco(mk, linea.marca);
   }
 
   // La viñeta y la casilla no se escriben: aparecen al plegarse la línea.
   if (linea.pieza) {
     const pieza = document.createElement("span");
     pieza.className = "pieza";
-    if (linea.pieza.tipo === "punto") {
-      pieza.classList.add("punto");
-      pieza.textContent = "• ";
-    } else {
+    // Una tarea lleva las dos cosas: sigue siendo un elemento de lista, así que
+    // el editor le pone su viñeta y además la casilla.
+    const punto = document.createElement("span");
+    punto.className = "punto";
+    punto.textContent = "• ";
+    pieza.appendChild(punto);
+
+    if (linea.pieza.tipo === "caja") {
       const caja = document.createElement("span");
       caja.className = linea.pieza.marcada ? "caja marcada" : "caja";
       pieza.appendChild(caja);
@@ -103,34 +116,106 @@ function construir(linea) {
 
   for (const trozo of linea.trozos) {
     if (!trozo.marca) {
-      hueco(document.createElement("span")).texto = trozo.texto;
+      hueco(document.createElement("span"), trozo.texto);
       continue;
     }
     const abre = document.createElement("span");
     abre.className = "mk";
-    hueco(abre).texto = trozo.marca;
+    hueco(abre, trozo.marca);
 
     const cuerpo = document.createElement(trozo.etiqueta);
     if (trozo.clase) cuerpo.className = trozo.clase;
-    hueco(cuerpo).texto = trozo.texto;
+    hueco(cuerpo, trozo.texto);
 
     const cierra = document.createElement("span");
     cierra.className = "mk";
-    hueco(cierra).texto = trozo.marca;
+    hueco(cierra, trozo.marca);
   }
 
-  return { div, huecos };
+  return { nodo: div, huecos };
+}
+
+/**
+ * La tabla se escribe con tuberías y luego se cierra sobre sí misma mientras
+ * la tabla de verdad se abre debajo. Las dos mitades animan su altura con
+ * `grid-template-rows` de 0fr a 1fr, que es lo que permite abrir algo cuya
+ * altura no se conoce de antemano sin medirla a mano.
+ */
+function construirTabla(modelo) {
+  const bloque = document.createElement("div");
+  bloque.className = "bloque-tabla";
+
+  const fuente = document.createElement("div");
+  fuente.className = "tabla-fuente";
+  const dentroFuente = document.createElement("div");
+  fuente.appendChild(dentroFuente);
+
+  const filasFuente = [
+    `| ${modelo.cabecera.join(" | ")} |`,
+    `| ${modelo.cabecera.map(() => "---").join(" | ")} |`,
+    ...modelo.filas.map((f) => `| ${f.join(" | ")} |`),
+  ];
+
+  const huecos = [];
+  for (const texto of filasFuente) {
+    const ln = document.createElement("div");
+    ln.className = "ln";
+    const nodo = document.createTextNode("");
+    ln.appendChild(nodo);
+    dentroFuente.appendChild(ln);
+    huecos.push({ el: ln, nodo, texto });
+  }
+
+  const hecha = document.createElement("div");
+  hecha.className = "tabla-hecha";
+  const dentroHecha = document.createElement("div");
+  const tabla = document.createElement("table");
+
+  const thead = document.createElement("thead");
+  const trCab = document.createElement("tr");
+  for (const celda of modelo.cabecera) {
+    const th = document.createElement("th");
+    th.textContent = celda;
+    trCab.appendChild(th);
+  }
+  thead.appendChild(trCab);
+  tabla.appendChild(thead);
+
+  const tbody = document.createElement("tbody");
+  for (const fila of modelo.filas) {
+    const tr = document.createElement("tr");
+    for (const celda of fila) {
+      const td = document.createElement("td");
+      td.textContent = celda;
+      tr.appendChild(td);
+    }
+    tbody.appendChild(tr);
+  }
+  tabla.appendChild(tbody);
+
+  dentroHecha.appendChild(tabla);
+  hecha.appendChild(dentroHecha);
+  bloque.append(fuente, hecha);
+
+  // La tabla se escribe más deprisa: son cuatro filas muy parecidas y a ritmo
+  // normal el bucle entero se hacía largo de mirar.
+  return { nodo: bloque, huecos, ritmo: 15 };
+}
+
+function construir(entrada) {
+  return typeof entrada === "string" ? construirLinea(entrada) : construirTabla(entrada.tabla);
 }
 
 /* ── Reproducción ───────────────────────────────────────────────────────── */
 
 const contenedor = document.getElementById("lineas");
 const demo = document.getElementById("demo");
+const menosMovimiento = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
 
 /*
  * Una puerta que la animación atraviesa en cada pausa. Mientras la ventana
- * está oculta o la demostración fuera de la pantalla se queda cerrada, y no
- * se gasta un solo fotograma en algo que nadie ve.
+ * está oculta o la demostración fuera de la pantalla se queda cerrada, y no se
+ * gasta un solo fotograma en algo que nadie ve.
  */
 let abrir = null;
 let puerta = Promise.resolve();
@@ -152,11 +237,11 @@ async function pausa(ms) {
 }
 
 function estatico() {
-  for (const fuente of GUION) {
-    const { div, huecos } = construir(analizarLinea(fuente));
+  for (const entrada of GUION) {
+    const { nodo, huecos } = construir(entrada);
     for (const h of huecos) h.nodo.data = h.texto;
-    div.classList.add("plegada");
-    contenedor.appendChild(div);
+    nodo.classList.add("plegada");
+    contenedor.appendChild(nodo);
   }
 }
 
@@ -168,37 +253,37 @@ async function reproducir() {
     contenedor.textContent = "";
     let anterior = null;
 
-    for (const fuente of GUION) {
-      const { div, huecos } = construir(analizarLinea(fuente));
-      contenedor.appendChild(div);
+    for (const entrada of GUION) {
+      const { nodo, huecos, ritmo } = construir(entrada);
+      contenedor.appendChild(nodo);
 
-      // El cursor baja: es esto, y no un temporizador, lo que pliega la de arriba.
-      div.appendChild(cursor);
+      // El cursor baja: es esto, y no un temporizador, lo que pliega lo de arriba.
+      nodo.appendChild(cursor);
       if (anterior) {
         anterior.classList.add("plegada");
-        await pausa(240);
+        await pausa(260);
       }
 
       for (const h of huecos) {
         h.el.appendChild(cursor);
         for (const caracter of h.texto) {
           h.nodo.data += caracter;
-          await pausa(RITMO + Math.random() * 30);
+          await pausa((ritmo ?? RITMO) + Math.random() * 30);
         }
       }
 
-      await pausa(430);
-      anterior = div;
+      await pausa(420);
+      anterior = nodo;
     }
 
     cursor.remove();
     anterior.classList.add("plegada");
-    await pausa(2800);
+    await pausa(3000);
   }
 }
 
 if (contenedor) {
-  if (window.matchMedia("(prefers-reduced-motion: reduce)").matches) {
+  if (menosMovimiento) {
     estatico();
   } else {
     new IntersectionObserver(
@@ -214,6 +299,34 @@ if (contenedor) {
 
     reproducir();
   }
+}
+
+/* ── Los títulos de la propia página se despliegan ──────────────────────── */
+
+/*
+ * Cada título llega con su `#` o su `##` en el margen y lo suelta al entrar en
+ * pantalla. Al pasar el ratón vuelve, que es lo que hace el editor cuando el
+ * cursor entra en la línea. Va en el margen y no en el flujo del texto para
+ * que aparecer y desaparecer no mueva ni un píxel de lo que se está leyendo.
+ */
+const titulos = document.querySelectorAll(".titulo");
+
+if (menosMovimiento) {
+  for (const titulo of titulos) titulo.classList.add("plegado");
+} else {
+  const vigilante = new IntersectionObserver(
+    (entradas) => {
+      for (const entrada of entradas) {
+        if (!entrada.isIntersecting) continue;
+        const espera = Number(entrada.target.dataset.plegar ?? 500);
+        setTimeout(() => entrada.target.classList.add("plegado"), espera);
+        vigilante.unobserve(entrada.target);
+      }
+    },
+    { threshold: 0.55 },
+  );
+
+  for (const titulo of titulos) vigilante.observe(titulo);
 }
 
 /* ── Conmutador de la captura ───────────────────────────────────────────── */
@@ -253,8 +366,11 @@ async function mostrarVersion() {
     const exe = (datos.assets ?? []).find((a) => a.name === "Unfold-Setup.exe");
     const partes = [datos.tag_name, "Windows 10 y 11"];
     if (exe) partes.push(`${(exe.size / 1048576).toFixed(1).replace(".", ",")} MB`);
-    partes.push("gratis y de código abierto");
+    partes.push("sin instalador de administrador");
     meta.textContent = partes.join(" · ");
+
+    const cierre = document.getElementById("meta-cierre");
+    if (cierre) cierre.textContent = `${datos.tag_name} · Windows 10 y 11`;
   } catch {
     // Sin conexión con la API el texto por defecto sigue siendo correcto.
   }

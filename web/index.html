@@ -12,8 +12,8 @@
 <meta property="og:description" content="Sin panel dividido, sin previsualización aparte. Escribes en un sitio y lees en ese mismo sitio.">
 <meta property="og:image" content="https://esdrasclth.github.io/unfold/captura-claro.png">
 <meta name="twitter:card" content="summary_large_image">
-<meta name="theme-color" content="#fdfcfa" media="(prefers-color-scheme: light)">
-<meta name="theme-color" content="#1b1a18" media="(prefers-color-scheme: dark)">
+<!-- Una sola, y clara: la página no cambia con el tema del sistema. -->
+<meta name="theme-color" content="#fdfcfa">
 
 <link rel="icon" href="favicon.svg" type="image/svg+xml">
 <link rel="stylesheet" href="styles.css">
@@ -38,15 +38,21 @@
   <nav class="nav-links">
     <a href="#caracteristicas">Características</a>
     <a href="#como-funciona">Cómo funciona</a>
-    <a href="https://github.com/esdrasclth/unfold">GitHub</a>
+    <a href="#instalar">Instalar</a>
+    <a class="nav-cta" href="https://github.com/esdrasclth/unfold">GitHub</a>
   </nav>
 </header>
 
 <main id="top">
 
 <section class="hero">
+  <div class="hero-wash" aria-hidden="true"></div>
+
   <div class="hero-texto">
-    <h1>El Markdown se despliega<br>mientras lo escribes.</h1>
+    <p class="sobretitulo"><span>Windows</span> · <span>gratis</span> · <span>código abierto</span></p>
+
+    <h1 class="titulo" data-plegar="600"><span class="mk"># </span>El Markdown se despliega<br>mientras lo escribes.</h1>
+
     <p class="entradilla">
       Sin panel dividido. Sin previsualización aparte. Escribes en un sitio
       y lees en ese mismo sitio.
@@ -55,9 +61,8 @@
     <div class="acciones">
       <a class="btn btn-primario" id="descargar"
          href="https://github.com/esdrasclth/unfold/releases/latest/download/Unfold-Setup.exe">
-        <svg viewBox="0 0 24 24" aria-hidden="true" class="btn-icono">
-          <path d="M12 3v12m0 0 4.5-4.5M12 15l-4.5-4.5M4 17v2a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2v-2"
-                fill="none" stroke="currentColor" stroke-width="1.8"
+        <svg viewBox="0 0 1024 1024" aria-hidden="true" class="btn-galon">
+          <path d="M352 512L512 668L672 512" fill="none" stroke="currentColor" stroke-width="90"
                 stroke-linecap="round" stroke-linejoin="round"/>
         </svg>
         Descargar para Windows
@@ -65,13 +70,13 @@
       <a class="btn btn-suave" href="https://github.com/esdrasclth/unfold">Ver el código</a>
     </div>
 
-    <p class="meta" id="meta">Windows 10 y 11 · 7,7 MB · gratis y de código abierto</p>
+    <p class="meta" id="meta">Windows 10 y 11 · 7,7 MB · sin instalador de administrador</p>
   </div>
 
   <!-- La demostración: la propia mecánica del editor, en vivo. -->
   <div class="hero-demo">
     <div class="ventana" id="demo" role="img"
-         aria-label="Animación: se escribe Markdown y sus marcadores se ocultan solos, dejando el texto ya con formato.">
+         aria-label="Animación: se escribe Markdown y sus marcadores se ocultan solos, dejando encabezados, tareas y una tabla ya con formato.">
       <div class="ventana-barra">
         <div class="ventana-titulo">
           <svg class="logo logo-xs" viewBox="0 0 1024 1024" aria-hidden="true"><use href="#marca"/></svg>
@@ -82,11 +87,13 @@
       <div class="ventana-pestanas"><span class="pestana">notas.md</span></div>
       <div class="ventana-hoja"><div class="lineas" id="lineas"></div></div>
     </div>
+    <p class="pie-demo">No es un vídeo: es la misma mecánica, dibujada aquí.</p>
   </div>
 </section>
 
 <section class="pilares">
   <article>
+    <span class="pilar-num">01</span>
     <h3>Tus archivos no cambian</h3>
     <p>
       El buffer contiene Markdown literal, no un modelo intermedio. Guardar
@@ -95,6 +102,7 @@
     </p>
   </article>
   <article>
+    <span class="pilar-num">02</span>
     <h3>Arranca en 250 ms</h3>
     <p>
       Ocupa 5 MB porque usa el WebView2 que Windows ya trae, en vez de
@@ -102,6 +110,7 @@
     </p>
   </article>
   <article>
+    <span class="pilar-num">03</span>
     <h3>Se edita donde se lee</h3>
     <p>
       Al poner el cursor en una línea sus marcadores reaparecen, atenuados
@@ -112,12 +121,13 @@
 
 <section class="captura-seccion">
   <div class="captura-cabecera">
-    <h2>Así se ve</h2>
-    <div class="conmutador" role="group" aria-label="Tema de la captura">
+    <h2 class="titulo"><span class="mk">## </span>Así se ve</h2>
+    <div class="conmutador" role="group" aria-label="Tema de la aplicación">
       <button type="button" class="activo" data-tema="claro">Claro</button>
       <button type="button" data-tema="oscuro">Oscuro</button>
     </div>
   </div>
+  <p class="bajada">La aplicación trae los dos temas y doce colores de barra. Pruébalos aquí.</p>
   <figure class="captura">
     <img id="captura" src="captura-claro.png" width="1080" height="760"
          alt="Unfold con un documento abierto, el esquema lateral a la izquierda y una tabla renderizada.">
@@ -125,23 +135,24 @@
 </section>
 
 <section id="caracteristicas" class="caracteristicas">
-  <h2>Qué sabe hacer</h2>
-  <div class="rejilla">
-    <article><h3>Vista previa en vivo</h3><p>Encabezados, negrita, cursiva, tachado, código, citas, listas, tareas, reglas e imágenes.</p></article>
-    <article><h3>Tablas de verdad</h3><p>Se dibujan como tablas y se recorren con <kbd>Tab</kbd>, sin dejar de ser Markdown en el archivo.</p></article>
-    <article><h3>Fórmulas y frontmatter</h3><p><code>$…$</code> y <code>$$…$$</code> con KaTeX. El bloque YAML del principio se muestra como ficha de metadatos.</p></article>
-    <article><h3>Pestañas y recientes</h3><p>Cada pestaña con su propio historial de deshacer. Los últimos archivos, a un clic.</p></article>
-    <article><h3>Esquema lateral</h3><p>Sacado del árbol sintáctico, plegable y ajustable. Una almohadilla dentro de un bloque de código no aparece.</p></article>
-    <article><h3>Pegar con formato</h3><p>Desde el navegador, el HTML se convierte a Markdown. Una imagen se guarda junto al documento.</p></article>
-    <article><h3>Exportar</h3><p>HTML autocontenido, en un solo archivo, y PDF a través de la impresión del sistema.</p></article>
-    <article><h3>Vigila el archivo</h3><p>Si lo editas desde otro programa, Unfold avisa en vez de pisarlo al guardar.</p></article>
-    <article><h3>A tu gusto</h3><p>Tipografía, tamaño, interlineado, ancho de columna y doce colores de barra.</p></article>
-  </div>
+  <h2 class="titulo"><span class="mk">## </span>Qué sabe hacer</h2>
+
+  <ol class="lista-larga">
+    <li><span class="idx">01</span><h3>Vista previa en vivo</h3><p>Encabezados, negrita, cursiva, tachado, código, citas, listas, tareas, reglas e imágenes.</p></li>
+    <li><span class="idx">02</span><h3>Tablas de verdad</h3><p>Se dibujan como tablas y se recorren con <kbd>Tab</kbd>, sin dejar de ser Markdown en el archivo.</p></li>
+    <li><span class="idx">03</span><h3>Fórmulas y frontmatter</h3><p><code>$…$</code> y <code>$$…$$</code> con KaTeX. El bloque YAML del principio se muestra aparte, como ficha.</p></li>
+    <li><span class="idx">04</span><h3>Pestañas y recientes</h3><p>Cada pestaña con su propio historial de deshacer. Los últimos archivos, a un clic.</p></li>
+    <li><span class="idx">05</span><h3>Esquema lateral</h3><p>Sacado del árbol sintáctico, plegable y ajustable. Una almohadilla dentro de un bloque de código no aparece.</p></li>
+    <li><span class="idx">06</span><h3>Pegar con formato</h3><p>Desde el navegador, el HTML se convierte a Markdown. Una imagen se guarda junto al documento.</p></li>
+    <li><span class="idx">07</span><h3>Exportar</h3><p>HTML autocontenido, en un solo archivo, y PDF a través de la impresión del sistema.</p></li>
+    <li><span class="idx">08</span><h3>Vigila el archivo</h3><p>Si lo editas desde otro programa, Unfold avisa en vez de pisarlo al guardar.</p></li>
+    <li><span class="idx">09</span><h3>A tu gusto</h3><p>Tipografía, tamaño, interlineado, ancho de columna, modo enfoque y máquina de escribir.</p></li>
+  </ol>
 </section>
 
 <section id="como-funciona" class="explicacion">
-  <h2>Cómo funciona</h2>
-  <div class="explicacion-cuerpo">
+  <div class="explicacion-texto">
+    <h2 class="titulo"><span class="mk">## </span>Cómo funciona</h2>
     <p>
       El buffer de CodeMirror contiene el Markdown tal cual. Un plugin recorre
       el árbol sintáctico <strong>de la parte visible</strong> y oculta los
@@ -155,18 +166,29 @@
       archivos grandes.
     </p>
     <p class="nota">
-      Hay dos excepciones. Las tablas y las fórmulas de bloque se sustituyen
-      por HTML real, y eso altera la altura de las líneas; CodeMirror no admite
+      Hay dos excepciones. Las tablas y las fórmulas de bloque se sustituyen por
+      HTML real, y eso altera la altura de las líneas; CodeMirror no admite
       decoraciones de bloque desde un plugin de vista, así que viven en un
       <code>StateField</code>. El frontmatter también se trata aparte, porque
       para Markdown no existe: la primera raya <code>---</code> es una regla
       horizontal y la de cierre convierte lo de en medio en un encabezado.
     </p>
   </div>
+
+  <!-- Lo que escribes, y lo que queda. La tabla explica más que un párrafo. -->
+  <div class="pares" aria-label="Equivalencias entre lo que se escribe y lo que se ve">
+    <div class="pares-cab"><span>Escribes</span><span>Queda</span></div>
+    <div class="par"><code>## Título</code><span class="res res-h">Título</span></div>
+    <div class="par"><code>**negrita**</code><span class="res"><strong>negrita</strong></span></div>
+    <div class="par"><code>*cursiva*</code><span class="res"><em>cursiva</em></span></div>
+    <div class="par"><code>`código`</code><span class="res"><span class="cod">código</span></span></div>
+    <div class="par"><code>- [x] hecho</code><span class="res"><i class="caja marcada"></i>hecho</span></div>
+    <div class="par"><code>&gt; una cita</code><span class="res res-cita">una cita</span></div>
+  </div>
 </section>
 
-<section class="instalar">
-  <h2>Instalar</h2>
+<section id="instalar" class="instalar">
+  <h2 class="titulo"><span class="mk">## </span>Instalar</h2>
   <ol class="pasos">
     <li><span class="paso-num">01</span><div><h3>Descarga el instalador</h3><p><code>Unfold-Setup.exe</code>, unos 7,7 MB.</p></div></li>
     <li><span class="paso-num">02</span><div><h3>Ábrelo</h3><p>Se instala para tu usuario. No pide permisos de administrador.</p></div></li>
@@ -181,13 +203,19 @@
     están publicados en
     <a href="https://github.com/esdrasclth/unfold/releases/latest">las notas de la versión</a>.
   </div>
+</section>
 
-  <div class="cierre">
-    <a class="btn btn-primario"
-       href="https://github.com/esdrasclth/unfold/releases/latest/download/Unfold-Setup.exe">
-      Descargar Unfold
-    </a>
-  </div>
+<section class="cierre">
+  <h2 class="cierre-titulo">Escribes en un sitio<br>y lees en ese mismo sitio.</h2>
+  <a class="btn btn-primario btn-grande"
+     href="https://github.com/esdrasclth/unfold/releases/latest/download/Unfold-Setup.exe">
+    <svg viewBox="0 0 1024 1024" aria-hidden="true" class="btn-galon">
+      <path d="M352 512L512 668L672 512" fill="none" stroke="currentColor" stroke-width="90"
+            stroke-linecap="round" stroke-linejoin="round"/>
+    </svg>
+    Descargar Unfold
+  </a>
+  <p class="meta" id="meta-cierre">Windows 10 y 11</p>
 </section>
 
 </main>
