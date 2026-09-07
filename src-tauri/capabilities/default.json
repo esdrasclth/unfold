@@ -25,6 +25,9 @@
     "opener:allow-open-url",
     "opener:allow-default-urls",
     "core:window:allow-destroy",
+    "updater:default",
+    "core:app:allow-version",
+    "process:allow-restart",
     {
       "identifier": "fs:scope",
       "allow": [

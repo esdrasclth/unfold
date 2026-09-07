@@ -28,6 +28,7 @@ import { icon } from "./ui/icons.ts";
 import { Outline } from "./ui/outline.ts";
 import { SettingsPanel } from "./ui/settings.ts";
 import { mountWindowControls } from "./ui/windowControls.ts";
+import { buscarActualizacion, instalarActualizacion, omitirVersion } from "./updates.ts";
 import { FileWatcher } from "./watcher.ts";
 import "./styles/app.css";
 import "./styles/markdown.css";
@@ -134,6 +135,11 @@ app.innerHTML = `
     </div>
     <div class="window-controls" id="window-controls"></div>
   </header>
+  <div class="update-bar" id="update" hidden>
+    <span class="update-text" id="update-text"></span>
+    <button class="update-action" id="update-now">Actualizar</button>
+    <button class="update-action is-quiet" id="update-later">Más tarde</button>
+  </div>
   <div class="conflict-bar" id="conflict" hidden>
     <span class="conflict-text">Este archivo ha cambiado fuera de Unfold y tienes cambios sin guardar.</span>
     <button class="conflict-action" id="conflict-reload">Cargar la versión del disco</button>
@@ -173,6 +179,10 @@ const el = {
   recentButton: document.querySelector<HTMLButtonElement>("#btn-recent")!,
   tabBar: document.querySelector<HTMLElement>("#tab-bar")!,
   titlebarFile: document.querySelector<HTMLElement>(".titlebar-file")!,
+  update: document.querySelector<HTMLElement>("#update")!,
+  updateText: document.querySelector<HTMLElement>("#update-text")!,
+  updateNow: document.querySelector<HTMLButtonElement>("#update-now")!,
+  updateLater: document.querySelector<HTMLButtonElement>("#update-later")!,
 };
 
 /**
@@ -608,6 +618,46 @@ window.addEventListener("keyup", (event) => {
   }
 });
 window.addEventListener("blur", () => document.body.classList.remove("following-links"));
+
+// --- Actualizaciones ----------------------------------------------------------
+
+let versionNueva = "";
+
+const manejadoresUpdate = {
+  onAvailable: (version: string, notas: string) => {
+    versionNueva = version;
+    const resumen = notas.split("\n")[0]?.trim();
+    el.updateText.textContent = resumen
+      ? `Versión ${version} disponible · ${resumen}`
+      : `Versión ${version} disponible`;
+    el.update.hidden = false;
+  },
+  onProgress: (descargado: number, total: number | null) => {
+    const megas = (descargado / 1024 / 1024).toFixed(1);
+    el.updateText.textContent = total
+      ? `Descargando ${megas} de ${(total / 1024 / 1024).toFixed(1)} MB…`
+      : `Descargando ${megas} MB…`;
+  },
+  onError: (mensaje: string) => {
+    console.error("Fallo al actualizar", mensaje);
+    el.updateText.textContent = "No se pudo actualizar. Inténtalo más tarde.";
+    el.updateNow.disabled = false;
+  },
+};
+
+el.updateNow.addEventListener("click", () => {
+  el.updateNow.disabled = true;
+  el.updateLater.hidden = true;
+  void instalarActualizacion(manejadoresUpdate);
+});
+
+el.updateLater.addEventListener("click", () => {
+  omitirVersion(versionNueva);
+  el.update.hidden = true;
+});
+
+// Se consulta con retraso: la red no debe frenar el arranque del editor.
+window.setTimeout(() => void buscarActualizacion(manejadoresUpdate), 4000);
 
 window.addEventListener("keydown", (event) => {
   // Escape cierra la apariencia sin necesidad de llegar al aspa.

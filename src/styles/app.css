@@ -184,7 +184,7 @@ body {
 
 #app {
   display: grid;
-  grid-template-rows: auto auto 1fr auto;
+  grid-template-rows: auto auto auto 1fr auto;
   height: 100vh;
   background: var(--chrome);
   overflow: hidden;
@@ -1359,4 +1359,72 @@ body.typewriter-mode .cm-content {
   font-size: 12px;
   line-height: 1.5;
   color: var(--chrome-faint);
+}
+
+/* --- Aviso de versión nueva ------------------------------------------------- */
+
+/*
+ * Mismo lenguaje que la barra de conflicto: una franja sobre el cromo, sin
+ * modal ni ventana aparte. Enterarse de una actualización no debería
+ * interrumpir lo que estabas escribiendo.
+ */
+.update-bar {
+  display: flex;
+  align-items: center;
+  gap: 0.55rem;
+  padding: 0.5rem 1rem;
+  background: color-mix(in srgb, var(--accent) 16%, var(--chrome));
+  font-size: 12.5px;
+  color: var(--chrome-text);
+  animation: drop-in var(--medium) var(--ease);
+}
+
+.update-bar[hidden] {
+  display: none;
+}
+
+.update-text {
+  flex: 1;
+  min-width: 0;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.update-action {
+  flex: none;
+  height: 26px;
+  padding: 0 0.75rem;
+  border: none;
+  border-radius: 6px;
+  background: var(--accent);
+  color: #fff;
+  font-family: inherit;
+  font-size: 12px;
+  cursor: pointer;
+  transition: filter var(--fast) var(--ease), transform var(--fast) var(--ease);
+}
+
+.update-action:hover {
+  filter: brightness(1.08);
+}
+
+.update-action:active {
+  transform: scale(0.97);
+}
+
+.update-action[disabled] {
+  opacity: 0.5;
+  cursor: default;
+}
+
+.update-action.is-quiet {
+  background: transparent;
+  color: var(--chrome-soft);
+}
+
+.update-action.is-quiet:hover {
+  background: var(--chrome-hover);
+  color: var(--chrome-text);
+  filter: none;
 }
