@@ -1463,6 +1463,14 @@ body.typewriter-mode .cm-content {
   cursor: pointer;
   transition: background var(--fast) var(--ease), border-color var(--fast) var(--ease);
 }
+.command-palette-backdrop, .history-backdrop { position: fixed; inset: 0; z-index: 100; display: grid; place-items: start center; padding-top: 12vh; background: rgba(15, 23, 42, .38); }
+.command-palette, .history-dialog { width: min(620px, calc(100vw - 32px)); max-height: 72vh; overflow: auto; padding: 12px; border: 1px solid var(--rule); border-radius: 14px; background: var(--canvas); box-shadow: 0 20px 60px rgba(0,0,0,.25); }
+.command-palette-input { width: 100%; padding: 12px; border: 1px solid var(--rule); border-radius: 9px; background: var(--chrome); color: var(--text); font: inherit; }
+.command-palette-list, .history-list { display: grid; gap: 4px; margin-top: 8px; }
+.command-palette-item, .history-item { border: 0; border-radius: 8px; padding: 10px; text-align: left; background: transparent; color: var(--text); cursor: pointer; }
+.command-palette-item:hover, .command-palette-item:focus, .history-item:hover, .history-item:focus { background: var(--accent-wash); outline: none; }
+.history-preview { max-height: 300px; overflow: auto; padding: 12px; background: var(--chrome); border-radius: 8px; white-space: pre-wrap; }
+.history-dialog > button { margin: 8px 6px 0 0; }
 
 .settings-action:hover {
   background: var(--chrome-pressed);

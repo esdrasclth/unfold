@@ -38,6 +38,9 @@ import {
 } from "./updates.ts";
 import { FileWatcher } from "./watcher.ts";
 import { closeMarkdownMenu, openMarkdownMenu } from "./ui/markdownMenu.ts";
+import { openCommandPalette } from "./ui/commandPalette.ts";
+import { historyKey, recordVersion } from "./history.ts";
+import { openHistoryDialog } from "./ui/historyDialog.ts";
 import { takeWelcome } from "./welcome.ts";
 import "./styles/app.css";
 import "./styles/markdown.css";
@@ -196,6 +199,9 @@ function renderHeader(): void {
   el.name.textContent = session.name;
   el.status.textContent = session.dirty ? "sin guardar" : session.path ? "guardado" : "";
   el.status.classList.toggle("is-dirty", session.dirty);
+  el.status.setAttribute("role", "status");
+  el.status.setAttribute("aria-live", "polite");
+  el.status.setAttribute("aria-label", session.dirty ? "Documento sin guardar" : "Documento guardado");
 }
 
 function renderStats(doc: string): void {
@@ -418,6 +424,9 @@ function toggleTheme(): void {
 
 function toggleFocusMode(): void {
   document.body.classList.toggle("focus-mode");
+  const button = document.querySelector<HTMLButtonElement>("#btn-focus");
+  button?.classList.toggle("is-on", document.body.classList.contains("focus-mode"));
+  button?.setAttribute("aria-pressed", String(document.body.classList.contains("focus-mode")));
 }
 
 let typewriterOn = localStorage.getItem("unfold:typewriter") === "on";
@@ -432,6 +441,8 @@ function applySourceMode(): void {
   setSourceMode(view, sourceMode);
   el.source.classList.toggle("is-on", sourceMode);
   el.source.title = sourceMode ? "Vista renderizada" : "Código fuente";
+  el.source.setAttribute("aria-pressed", String(sourceMode));
+  el.source.setAttribute("aria-label", sourceMode ? "Cambiar a vista renderizada" : "Cambiar a código fuente");
   document.body.classList.toggle("source-mode", sourceMode);
 }
 
@@ -504,6 +515,7 @@ const editorOptions: EditorOptions = {
     scheduleAutosave();
     if (outlineOn) outline.refresh();
     scheduleSessionSave();
+    recordVersion(historyKey(session.path, session.name), doc);
   },
   links: {
     notify,
@@ -601,6 +613,23 @@ document.querySelector("#btn-save")!.addEventListener("click", () => void persis
 document.querySelector("#btn-search")!.addEventListener("click", () => openSearchPanel(view));
 document.querySelector("#btn-export")!.addEventListener("click", () => void exportHtml(exportContext()));
 document.querySelector("#btn-print")!.addEventListener("click", () => printDocument(exportContext()));
+window.addEventListener("keydown", (event) => {
+  if (event.ctrlKey && event.shiftKey && event.key.toLowerCase() === "p") {
+    event.preventDefault();
+    openCommandPalette([
+      { id: "new", label: "Nuevo documento", shortcut: "Ctrl+N", run: newDocument },
+      { id: "open", label: "Abrir documento", shortcut: "Ctrl+O", run: () => void load() },
+      { id: "save", label: "Guardar documento", shortcut: "Ctrl+S", run: () => void persist(false) },
+      { id: "export", label: "Exportar a HTML", shortcut: "Ctrl+Shift+E", run: () => void exportHtml(exportContext()) },
+      { id: "print", label: "Imprimir / exportar PDF", shortcut: "Ctrl+P", run: () => void printDocument(exportContext()) },
+      { id: "source", label: sourceMode ? "Usar vista renderizada" : "Usar código fuente", run: toggleSourceMode },
+      { id: "focus", label: "Alternar modo enfoque", run: toggleFocusMode },
+      { id: "theme", label: "Cambiar tema", run: toggleTheme },
+      { id: "settings", label: "Abrir Apariencia y ajustes", run: () => toggleSettings(true) },
+      { id: "history", label: "Ver historial y recuperar versión", run: () => openHistoryDialog(historyKey(session.path, session.name), view.state.doc.toString(), (content) => replaceDocument(view, content)) },
+    ]);
+  }
+});
 document.querySelector("#btn-focus")!.addEventListener("click", toggleFocusMode);
 el.outlineButton.addEventListener("click", toggleOutline);
 el.typewriter.addEventListener("click", toggleTypewriter);
