@@ -329,6 +329,93 @@ if (menosMovimiento) {
   for (const titulo of titulos) vigilante.observe(titulo);
 }
 
+/* ── Saber si ya se está bajando ────────────────────────────────────────── */
+
+/*
+ * Un punto invisible a 90 px del principio. Cuando deja de verse es que el
+ * visitante ya ha bajado: la barra se despega del papel y el galón que invita
+ * a seguir se retira, porque a partir de ahí sobra.
+ *
+ * Con un observador y no con un oyente de `scroll`: el navegador avisa solo,
+ * sin ejecutar nada en cada píxel de desplazamiento.
+ */
+const hero = document.querySelector(".hero");
+const centinela = document.querySelector(".centinela");
+
+if (centinela) {
+  new IntersectionObserver(
+    ([entrada]) => {
+      const bajando = !entrada.isIntersecting;
+      document.documentElement.classList.toggle("desplazado", bajando);
+      if (hero) hero.classList.toggle("bajando", bajando);
+    },
+    { threshold: 0 },
+  ).observe(centinela);
+}
+
+/* ── Entradas al aparecer ───────────────────────────────────────────────── */
+
+/*
+ * Cada grupo lleva su paso de retardo, para que las piezas de una misma fila
+ * no entren todas de golpe. El estado oculto se enciende desde aquí y no desde
+ * la hoja de estilos: si este guion no llega a ejecutarse, la página se ve
+ * entera igualmente.
+ */
+/*
+ * Si la página se abre en una pestaña de fondo no se monta nada: una pestaña
+ * que no pinta tampoco entrega observaciones, y montar la entrada allí deja el
+ * contenido invisible hasta que alguien mire. Sin animación se ve igual de
+ * bien; en blanco, no.
+ */
+if (!menosMovimiento && !document.hidden) {
+  document.documentElement.classList.add("con-animaciones");
+
+  const grupos = [
+    [".hero-texto > *", 80],
+    [".hero-demo", 0],
+    [".pilares article", 90],
+    [".captura-cabecera, .bajada, .captura", 70],
+    [".lista-larga li", 45],
+    [".explicacion-texto, .pares", 110],
+    [".pasos li", 90],
+    [".aviso", 0],
+    [".cierre > *", 90],
+  ];
+
+  const alAparecer = new IntersectionObserver(
+    (entradas) => {
+      for (const entrada of entradas) {
+        if (!entrada.isIntersecting) continue;
+        entrada.target.classList.add("visible");
+        alAparecer.unobserve(entrada.target);
+      }
+    },
+    // Un margen negativo abajo para que nada se encienda justo en el borde,
+    // cuando todavía no se está mirando.
+    { threshold: 0.1, rootMargin: "0px 0px -40px 0px" },
+  );
+
+  for (const [selector, paso] of grupos) {
+    const piezas = document.querySelectorAll(selector);
+    piezas.forEach((pieza, i) => {
+      pieza.classList.add("revelar");
+      if (paso) pieza.style.setProperty("--retardo", `${i * paso}ms`);
+      alAparecer.observe(pieza);
+    });
+  }
+
+  /*
+   * Red de seguridad. Si por lo que sea el observador no llega a entregar
+   * nada, lo que queda no es una animación sin hacer: es contenido invisible.
+   * Pasados dos segundos se enseña todo lo que ya debería verse.
+   */
+  setTimeout(() => {
+    for (const pieza of document.querySelectorAll(".revelar:not(.visible)")) {
+      if (pieza.getBoundingClientRect().top < innerHeight) pieza.classList.add("visible");
+    }
+  }, 2000);
+}
+
 /* ── Conmutador de la captura ───────────────────────────────────────────── */
 
 const captura = document.getElementById("captura");

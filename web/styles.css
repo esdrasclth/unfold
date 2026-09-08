@@ -41,6 +41,8 @@
   --rule: rgba(32, 26, 16, 0.11);
   --rule-suave: rgba(32, 26, 16, 0.07);
 
+  --alto-nav: 3.95rem;
+
   --sombra: 0 1px 2px rgba(32, 26, 16, 0.04), 0 12px 32px rgba(32, 26, 16, 0.07);
   --sombra-alta: 0 2px 6px rgba(32, 26, 16, 0.05), 0 34px 80px rgba(32, 26, 16, 0.14);
 }
@@ -170,10 +172,13 @@ h2.titulo { font-size: clamp(1.55rem, 3vw, 2.15rem); letter-spacing: -0.03em; }
 .hero {
   position: relative;
   display: grid;
-  grid-template-columns: minmax(0, 1.02fr) minmax(0, 1fr);
-  gap: clamp(2rem, 5vw, 4.5rem);
+  grid-template-columns: minmax(0, 1.18fr) minmax(0, 1fr);
+  gap: clamp(2rem, 4vw, 3.5rem);
   align-items: center;
-  padding: clamp(3rem, 8vw, 6rem) 0 clamp(3.5rem, 8vw, 6rem);
+  padding: clamp(2rem, 5vh, 4rem) 0 clamp(4rem, 8vh, 6rem);
+  /* `svh` descuenta la barra del navegador movil, que `vh` ignora. */
+  min-height: calc(100vh - var(--alto-nav));
+  min-height: calc(100svh - var(--alto-nav));
 }
 
 /*
@@ -194,27 +199,27 @@ h2.titulo { font-size: clamp(1.55rem, 3vw, 2.15rem); letter-spacing: -0.03em; }
 
 .sobretitulo {
   font-family: var(--font-mono);
-  font-size: 0.76rem;
+  font-size: 0.8rem;
   letter-spacing: 0.09em;
   text-transform: uppercase;
   color: var(--text-faint);
-  margin-bottom: 1.4rem;
+  margin-bottom: 1.5rem;
 }
 
 .sobretitulo span { color: var(--accent); }
 
 .hero h1 {
-  font-size: clamp(2.05rem, 3.4vw, 2.85rem);
-  line-height: 1.1;
-  letter-spacing: -0.036em;
+  font-size: clamp(2.2rem, 3.6vw, 3.05rem);
+  line-height: 1.08;
+  letter-spacing: -0.04em;
   font-weight: 660;
 }
 
 .entradilla {
-  margin-top: 1.15rem;
-  font-size: clamp(1.02rem, 1.6vw, 1.16rem);
+  margin-top: 1.35rem;
+  font-size: clamp(1.05rem, 1.7vw, 1.2rem);
   color: var(--text-soft);
-  max-width: 34ch;
+  max-width: 36ch;
 }
 
 .acciones { display: flex; flex-wrap: wrap; gap: 0.7rem; margin-top: 2rem; }
@@ -223,9 +228,9 @@ h2.titulo { font-size: clamp(1.55rem, 3vw, 2.15rem); letter-spacing: -0.03em; }
   display: inline-flex;
   align-items: center;
   gap: 0.55rem;
-  padding: 0.75rem 1.35rem;
+  padding: 0.8rem 1.45rem;
   border-radius: 11px;
-  font-size: 0.96rem;
+  font-size: 1rem;
   font-weight: 560;
   text-decoration: none;
   transition: transform var(--fast) var(--ease), background var(--fast) var(--ease),
@@ -346,7 +351,13 @@ h2.titulo { font-size: clamp(1.55rem, 3vw, 2.15rem); letter-spacing: -0.03em; }
 .ventana-hoja {
   background: var(--canvas);
   padding: 1.6rem clamp(1.1rem, 3vw, 2rem) 1.8rem;
-  min-height: 340px;
+  /*
+   * Crece con la pantalla para que el encabezado a pantalla completa no quede
+   * aireado, pero nunca baja de lo que ocupa el guion entero con su tabla, que
+   * ronda los 300 px. Al ser `min-height`, si algún día el guion crece la hoja
+   * lo acompaña en vez de recortarlo.
+   */
+  min-height: clamp(330px, 40vh, 460px);
 }
 
 .lineas { font-size: 0.95rem; line-height: 1.75; color: var(--text-body); }
@@ -485,6 +496,50 @@ h2.titulo { font-size: clamp(1.55rem, 3vw, 2.15rem); letter-spacing: -0.03em; }
 }
 
 @keyframes parpadeo { 0%, 55% { opacity: 1; } 56%, 100% { opacity: 0; } }
+
+/*
+ * La señal de seguir bajando es el galón de la marca: el mismo gesto de
+ * desplegar que da nombre a la aplicación. Se aparta en cuanto el visitante
+ * ya está bajando, porque a partir de ahí sobra.
+ */
+.centinela {
+  position: absolute;
+  top: 90px;
+  left: 0;
+  width: 1px;
+  height: 1px;
+  pointer-events: none;
+}
+
+.bajar {
+  position: absolute;
+  left: 50%;
+  bottom: 1.6rem;
+  width: 34px;
+  height: 34px;
+  display: grid;
+  place-items: center;
+  color: var(--accent);
+  border-radius: 50%;
+  /* El centrado vive aquí y no sólo en los fotogramas: si la animación se
+     desactiva por «menos movimiento», el galón debe seguir centrado. */
+  transform: translateX(-50%);
+  animation: asomar 2.6s var(--ease) infinite;
+  transition: opacity var(--medium) var(--ease);
+}
+
+.bajar svg { width: 22px; height: 22px; }
+.bajar:hover { background: var(--accent-wash); }
+.hero.bajando .bajar { opacity: 0; pointer-events: none; }
+
+@keyframes asomar {
+  0%, 100% { transform: translate(-50%, 0); opacity: 0.4; }
+  50% { transform: translate(-50%, 6px); opacity: 0.85; }
+}
+
+@media (max-width: 900px) {
+  .bajar { display: none; }
+}
 
 /* ── Pilares ────────────────────────────────────────────────────────────── */
 
@@ -713,6 +768,47 @@ h2.titulo { font-size: clamp(1.55rem, 3vw, 2.15rem); letter-spacing: -0.03em; }
 .pie nav { display: flex; flex-wrap: wrap; gap: 1.4rem; }
 .pie nav a { color: var(--text-soft); text-decoration: none; transition: color var(--fast) var(--ease); }
 .pie nav a:hover { color: var(--text); }
+
+
+/* ── Entradas ───────────────────────────────────────────────────────────────
+ *
+ * El estado oculto sólo existe si el guion enciende `con-animaciones` en la
+ * raíz. Sin JavaScript, o con «menos movimiento», nadie se encuentra una
+ * página en blanco esperando a un observador que no va a llegar.
+ *
+ * Se mueve opacidad y `transform`, que el navegador resuelve en el compositor.
+ * Nada de `will-change`: con treinta elementos serían treinta capas.
+ */
+
+.con-animaciones .revelar {
+  opacity: 0;
+  transform: translateY(16px);
+  transition: opacity 620ms var(--ease), transform 620ms var(--ease);
+  transition-delay: var(--retardo, 0ms);
+}
+
+.con-animaciones .revelar.visible {
+  opacity: 1;
+  transform: none;
+}
+
+/* La ventana y la captura entran además creciendo un pelo. */
+.con-animaciones .hero-demo.revelar { transform: translateY(26px) scale(0.985); }
+.con-animaciones .captura.revelar { transform: translateY(20px) scale(0.99); }
+.con-animaciones .hero-demo.revelar.visible,
+.con-animaciones .captura.revelar.visible { transform: none; }
+
+/* La barra se despega del papel en cuanto la página deja de estar arriba. */
+.nav { box-shadow: 0 0 0 rgba(32, 26, 16, 0); transition: box-shadow var(--medium) var(--ease); }
+.desplazado .nav { box-shadow: 0 1px 0 var(--rule-suave), 0 8px 24px rgba(32, 26, 16, 0.05); }
+
+/* Las filas de la lista larga acercan su índice al pasar el ratón. */
+.lista-larga li { transition: transform var(--medium) var(--ease); }
+.lista-larga li:hover { transform: translateX(3px); }
+
+/* Y los pilares levantan un poco su número. */
+.pilar-num { transition: transform var(--medium) var(--ease), color var(--medium) var(--ease); }
+.pilares article:hover .pilar-num { transform: translateY(-2px); }
 
 /* Quien pide menos movimiento recibe el resultado, no el camino. */
 @media (prefers-reduced-motion: reduce) {
