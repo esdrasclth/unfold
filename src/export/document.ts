@@ -72,6 +72,14 @@ th, td { border: 1px solid var(--borde); padding: .45em .7em; }
 th { background: #f7f5f1; font-weight: 620; }
 tbody tr:nth-child(even) td { background: #faf9f7; }
 input[type=checkbox] { margin-right: .35em; accent-color: var(--acento); }
+.markdown-alert { margin: 1.1em 0; padding: .8em 1em; border-left: 4px solid var(--acento); background: #fff8f2; border-radius: 6px; }
+.markdown-alert strong { display: block; margin-bottom: .2em; }
+.markdown-alert.warning, .markdown-alert.caution { border-color: #c47b16; background: #fff9e8; }
+.markdown-alert.tip { border-color: #2f8f68; background: #effaf5; }
+.markdown-alert.important { border-color: #6957b5; background: #f5f2ff; }
+.footnotes { margin-top: 3rem; border-top: 1px solid var(--borde); color: var(--suave); font-size: .9em; }
+.mermaid-diagram { overflow: auto; margin: 1.2em 0; text-align: center; }
+.mermaid-diagram pre { text-align: left; }
 
 @media print {
   /* Al imprimir manda el papel: sin márgenes propios y sin cortar bloques. */
@@ -81,14 +89,24 @@ input[type=checkbox] { margin-right: .35em; accent-color: var(--acento); }
   h1, h2, h3, h4, h5, h6 { break-after: avoid; }
   @page { margin: 18mm 16mm; }
 }
+.theme-midnight { --texto: #e8edf5; --suave: #a7b2c4; --tenue: #718096; --borde: #334155; --acento: #7dd3fc; --codigo-fondo: #162033; background: #0f172a; color-scheme: dark; }
+.theme-midnight body { background: #0f172a; }
+.theme-warm { --texto: #3b2f25; --suave: #756454; --borde: #e8d8c5; --acento: #b4572a; --codigo-fondo: #fbf3e8; background: #fffaf3; }
+.theme-warm body { background: #fffaf3; }
 `;
 
 function escapeHtml(text: string): string {
   return text.replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;");
 }
+function escapeAttribute(text: string): string {
+  return escapeHtml(text).replace(/"/g, "&quot;").replace(/'/g, "&#39;");
+}
 
 export interface DocumentOptions {
   title: string;
+  theme?: "paper" | "midnight" | "warm";
+  author?: string;
+  description?: string;
   /** Convierte rutas de imagen para que se vean también fuera del editor. */
   resolveAsset?: (src: string) => string;
 }
@@ -104,15 +122,19 @@ export function buildHtmlDocument(markdown: string, options: DocumentOptions): s
     );
   }
 
+  const theme = options.theme ?? "paper";
+  const themeClass = ` theme-${theme}`;
   return `<!doctype html>
 <html lang="es">
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>${escapeHtml(options.title)}</title>
+${options.author ? `<meta name="author" content="${escapeAttribute(options.author)}">` : ""}
+${options.description ? `<meta name="description" content="${escapeAttribute(options.description)}">` : ""}
 <style>${STYLES}</style>
 </head>
-<body>
+<body class="${themeClass.trim()}">
 ${body}
 </body>
 </html>

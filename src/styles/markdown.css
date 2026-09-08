@@ -347,3 +347,6 @@ body.following-links .cm-md-link {
 .cm-md-math .katex-error {
   color: var(--danger);
 }
+.cm-md-mermaid { display: flex; justify-content: center; overflow: auto; margin: 1rem 0; padding: .75rem; border: 1px solid var(--borde, #e0ddd6); border-radius: 10px; background: var(--superficie, #fff); }
+.cm-md-mermaid svg { max-width: 100%; height: auto; }
+.cm-md-mermaid.is-error { justify-content: flex-start; color: #b53b32; font-size: .9em; }

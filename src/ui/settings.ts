@@ -12,6 +12,11 @@ import {
 } from "../settings.ts";
 import { icon } from "./icons.ts";
 
+export interface UpdateSettingsActions {
+  check: () => void;
+  resetDismissed: () => void;
+}
+
 /**
  * Panel de apariencia.
  *
@@ -25,6 +30,7 @@ export class SettingsPanel {
   constructor(
     private readonly root: HTMLElement,
     private readonly onClose: () => void,
+    private readonly updates?: UpdateSettingsActions,
   ) {
     this.settings = loadSettings();
     applySettings(this.settings);
@@ -102,6 +108,14 @@ export class SettingsPanel {
           <p class="settings-hint">Cambia la barra superior, el esquema y la barra de estado. El papel del editor no se toca, y el color de acento lo elige la propia barra.</p>
         </section>
 
+        ${this.updates ? `
+        <section class="settings-group settings-updates">
+          <span class="settings-label">Actualizaciones</span>
+          <button class="settings-action" id="settings-check-updates" type="button">Buscar actualizaciones</button>
+          <button class="settings-action is-quiet" id="settings-reset-updates" type="button">Volver a mostrar versiones omitidas</button>
+          <p class="settings-hint">Se comprueba automáticamente al iniciar, como máximo una vez cada 15 minutos.</p>
+        </section>` : ""}
+
         <button class="settings-reset" id="settings-reset">Restablecer todo</button>
       </div>
     `;
@@ -158,6 +172,10 @@ export class SettingsPanel {
 
     q("settings-reset").addEventListener("click", () => commit({ ...DEFAULTS }));
     q("settings-close").addEventListener("click", () => this.onClose());
+    if (this.updates) {
+      q("settings-check-updates").addEventListener("click", () => this.updates?.check());
+      q("settings-reset-updates").addEventListener("click", () => this.updates?.resetDismissed());
+    }
 
     paint();
   }

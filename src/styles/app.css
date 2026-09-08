@@ -182,11 +182,20 @@ body {
   overflow: hidden;
 }
 
+html,
+body {
+  width: 100%;
+  height: 100%;
+  min-height: 100%;
+}
+
 #app {
   display: grid;
   /* La pista central nunca debe encogerse según el contenido del editor. */
   grid-template-rows: auto auto auto minmax(0, 1fr) auto;
-  height: 100vh;
+  height: 100%;
+  min-height: 100vh;
+  height: 100dvh;
   background: var(--chrome);
   overflow: hidden;
 }
@@ -197,6 +206,7 @@ body {
  */
 .workspace {
   display: flex;
+  height: 100%;
   min-height: 0;
 }
 
@@ -414,6 +424,7 @@ body {
   font-variant-numeric: tabular-nums;
   transition: opacity var(--medium) var(--ease);
   user-select: none;
+  min-height: 32px;
 }
 
 /* --- Esquema del documento -------------------------------------------------- */
@@ -1389,6 +1400,10 @@ body.typewriter-mode .cm-content {
   animation: drop-in var(--medium) var(--ease);
 }
 
+.update-bar.is-error {
+  background: color-mix(in srgb, #b54a42 18%, var(--chrome));
+}
+
 .update-bar[hidden] {
   display: none;
 }
@@ -1432,6 +1447,29 @@ body.typewriter-mode .cm-content {
   background: transparent;
   color: var(--chrome-soft);
 }
+
+.settings-action {
+  width: 100%;
+  min-height: 30px;
+  margin-top: 0.35rem;
+  padding: 0.35rem 0.6rem;
+  border: 1px solid var(--chrome-rule);
+  border-radius: 7px;
+  background: var(--chrome-hover);
+  color: var(--chrome-text);
+  font-family: inherit;
+  font-size: 12px;
+  text-align: left;
+  cursor: pointer;
+  transition: background var(--fast) var(--ease), border-color var(--fast) var(--ease);
+}
+
+.settings-action:hover {
+  background: var(--chrome-pressed);
+  border-color: var(--accent-edge);
+}
+
+.settings-action.is-quiet { color: var(--chrome-soft); }
 
 .update-action.is-quiet:hover {
   background: var(--chrome-hover);

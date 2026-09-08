@@ -30,7 +30,12 @@ import { icon } from "./ui/icons.ts";
 import { Outline } from "./ui/outline.ts";
 import { SettingsPanel } from "./ui/settings.ts";
 import { mountWindowControls } from "./ui/windowControls.ts";
-import { buscarActualizacion, instalarActualizacion, omitirVersion } from "./updates.ts";
+import {
+  buscarActualizacion,
+  instalarActualizacion,
+  omitirVersion,
+  restablecerVersionOmitida,
+} from "./updates.ts";
 import { FileWatcher } from "./watcher.ts";
 import { closeMarkdownMenu, openMarkdownMenu } from "./ui/markdownMenu.ts";
 import { takeWelcome } from "./welcome.ts";
@@ -550,7 +555,13 @@ recentMenu = new RecentMenu(el.recentButton, {
 
 outline = new Outline(el.outline, () => view);
 mountWindowControls(document.querySelector<HTMLElement>("#window-controls")!);
-settingsPanel = new SettingsPanel(el.settings, () => toggleSettings(false));
+settingsPanel = new SettingsPanel(el.settings, () => toggleSettings(false), {
+  check: () => checkForUpdates(true),
+  resetDismissed: () => {
+    restablecerVersionOmitida();
+    checkForUpdates(true);
+  },
+});
 
 renderHeader();
 renderStats(initialDocument);
@@ -597,8 +608,28 @@ el.source.addEventListener("click", toggleSourceMode);
 el.theme.addEventListener("click", toggleTheme);
 el.settingsButton.addEventListener("click", () => toggleSettings());
 el.recentButton.addEventListener("click", () => recentMenu.toggle());
+function chooseImage(): void {
+  const input = document.createElement("input");
+  input.type = "file";
+  input.accept = "image/*";
+  input.addEventListener("change", () => {
+    const file = input.files?.[0];
+    if (!file) return;
+    void (async () => {
+      if (!isTauri || !session.path) { notify("Guarda el documento antes de insertar imágenes"); return; }
+      try {
+        const relative = await saveImageBeside(session.path, new Uint8Array(await file.arrayBuffer()), extensionForImage(file.type));
+        const head = view.state.selection.main.head;
+        const text = `![${file.name.replace(/\.[^.]+$/, "")}](${relative})`;
+        view.dispatch({ changes: { from: head, to: head, insert: text }, selection: { anchor: head + text.length } });
+        notify("Imagen insertada");
+      } catch { notify("No se pudo insertar la imagen"); }
+    })();
+  });
+  input.click();
+}
 view.dom.addEventListener("contextmenu", (event) => {
-  openMarkdownMenu(event, view, sourceMode, toggleSourceMode);
+  openMarkdownMenu(event, view, sourceMode, toggleSourceMode, chooseImage);
 });
 window.addEventListener("resize", closeMarkdownMenu);
 
@@ -674,37 +705,78 @@ window.addEventListener("blur", () => document.body.classList.remove("following-
 // --- Actualizaciones ----------------------------------------------------------
 
 let versionNueva = "";
+let estadoUpdate: "idle" | "available" | "checking" | "installing" | "error" = "idle";
 
 const manejadoresUpdate = {
   onAvailable: (version: string, notas: string) => {
+    estadoUpdate = "available";
+    el.update.classList.remove("is-error");
     versionNueva = version;
     const resumen = notas.split("\n")[0]?.trim();
     el.updateText.textContent = resumen
       ? `Versión ${version} disponible · ${resumen}`
       : `Versión ${version} disponible`;
+    el.updateNow.textContent = "Actualizar";
+    el.updateNow.hidden = false;
+    el.updateLater.textContent = "Más tarde";
+    el.updateLater.hidden = false;
+    el.updateNow.disabled = false;
     el.update.hidden = false;
   },
   onProgress: (descargado: number, total: number | null) => {
+    estadoUpdate = "installing";
+    el.update.classList.remove("is-error");
     const megas = (descargado / 1024 / 1024).toFixed(1);
     el.updateText.textContent = total
       ? `Descargando ${megas} de ${(total / 1024 / 1024).toFixed(1)} MB…`
       : `Descargando ${megas} MB…`;
   },
   onError: (mensaje: string) => {
+    estadoUpdate = "error";
+    el.update.classList.add("is-error");
     console.error("Fallo al actualizar", mensaje);
-    el.updateText.textContent = "No se pudo actualizar. Inténtalo más tarde.";
+    el.updateText.textContent = mensaje;
+    el.updateNow.textContent = "Reintentar";
+    el.updateNow.hidden = false;
     el.updateNow.disabled = false;
+    el.updateLater.textContent = "Cerrar";
+    el.updateLater.hidden = false;
+    el.update.hidden = false;
   },
 };
 
+function checkForUpdates(force = false): void {
+  estadoUpdate = "checking";
+  el.update.classList.remove("is-error");
+  el.updateText.textContent = "Buscando actualizaciones…";
+  el.updateNow.hidden = true;
+  el.updateLater.textContent = "Cancelar";
+  el.updateLater.hidden = false;
+  el.update.hidden = false;
+  void buscarActualizacion(manejadoresUpdate, force).then((found) => {
+    if (!found && estadoUpdate === "checking") {
+      estadoUpdate = "idle";
+      el.update.hidden = true;
+      notify("No hay actualizaciones disponibles.");
+    }
+  });
+}
+
 el.updateNow.addEventListener("click", () => {
+  if (estadoUpdate === "error") {
+    checkForUpdates(true);
+    return;
+  }
+  if (estadoUpdate !== "available") return;
+  estadoUpdate = "installing";
   el.updateNow.disabled = true;
   el.updateLater.hidden = true;
   void instalarActualizacion(manejadoresUpdate);
 });
 
 el.updateLater.addEventListener("click", () => {
-  omitirVersion(versionNueva);
+  if (estadoUpdate === "available" && versionNueva) omitirVersion(versionNueva);
+  estadoUpdate = "idle";
   el.update.hidden = true;
 });
 

@@ -34,6 +34,7 @@ export function openMarkdownMenu(
   view: EditorView,
   sourceMode: boolean,
   onSourceMode: () => void,
+  onChooseImage?: () => void,
 ): void {
   event.preventDefault();
   closeMarkdownMenu();
@@ -76,7 +77,7 @@ export function openMarkdownMenu(
         { label: "Fórmula en línea", command: run(insertMarkdownSnippet("$fórmula$", 1)) },
         { label: "Fórmula de bloque", command: run(insertMarkdownBlock("$$\n\n$$", 3)) },
         { label: "Frontmatter YAML", command: run(insertMarkdownBlock("---\ntitle: \nauthor: \n---\n", 15)) },
-        { label: "Imagen", command: run(insertMarkdownSnippet("![descripción](/ruta/a/imagen.png)", 16)) },
+        { label: "Imagen", command: onChooseImage ? () => { onChooseImage(); return true; } : run(insertMarkdownSnippet("![descripción](/ruta/a/imagen.png)", 16)) },
       ],
     },
   ];

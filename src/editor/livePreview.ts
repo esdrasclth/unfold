@@ -17,6 +17,7 @@ import {
 import { frontmatterRange } from "./frontmatter.ts";
 import { inlineMath } from "./inlineMath.ts";
 import { MathWidget, mathBlocks } from "./math.ts";
+import { MermaidWidget } from "./mermaid.ts";
 import { BulletWidget, ImageWidget, RuleWidget, TableWidget, TaskWidget } from "./widgets.ts";
 
 /**
@@ -337,11 +338,35 @@ function buildTables(state: EditorState): DecorationSet {
   return Decoration.set(decorations, true);
 }
 
+function buildMermaid(state: EditorState): DecorationSet {
+  const decorations: Range<Decoration>[] = [];
+  const tree = syntaxTree(state);
+  for (let node = tree.topNode.firstChild; node; node = node.nextSibling) {
+    if (node.name !== "FencedCode") continue;
+    const info = node.getChild("CodeInfo");
+    if (!info || state.doc.sliceString(info.from, info.to).trim().toLowerCase() !== "mermaid") continue;
+    if (state.selection.ranges.some((range) => range.from <= node.to && range.to >= node.from)) continue;
+    const textNode = node.getChild("CodeText");
+    const source = textNode ? state.doc.sliceString(textNode.from, textNode.to).replace(/\n$/, "") : "";
+    decorations.push(Decoration.replace({ widget: new MermaidWidget(source), block: true }).range(node.from, node.to));
+  }
+  return Decoration.set(decorations, true);
+}
+
 const tableField = StateField.define<DecorationSet>({
   create: (state) => buildTables(state),
   update(value, transaction) {
     if (!transaction.docChanged && !transaction.selection) return value;
     return buildTables(transaction.state);
+  },
+  provide: (field) => EditorView.decorations.from(field),
+});
+
+const mermaidField = StateField.define<DecorationSet>({
+  create: (state) => buildMermaid(state),
+  update(value, transaction) {
+    if (!transaction.docChanged && !transaction.selection) return value;
+    return buildMermaid(transaction.state);
   },
   provide: (field) => EditorView.decorations.from(field),
 });
@@ -375,5 +400,5 @@ const livePreviewPlugin = ViewPlugin.fromClass(
 );
 
 export function livePreview(): Extension {
-  return [tableField, mathBlocks(), livePreviewPlugin];
+  return [tableField, mermaidField, mathBlocks(), livePreviewPlugin];
 }

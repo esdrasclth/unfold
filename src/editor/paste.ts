@@ -82,6 +82,21 @@ export function smartPaste(options: PasteOptions): Extension {
         // 3. Cualquier otra cosa: comportamiento normal de CodeMirror.
         return false;
       },
+      drop(event, view) {
+        const data = event.dataTransfer;
+        if (!data) return false;
+        const image = Array.from(data.files).find((file) => file.type.startsWith("image/"));
+        if (!image) return false;
+        event.preventDefault();
+        const position = view.posAtCoords({ x: event.clientX, y: event.clientY }) ?? view.state.selection.main.head;
+        void (async () => {
+          const relative = await options.saveImage(new Uint8Array(await image.arrayBuffer()), image.type);
+          if (!relative) return;
+          view.dispatch({ changes: { from: position, to: position, insert: `![](${relative})` }, selection: { anchor: position + relative.length + 5 } });
+          options.notify(`Imagen insertada (${image.name || "imagen"})`);
+        })();
+        return true;
+      },
     }),
     keymap.of([{ key: "Mod-Shift-v", run: pastePlain }]),
   ];

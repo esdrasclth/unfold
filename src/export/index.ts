@@ -10,6 +10,24 @@ export interface ExportContext {
   notify: (message: string) => void;
 }
 
+async function renderMermaidInHtml(html: string): Promise<string> {
+  if (!html.includes("mermaid-diagram")) return html;
+  try {
+    const { default: mermaid } = await import("mermaid");
+    mermaid.initialize({ startOnLoad: false, theme: "neutral", securityLevel: "strict" });
+    const pattern = /<div class="mermaid-diagram" data-mermaid="([^"]*)">[\s\S]*?<\/div>/g;
+    const matches = [...html.matchAll(pattern)];
+    for (const match of matches) {
+      const source = match[1].replace(/&quot;/g, '"').replace(/&amp;/g, "&").replace(/&lt;/g, "<").replace(/&gt;/g, ">");
+      try {
+        const { svg } = await mermaid.render(`unfold-export-${Math.random().toString(36).slice(2)}`, source);
+        html = html.replace(match[0], `<div class="mermaid-diagram">${svg}</div>`);
+      } catch { /* conserva el bloque fuente como fallback */ }
+    }
+  } catch { /* Mermaid es opcional para exportar documentos sin diagramas */ }
+  return html;
+}
+
 function suggestedName(context: ExportContext, extension: string): string {
   const base = context.documentPath
     ? (context.documentPath.split(/[\\/]/).pop() ?? context.title).replace(/\.[^.]+$/, "")
@@ -19,10 +37,10 @@ function suggestedName(context: ExportContext, extension: string): string {
 
 /** Guarda un `.html` autocontenido en la ruta que elija el usuario. */
 export async function exportHtml(context: ExportContext): Promise<void> {
-  const html = buildHtmlDocument(context.markdown, {
+  const html = await renderMermaidInHtml(buildHtmlDocument(context.markdown, {
     title: context.title,
     resolveAsset: context.resolveAsset,
-  });
+  }));
 
   if (!isTauri) {
     const blob = new Blob([html], { type: "text/html;charset=utf-8" });
@@ -54,11 +72,11 @@ export async function exportHtml(context: ExportContext): Promise<void> {
  * editor, con su sintaxis a medio ocultar y su barra de herramientas. Desde el
  * diálogo, «Microsoft Print to PDF» produce el PDF.
  */
-export function printDocument(context: ExportContext): void {
-  const html = buildHtmlDocument(context.markdown, {
+export async function printDocument(context: ExportContext): Promise<void> {
+  const html = await renderMermaidInHtml(buildHtmlDocument(context.markdown, {
     title: context.title,
     resolveAsset: context.resolveAsset,
-  });
+  }));
 
   const previous = document.getElementById("print-frame");
   if (previous) previous.remove();

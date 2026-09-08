@@ -90,6 +90,10 @@ export class ImageWidget extends WidgetType {
     img.src = this.url;
     img.alt = this.alt;
     img.loading = "lazy";
+    img.addEventListener("load", () => {
+      wrap.title = `${img.naturalWidth} × ${img.naturalHeight} px`;
+      wrap.dataset.dimensions = wrap.title;
+    });
     img.addEventListener("error", () => wrap.classList.add("is-broken"));
     wrap.appendChild(img);
     return wrap;

@@ -144,7 +144,48 @@ function renderCode(node: SyntaxNode, ctx: Context): string {
     text = ctx.src.slice(node.from, node.to).replace(/^ {4}/gm, "");
   }
   const cls = language ? ` class="language-${escapeAttribute(language)}"` : "";
+  if (language.toLowerCase() === "mermaid") {
+    return `<div class="mermaid-diagram" data-mermaid="${escapeAttribute(text)}"><pre><code>${escapeHtml(text)}</code></pre></div>`;
+  }
   return `<pre><code${cls}>${escapeHtml(text)}</code></pre>`;
+}
+
+function prepareMarkdown(source: string): { markdown: string; footnotes: string[] } {
+  const footnotes: string[] = [];
+  const definitions = new Map<string, string>();
+  const lines = source.split(/\r?\n/).filter((line) => {
+    const match = /^\[\^([^\]]+)\]:\s*(.*)$/.exec(line);
+    if (!match) return true;
+    definitions.set(match[1], match[2]);
+    return false;
+  });
+  let markdown = lines.join("\n");
+  markdown = markdown.replace(/(^|\n)>\s*\[!(NOTE|TIP|IMPORTANT|WARNING|CAUTION)\]\s*\n((?:>.*(?:\n|$))*)/gi, (_all, prefix: string, kind: string, quoted: string) => {
+    const text = quoted.split(/\r?\n/).map((line) => line.replace(/^>\s?/, "")).filter(Boolean).join(" ");
+    const label = kind[0].toUpperCase() + kind.slice(1).toLowerCase();
+    return `${prefix}<aside class="markdown-alert ${kind.toLowerCase()}"><strong>${label}</strong><p>${escapeHtml(text)}</p></aside>\n`;
+  });
+  // El parser GFM trata las URL desnudas como nodos silenciosos; convertirlas
+  // a enlaces explícitos conserva su texto y evita párrafos vacíos.
+  markdown = markdown.replace(/(^|\s)(https?:\/\/[^\s<]+)/g, (_all, prefix: string, url: string) => `${prefix}[${url}](${url})`);
+  markdown = markdown.replace(/\[\^([^\]]+)\]/g, (_all, id: string) => {
+    const number = footnotes.length + 1;
+    if (!footnotes.some((entry) => entry.startsWith(`${id}::`))) {
+      footnotes.push(`${id}::${definitions.get(id) ?? ""}`);
+    }
+    return `<sup class="footnote-ref"><a href="#fn-${escapeAttribute(id)}">${number}</a></sup>`;
+  });
+  return { markdown, footnotes };
+}
+
+function enhanceInline(html: string): string {
+  return html.split(/(<[^>]+>)/g).map((part) => {
+    if (part.startsWith("<")) return part;
+    return part
+      .replace(/\^(\S[^\^\n]*?)\^/g, "<sup>$1</sup>")
+      .replace(/~(\S[^~\n]*?)~/g, "<sub>$1</sub>")
+      .replace(/(?<![\w"'=])(https?:\/\/[^\s<]+)/g, '<a href="$1">$1</a>');
+  }).join("");
 }
 
 function renderTable(node: SyntaxNode, ctx: Context): string {
@@ -316,7 +357,15 @@ function renderNode(node: SyntaxNode, ctx: Context): string {
 }
 
 export function markdownToHtml(markdown: string): string {
-  const tree = parser.parse(markdown);
-  const ctx: Context = { src: markdown, usedIds: new Map() };
-  return renderNode(tree.topNode, ctx).trim();
+  const prepared = prepareMarkdown(markdown);
+  const tree = parser.parse(prepared.markdown);
+  const ctx: Context = { src: prepared.markdown, usedIds: new Map() };
+  let body = enhanceInline(renderNode(tree.topNode, ctx).trim());
+  if (prepared.footnotes.length) {
+    body += `\n<section class="footnotes"><h2>Notas</h2><ol>${prepared.footnotes.map((entry) => {
+      const [id, text] = entry.split("::");
+      return `<li id="fn-${escapeAttribute(id)}">${enhanceInline(escapeHtml(text))} <a href="#fnref-${escapeAttribute(id)}">↩</a></li>`;
+    }).join("")}</ol></section>`;
+  }
+  return body;
 }

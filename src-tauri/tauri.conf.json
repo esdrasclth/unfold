@@ -50,6 +50,7 @@
       "icons/icon.ico"
     ],
     "copyright": "Esdras Clother",
+    "publisher": "Esdras Clother - BrandSofts",
     "shortDescription": "Editor Markdown con vista previa en vivo",
     "windows": {
       "nsis": {

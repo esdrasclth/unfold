@@ -11,8 +11,8 @@ import { isTauri } from "./files.ts";
  * red no debe retrasar que el editor esté listo para escribir.
  */
 
-/** Una vez al día basta; comprobarlo en cada arranque sería ruido. */
-const INTERVALO = 24 * 60 * 60 * 1000;
+/** Se intenta al arrancar, con una ventana contra consultas repetidas. */
+const INTERVALO = 15 * 60 * 1000;
 const CLAVE_ULTIMA = "unfold:ultima-comprobacion";
 const CLAVE_OMITIDA = "unfold:version-omitida";
 
@@ -35,25 +35,26 @@ function tocaComprobar(): boolean {
 export async function buscarActualizacion(
   handlers: UpdateHandlers,
   forzar = false,
-): Promise<void> {
-  if (!isTauri) return;
-  if (!forzar && !tocaComprobar()) return;
+): Promise<boolean> {
+  if (!isTauri) return false;
+  if (!forzar && !tocaComprobar()) return false;
 
   try {
     const { check } = await import("@tauri-apps/plugin-updater");
     const encontrada = await check();
     localStorage.setItem(CLAVE_ULTIMA, String(Date.now()));
-    if (!encontrada) return;
+    if (!encontrada) return false;
 
     // Si ya se dijo "más tarde" para esta versión concreta, no se insiste.
-    if (!forzar && localStorage.getItem(CLAVE_OMITIDA) === encontrada.version) return;
+    if (!forzar && localStorage.getItem(CLAVE_OMITIDA) === encontrada.version) return false;
 
     pendiente = encontrada;
     handlers.onAvailable(encontrada.version, encontrada.body ?? "");
+    return true;
   } catch (error) {
-    // Sin conexión o con el servidor caído no se molesta al usuario: esto es
-    // una cortesía, no una función que le haya pedido.
     console.error("No se pudo comprobar si hay actualizaciones", error);
+    handlers.onError("No se pudo comprobar si hay actualizaciones. Revisa tu conexión e inténtalo de nuevo.");
+    return false;
   }
 }
 
@@ -85,4 +86,9 @@ export async function instalarActualizacion(handlers: UpdateHandlers): Promise<v
 export function omitirVersion(version: string): void {
   localStorage.setItem(CLAVE_OMITIDA, version);
   pendiente = null;
+}
+
+/** Permite volver a mostrar una versión que se había pospuesto. */
+export function restablecerVersionOmitida(): void {
+  localStorage.removeItem(CLAVE_OMITIDA);
 }
