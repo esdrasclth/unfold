@@ -41,7 +41,7 @@ import { closeMarkdownMenu, openMarkdownMenu } from "./ui/markdownMenu.ts";
 import { openCommandPalette } from "./ui/commandPalette.ts";
 import { historyKey, recordVersion } from "./history.ts";
 import { openHistoryDialog } from "./ui/historyDialog.ts";
-import { backupFolder, createBackup, historyKey as backupKey, restoreLatest, setBackupFolder } from "./backups.ts";
+import { backupFolder, createBackup, restoreLatest, setBackupFolder } from "./backups.ts";
 import { takeWelcome } from "./welcome.ts";
 import "./styles/app.css";
 import "./styles/markdown.css";
@@ -228,7 +228,7 @@ function scheduleSessionSave(): void {
 function scheduleBackup(): void {
   window.clearTimeout(backupTimer);
   backupTimer = window.setTimeout(() => {
-    const key = backupKey(session.path, session.name);
+    const key = historyKey(session.path, session.name);
     void createBackup(key, view.state.doc.toString());
   }, 30_000);
 }
@@ -649,7 +649,7 @@ window.addEventListener("keydown", (event) => {
         if (typeof folder === "string") { setBackupFolder(folder); notify("Carpeta de copias guardada"); }
       })() },
       { id: "restore-backup", label: "Recuperar última copia automática", run: () => void (async () => {
-        const content = await restoreLatest(backupKey(session.path, session.name));
+        const content = await restoreLatest(historyKey(session.path, session.name));
         if (content) { replaceDocument(view, content); notify("Última copia restaurada"); } else notify("No hay una copia automática disponible");
       })() },
     ]);
