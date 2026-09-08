@@ -7,7 +7,7 @@
 Sin panel dividido, sin previsualización aparte. Escribes en un sitio y lees en ese mismo sitio.
 
 [Descargar para Windows](https://github.com/esdrasclth/unfold/releases/latest) ·
-[Web](https://esdrasclth.github.io/unfold/) ·
+[unfold.brandsofts.com](https://unfold.brandsofts.com/) ·
 [Cómo funciona](#cómo-funciona) ·
 [Contribuir](CONTRIBUTING.md)
 
