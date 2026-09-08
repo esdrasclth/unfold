@@ -11,7 +11,7 @@ use std::os::windows::process::CommandExt;
 /// Se empotra en vez de acompanarlo como archivo suelto para que lo que se
 /// descarga sea un unico .exe. La ruta apunta al artefacto de la aplicacion
 /// principal, asi que hay que compilarla antes que esto.
-const NSIS: &[u8] = include_bytes!("../../../src-tauri/target/release/bundle/nsis/Unfold_0.1.0_x64-setup.exe");
+const NSIS: &[u8] = include_bytes!("../../../src-tauri/target/release/bundle/nsis/Unfold_0.1.1_x64-setup.exe");
 
 /// Carpeta propuesta: la misma que usaria el instalador por su cuenta.
 #[tauri::command]

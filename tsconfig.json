@@ -4,6 +4,7 @@
     "module": "ESNext",
     "lib": ["ES2022", "DOM", "DOM.Iterable"],
     "moduleResolution": "bundler",
+    "resolveJsonModule": true,
     "moduleDetection": "force",
     "useDefineForClassFields": true,
     "allowImportingTsExtensions": true,

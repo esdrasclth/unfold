@@ -11,7 +11,7 @@ import "./styles.css";
  * reescribir la maquinaria, que es la parte que conviene no tocar.
  */
 
-const VERSION = "0.1.0";
+const VERSION = "0.1.1";
 
 const icono = {
   check: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="m5 12.5 4.5 4.5L19 7"/></svg>',

@@ -24,8 +24,12 @@ Para publicar desde CI, la clave va como secreto en la variable
 
 ## Pasos
 
-**1. Subir la versión** en `src-tauri/tauri.conf.json` y en `package.json`.
-Deben coincidir.
+**1. Subir la versión** en `src-tauri/tauri.conf.json` y en `package.json`, y
+actualizar la versión y la lista de novedades de `src/release.json`. Las tres
+versiones deben coincidir: la compilación se detiene si alguna queda atrasada.
+
+La bienvenida se muestra una vez por versión instalada, así que escribe allí
+las características que realmente cambian para quien acaba de actualizar.
 
 **2. Compilar firmando:**
 

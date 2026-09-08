@@ -30,48 +30,9 @@ import { SettingsPanel } from "./ui/settings.ts";
 import { mountWindowControls } from "./ui/windowControls.ts";
 import { buscarActualizacion, instalarActualizacion, omitirVersion } from "./updates.ts";
 import { FileWatcher } from "./watcher.ts";
+import { takeWelcome } from "./welcome.ts";
 import "./styles/app.css";
 import "./styles/markdown.css";
-
-const WELCOME = `# Unfold
-
-Un editor Markdown que se ve como el documento final **mientras escribes**.
-
-Coloca el cursor en cualquier línea y la sintaxis reaparece para editarla.
-Sácalo de ahí y vuelve a *renderizarse*.
-
-## Lo que ya funciona
-
-- Vista previa en vivo: encabezados, **negrita**, *cursiva*, ~~tachado~~ y \`código\`
-- Listas de tareas que puedes marcar con el ratón
-  - [x] Ocultar los marcadores de sintaxis
-  - [x] Tablas renderizadas y navegables con \`Tab\`
-  - [x] Esquema lateral, exportación y vigilancia del archivo
-- Citas, reglas horizontales e imágenes en línea
-- Bloques de código con resaltado por lenguaje
-
-> El archivo en disco sigue siendo Markdown puro. Nada se reescribe al guardar.
-
----
-
-## Atajos
-
-| Acción | Atajo |
-| --- | --- |
-| Nuevo / Abrir / Guardar | \`Ctrl+N\` / \`Ctrl+O\` / \`Ctrl+S\` |
-| Negrita / Cursiva | \`Ctrl+B\` / \`Ctrl+I\` |
-| Encabezado 1..6 | \`Ctrl+1\` … \`Ctrl+6\` |
-| Buscar | \`Ctrl+F\` |
-| Esquema | \`Ctrl+Shift+O\` |
-| Exportar HTML / Imprimir | \`Ctrl+Shift+E\` / \`Ctrl+P\` |
-| Seguir un enlace | \`Ctrl\` + clic |
-
-\`\`\`ts
-// El resaltado de código va por lenguaje, cargado bajo demanda.
-const saludo = (nombre: string) => \`Hola, \${nombre}\`;
-console.log(saludo("Esdras"));
-\`\`\`
-`;
 
 /**
  * `session` sigue siendo el documento en pantalla, pero ahora es una vista
@@ -107,6 +68,8 @@ let tabBar: TabBar;
 let recentMenu: RecentMenu;
 let outline: Outline;
 let autosaveTimer: number | undefined;
+/** La guía inicial se descarta al abrir el primer archivo si no se editó. */
+let welcomeTabId: number | null = null;
 /** Contenido externo pendiente de resolver mientras hay conflicto. */
 let conflictContent: string | null = null;
 
@@ -219,7 +182,7 @@ function renderHeader(): void {
   // en la barra de título sería ruido.
   el.titlebarFile.classList.toggle("is-hidden", tabs.count() > 1);
   el.name.textContent = session.name;
-  el.status.textContent = session.dirty ? "sin guardar" : "guardado";
+  el.status.textContent = session.dirty ? "sin guardar" : session.path ? "guardado" : "";
   el.status.classList.toggle("is-dirty", session.dirty);
 }
 
@@ -290,7 +253,15 @@ async function persist(prompt: boolean): Promise<void> {
 function applyFile(file: OpenedFile): void {
   conflictContent = null;
   el.conflict.hidden = true;
+  const welcomeTab = welcomeTabId === null
+    ? undefined
+    : tabs.list().find((tab) => tab.id === welcomeTabId);
+  const discardWelcome = Boolean(welcomeTab && !welcomeTab.dirty && welcomeTab.path === null);
   tabs.open(view, file.path, file.name, file.content);
+  if (discardWelcome && welcomeTab) {
+    tabs.close(view, welcomeTab.id);
+    welcomeTabId = null;
+  }
   rememberRecent(file.path, file.name);
   afterTabChange();
 }
@@ -392,6 +363,7 @@ async function closeTab(id: number): Promise<void> {
   }
 
   tabs.close(view, id);
+  if (id === welcomeTabId) welcomeTabId = null;
   conflictContent = null;
   el.conflict.hidden = true;
   afterTabChange();
@@ -470,9 +442,11 @@ const savedTheme = localStorage.getItem("unfold:theme");
 document.documentElement.dataset.theme = savedTheme ?? "light";
 el.theme.innerHTML = icon(document.documentElement.dataset.theme === "dark" ? "sun" : "moon");
 
+const initialDocument = takeWelcome();
+
 const editorOptions: EditorOptions = {
   parent: el.host,
-  doc: WELCOME,
+  doc: initialDocument,
   resolveAsset: makeAssetResolver(() => session.path),
   onSelection: (line, column) => {
     el.caret.textContent = `Ln ${line}, Col ${column}`;
@@ -526,7 +500,8 @@ tabBar = new TabBar(el.tabBar, {
   activate: (id) => void switchTab(id),
   close: (id) => void closeTab(id),
 });
-tabs.adopt(view.state, titleFromDoc(WELCOME));
+const initialTab = tabs.adopt(view.state, titleFromDoc(initialDocument));
+if (initialDocument) welcomeTabId = initialTab.id;
 
 recentMenu = new RecentMenu(el.recentButton, {
   open: (path) => void loadPath(path),
@@ -538,7 +513,7 @@ mountWindowControls(document.querySelector<HTMLElement>("#window-controls")!);
 settingsPanel = new SettingsPanel(el.settings, () => toggleSettings(false));
 
 renderHeader();
-renderStats(WELCOME);
+renderStats(initialDocument);
 applyTypewriter();
 applyOutline();
 view.focus();
