@@ -1,6 +1,6 @@
 {
   "name": "unfold",
-  "version": "0.2.0",
+  "version": "0.2.1",
   "private": true,
   "type": "module",
   "scripts": {
@@ -9,7 +9,7 @@
     "start": "tauri dev",
     "release": "tauri build",
     "tauri": "tauri",
-    "test": "node --experimental-strip-types scripts/test-markdown.mjs && node --experimental-strip-types scripts/test-export.mjs && node --experimental-strip-types scripts/test-math.mjs && node --experimental-strip-types scripts/test-welcome.mjs && node --experimental-strip-types scripts/test-session.mjs",
+    "test": "node --experimental-strip-types scripts/test-markdown.mjs && node --experimental-strip-types scripts/test-export.mjs && node --experimental-strip-types scripts/test-math.mjs && node --experimental-strip-types scripts/test-welcome.mjs && node --experimental-strip-types scripts/test-session.mjs && node --experimental-strip-types scripts/test-files.mjs && node --experimental-strip-types scripts/test-save.mjs && node --experimental-strip-types scripts/test-watcher.mjs",
     "benchmark:large": "node --experimental-strip-types scripts/benchmark-large.mjs",
     "release:setup": "npm run release && npm --prefix setup run release"
   },

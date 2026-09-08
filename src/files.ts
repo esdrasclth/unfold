@@ -32,7 +32,7 @@ function dirname(path: string): string {
 
 // --- Navegador ---------------------------------------------------------------
 
-let browserHandle: FileSystemFileHandle | null = null;
+const browserHandles = new Map<string, FileSystemFileHandle>();
 
 async function openInBrowser(): Promise<OpenedFile | null> {
   const picker = window.showOpenFilePicker;
@@ -41,12 +41,18 @@ async function openInBrowser(): Promise<OpenedFile | null> {
     types: [{ description: "Markdown", accept: { "text/markdown": [".md", ".markdown"] } }],
   });
   if (!handle) return null;
-  browserHandle = handle;
   const file = await handle.getFile();
-  return { path: handle.name, name: handle.name, content: await file.text() };
+  let path: string | undefined;
+  for (const [key, existing] of browserHandles) {
+    if (await existing.isSameEntry(handle)) { path = key; break; }
+  }
+  path ??= `browser:${crypto.randomUUID()}/${handle.name}`;
+  browserHandles.set(path, handle);
+  return { path, name: handle.name, content: await file.text() };
 }
 
-async function writeInBrowser(content: string): Promise<boolean> {
+async function writeInBrowser(path: string | null, content: string): Promise<boolean> {
+  const browserHandle = path ? browserHandles.get(path) : undefined;
   if (!browserHandle) return false;
   const writable = await browserHandle.createWritable();
   await writable.write(content);
@@ -73,7 +79,12 @@ async function openInTauri(): Promise<OpenedFile | null> {
 // --- API pública -------------------------------------------------------------
 
 export async function openFile(): Promise<OpenedFile | null> {
-  return isTauri ? openInTauri() : openInBrowser();
+  try {
+    return await (isTauri ? openInTauri() : openInBrowser());
+  } catch (error) {
+    if (error instanceof Error && error.name === "AbortError") return null;
+    throw error;
+  }
 }
 
 export async function readFile(path: string): Promise<string> {
@@ -84,9 +95,8 @@ export async function readFile(path: string): Promise<string> {
 /** Guarda en `path`; si no hay ruta todavía, pregunta dónde. Devuelve la ruta usada. */
 export async function saveFile(path: string | null, content: string): Promise<string | null> {
   if (!isTauri) {
-    if (await writeInBrowser(content)) return path;
-    downloadFallback(path ?? "documento.md", content);
-    return path;
+    if (await writeInBrowser(path, content)) return path;
+    return saveFileAs(content);
   }
 
   let target = path;
@@ -103,6 +113,18 @@ export async function saveFile(path: string | null, content: string): Promise<st
 
 export async function saveFileAs(content: string): Promise<string | null> {
   if (!isTauri) {
+    if (window.showSaveFilePicker) {
+      try {
+        const handle = await window.showSaveFilePicker({ suggestedName: "documento.md" });
+        const path = `browser:${crypto.randomUUID()}/${handle.name}`;
+        browserHandles.set(path, handle);
+        await writeInBrowser(path, content);
+        return path;
+      } catch (error) {
+        if (error instanceof Error && error.name === "AbortError") return null;
+        throw error;
+      }
+    }
     downloadFallback("documento.md", content);
     return null;
   }

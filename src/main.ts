@@ -23,6 +23,7 @@ import {
 import { rememberRecent } from "./recent.ts";
 import { clearSession, loadSession, saveSession } from "./session.ts";
 import { Tabs } from "./tabs.ts";
+import { saveSnapshot } from "./saveSnapshot.ts";
 import { confirmDialog } from "./ui/confirmDialog.ts";
 import { RecentMenu } from "./ui/recentMenu.ts";
 import { TabBar } from "./ui/tabBar.ts";
@@ -87,6 +88,7 @@ let welcomeTabId: number | null = null;
 let sourceMode = localStorage.getItem("unfold:source-mode") === "on";
 /** Contenido externo pendiente de resolver mientras hay conflicto. */
 let conflictContent: string | null = null;
+const tabConflicts = new Map<number, string>();
 
 // --- Construcción de la interfaz ---------------------------------------------
 
@@ -247,6 +249,7 @@ const watcher = new FileWatcher({
     notify("Recargado: el archivo cambió fuera de Unfold");
   },
   onConflict: (content) => {
+    tabConflicts.set(tabs.active().id, content);
     conflictContent = content;
     el.conflict.hidden = false;
     // Mientras haya conflicto no autoguardamos: sobrescribiría el disco.
@@ -256,6 +259,7 @@ const watcher = new FileWatcher({
 });
 
 function resolveConflict(keepMine: boolean): void {
+  tabConflicts.delete(tabs.active().id);
   if (!keepMine && conflictContent !== null) {
     replaceDocument(view, conflictContent);
     session.dirty = false;
@@ -265,6 +269,7 @@ function resolveConflict(keepMine: boolean): void {
   el.conflict.hidden = true;
   renderHeader();
   view.focus();
+  if (keepMine) scheduleAutosave();
 }
 
 // --- Acciones -----------------------------------------------------------------
@@ -273,22 +278,49 @@ function scheduleAutosave(): void {
   window.clearTimeout(autosaveTimer);
   if (!session.path || conflictContent !== null) return;
   // Guardado silencioso un segundo después de dejar de escribir.
-  autosaveTimer = window.setTimeout(() => void persist(false), 1000);
+  const tabId = tabs.active().id;
+  autosaveTimer = window.setTimeout(() => {
+    if (tabs.active().id === tabId) void persist(false);
+  }, 1000);
 }
 
-async function persist(prompt: boolean): Promise<void> {
-  const content = view.state.doc.toString();
-  watcher.noteSelfWrite();
-  const target = prompt ? await saveFileAs(content) : await saveFile(session.path, content);
-  if (!target && !session.path) return;
-  if (target) {
-    session.path = target;
-    session.name = target.split(/[\\/]/).pop() ?? target;
-    void watcher.watch(target);
+let saving: Promise<boolean> | null = null;
+async function persist(prompt: boolean): Promise<boolean> {
+  const requestedTab = tabs.active();
+  if (saving) {
+    await saving;
+    if (tabs.active() !== requestedTab) return false;
+    return persist(prompt);
   }
-  session.dirty = false;
-  renderHeader();
-  scheduleSessionSave();
+  saving = persistActive(prompt);
+  try { return await saving; } finally { saving = null; }
+}
+
+async function persistActive(prompt: boolean): Promise<boolean> {
+  window.clearTimeout(autosaveTimer);
+  const tab = tabs.active();
+  const content = view.state.doc.toString();
+  try {
+    watcher.noteSelfWrite(content);
+    const saved = await saveSnapshot(tab, content,
+      () => prompt ? saveFileAs(content) : saveFile(tab.path, content),
+      () => (tabs.active() === tab ? view.state : tab.state).doc.toString());
+    if (!saved) return false;
+    tabConflicts.delete(tab.id);
+    if (tabs.active() === tab) {
+      conflictContent = null;
+      el.conflict.hidden = true;
+      void watcher.watch(tab.path);
+      renderHeader();
+    }
+    tabs.touch();
+    scheduleSessionSave();
+    return !tab.dirty;
+  } catch (error) {
+    console.error("No se pudo guardar", error);
+    notify("No se pudo guardar el archivo; tus cambios siguen en el editor");
+    return false;
+  }
 }
 
 function applyFile(file: OpenedFile): void {
@@ -309,6 +341,9 @@ function applyFile(file: OpenedFile): void {
 
 /** Todo lo que hay que refrescar cuando cambia el documento en pantalla. */
 function afterTabChange(): void {
+  window.clearTimeout(autosaveTimer);
+  conflictContent = tabConflicts.get(tabs.active().id) ?? null;
+  el.conflict.hidden = conflictContent === null;
   const doc = view.state.doc.toString();
   renderHeader();
   renderStats(doc);
@@ -323,9 +358,13 @@ function afterTabChange(): void {
 }
 
 async function load(): Promise<void> {
-  if (!(await confirmDiscard("abrir otro"))) return;
-  const file = await openFile();
-  if (file) applyFile(file);
+  try {
+    const file = await openFile();
+    if (file) applyFile(file);
+  } catch (error) {
+    console.error("No se pudo abrir", error);
+    notify("No se pudo abrir el archivo");
+  }
 }
 
 /** Abre una ruta concreta: usada por el arranque con argumento y por arrastrar. */
@@ -352,8 +391,7 @@ async function confirmDiscard(accion: string): Promise<boolean> {
   // Con archivo y sin conflicto, guardar es lo que el autoguardado ya promete:
   // no hay nada que preguntar.
   if (session.path && conflictContent === null) {
-    await persist(false);
-    return true;
+    return persist(false);
   }
 
   const choice = await confirmDialog(
@@ -368,9 +406,7 @@ async function confirmDiscard(accion: string): Promise<boolean> {
 
   if (choice === "cancelar") return false;
   if (choice === "guardar") {
-    await persist(false);
-    // Si el diálogo de guardar se cerró sin elegir sitio, no se sigue.
-    return !session.dirty;
+    return persist(false);
   }
   return true;
 }
@@ -387,7 +423,7 @@ async function switchTab(id: number): Promise<void> {
   if (id === tabs.active().id) return;
   // Se guarda lo pendiente de la que se abandona: al volver debe estar como
   // se dejó, y el autoguardado de la otra ya no se dispararía.
-  if (session.dirty && session.path && conflictContent === null) await persist(false);
+  if (session.dirty && session.path && conflictContent === null && !(await persist(false))) return;
   conflictContent = null;
   el.conflict.hidden = true;
   tabs.activate(view, id);
@@ -402,10 +438,12 @@ async function closeTab(id: number): Promise<void> {
     // Se trae al frente antes de preguntar: no se decide a ciegas sobre un
     // documento que no se está viendo.
     await switchTab(id);
+    if (tabs.active().id !== id) return;
     if (!(await confirmDiscard("cerrar la pestaña"))) return;
   }
 
   tabs.close(view, id);
+  tabConflicts.delete(id);
   if (id === welcomeTabId) welcomeTabId = null;
   conflictContent = null;
   el.conflict.hidden = true;
@@ -605,7 +643,7 @@ async function restoreSession(): Promise<void> {
   // el borrador local para no perder cambios que aún no llegaron al archivo.
   const snapshots = [];
   for (const snapshot of saved.tabs) {
-    if (snapshot.path && !snapshot.dirty) {
+    if (isTauri && snapshot.path && !snapshot.dirty) {
       try {
         snapshot.content = await readFile(snapshot.path);
       } catch {
@@ -716,6 +754,7 @@ if (isTauri) {
       while (tabs.dirtyTabs().length > 0) {
         const pending = tabs.dirtyTabs()[0];
         await switchTab(pending.id);
+        if (tabs.active().id !== pending.id) return;
         if (!(await confirmDiscard("cerrar"))) return;
         // Si se descartó, la pestaña sigue marcada como sucia: se limpia para
         // no volver a preguntar por ella en la siguiente vuelta.
@@ -825,6 +864,7 @@ el.updateNow.addEventListener("click", () => {
   estadoUpdate = "installing";
   el.updateNow.disabled = true;
   el.updateLater.hidden = true;
+  saveCurrentSession();
   void instalarActualizacion(manejadoresUpdate);
 });
 
@@ -875,8 +915,10 @@ window.addEventListener("keydown", (event) => {
     void closeTab(tabs.active().id);
   } else if (event.key === "Tab") {
     event.preventDefault();
-    tabs.cycle(view, event.shiftKey ? -1 : 1);
-    afterTabChange();
+    const items = tabs.list();
+    const index = items.findIndex((tab) => tab.id === tabs.active().id);
+    const next = (index + (event.shiftKey ? -1 : 1) + items.length) % items.length;
+    void switchTab(items[next].id);
   } else if (key === "s") {
     event.preventDefault();
     void persist(event.shiftKey);
@@ -884,6 +926,7 @@ window.addEventListener("keydown", (event) => {
     event.preventDefault();
     void exportHtml(exportContext());
   } else if (key === "p") {
+    if (event.shiftKey) return;
     // El diálogo del navegador imprimiría el editor, no el documento.
     event.preventDefault();
     printDocument(exportContext());

@@ -13,6 +13,21 @@ export interface WatchHandlers {
   onRemoved: () => void;
 }
 
+interface WatchIO {
+  enabled: boolean;
+  read: (path: string) => Promise<string>;
+  watch: (path: string, callback: () => void) => Promise<() => void>;
+}
+
+const nativeIO: WatchIO = {
+  enabled: isTauri,
+  read: readFile,
+  watch: async (path, callback) => {
+    const { watch } = await import("@tauri-apps/plugin-fs");
+    return watch(path, callback, { delayMs: 250 });
+  },
+};
+
 /**
  * Vigila el archivo abierto y avisa cuando cambia fuera de Unfold.
  *
@@ -22,45 +37,59 @@ export interface WatchHandlers {
 export class FileWatcher {
   private stop: (() => void) | null = null;
   private watching: string | null = null;
-  /** Última vez que escribimos nosotros: sirve para ignorar nuestro eco. */
-  private lastSelfWrite = 0;
+  private generation = 0;
+  private lastSelfContent: string | null = null;
 
-  constructor(private readonly handlers: WatchHandlers) {}
+  private readonly handlers: WatchHandlers;
+  private readonly io: WatchIO;
+
+  constructor(handlers: WatchHandlers, io: WatchIO = nativeIO) {
+    this.handlers = handlers;
+    this.io = io;
+  }
 
   /** Marca que el guardado lo hemos hecho nosotros, no un programa externo. */
-  noteSelfWrite(): void {
-    this.lastSelfWrite = Date.now();
+  noteSelfWrite(content: string): void {
+    this.lastSelfContent = content;
   }
 
   async watch(path: string | null): Promise<void> {
     if (path === this.watching) return;
     this.close();
     this.watching = path;
-    if (!isTauri || !path) return;
+    const generation = this.generation;
+    if (!this.io.enabled || !path) return;
 
     try {
-      const { watch } = await import("@tauri-apps/plugin-fs");
       // `watch` es la variante con rebote: un guardado ajeno produce una
       // ráfaga de eventos y sólo queremos reaccionar una vez.
-      this.stop = await watch(path, () => void this.check(path), { delayMs: 250 });
+      const stop = await this.io.watch(path, () => void this.check(path, generation));
+      if (generation !== this.generation) stop();
+      else {
+        this.stop = stop;
+        await this.check(path, generation);
+      }
     } catch (error) {
       // Sin vigilancia la aplicación sigue siendo usable; no vale interrumpir.
       console.error("No se pudo vigilar el archivo", error);
     }
   }
 
-  private async check(path: string): Promise<void> {
-    // Nuestro propio guardado genera un evento: no es un cambio externo.
-    if (Date.now() - this.lastSelfWrite < 1500) return;
+  private async check(path: string, generation: number): Promise<void> {
+    if (generation !== this.generation) return;
 
     let content: string;
     try {
-      content = await readFile(path);
+      content = await this.io.read(path);
     } catch {
+      if (generation !== this.generation) return;
       this.handlers.onRemoved();
       return;
     }
 
+    if (generation !== this.generation) return;
+    if (content === this.lastSelfContent) return;
+    this.lastSelfContent = null;
     // El contenido puede ser idéntico si sólo cambió la fecha del archivo.
     if (content === this.handlers.currentContent()) return;
 
@@ -69,6 +98,8 @@ export class FileWatcher {
   }
 
   close(): void {
+    this.generation++;
+    this.lastSelfContent = null;
     this.stop?.();
     this.stop = null;
     this.watching = null;

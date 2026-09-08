@@ -5,7 +5,7 @@ proyecto y qué se espera de un cambio.
 
 ## Poner en marcha el entorno
 
-Hace falta **Node.js 20 o superior** y **Rust con toolchain MSVC**. En Windows,
+Hace falta **Node.js 22.18 o superior** y **Rust con toolchain MSVC**. En Windows,
 Rust necesita además las *Microsoft C++ Build Tools*; WebView2 ya viene con
 Windows 10 y 11 actualizados.
 

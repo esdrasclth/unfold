@@ -36,10 +36,11 @@ export function loadSession(storage: SessionStorage = localStorage): SessionSnap
       typeof tab === "object" && tab !== null &&
       typeof tab.name === "string" && typeof tab.content === "string" &&
       (typeof tab.path === "string" || tab.path === null) &&
-      typeof tab.dirty === "boolean" && typeof tab.anchor === "number" &&
-      typeof tab.head === "number" && typeof tab.scrollTop === "number",
+      typeof tab.dirty === "boolean" && Number.isSafeInteger(tab.anchor) &&
+      Number.isSafeInteger(tab.head) && Number.isFinite(tab.scrollTop),
     );
-    return tabs.length ? { version: FORMAT_VERSION, active: Number(value.active) || 0, tabs } : null;
+    const selected = value.tabs[Number.isSafeInteger(value.active) ? value.active! : 0];
+    return tabs.length ? { version: FORMAT_VERSION, active: Math.max(0, tabs.indexOf(selected)), tabs } : null;
   } catch {
     return null;
   }

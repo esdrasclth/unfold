@@ -113,12 +113,12 @@ medio en un encabezado subrayado.
 
 ## Desarrollo
 
-Necesitas Node.js 20 o superior y Rust con toolchain MSVC.
+Necesitas Node.js 22.18 o superior y Rust con toolchain MSVC.
 
 ```powershell
 npm install
 npm start     # aplicación nativa con recarga en caliente
-npm test      # 49 pruebas de los conversores, sin abrir la app
+npm test      # pruebas de regresión, sin abrir la app
 ```
 
 Para iterar sólo en la interfaz, `npm run dev` levanta Vite en el navegador; ahí
@@ -134,7 +134,6 @@ un issue para comentarlo.
 
 Lo que está pendiente y sería bienvenido:
 
-- Diagramas Mermaid
 - Notas al pie y enlaces automáticos
 - Tablas dentro de citas o listas
 - Compilaciones para macOS y Linux

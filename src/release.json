@@ -1,9 +1,9 @@
 {
-  "version": "0.2.0",
+  "version": "0.2.1",
   "highlights": [
-    "**Restauración de sesión**: recupera pestañas, borradores, cursor y posición al volver a abrir.",
-    "**Menú Markdown contextual** para insertar formato, listas, tablas, fórmulas, imágenes y bloques.",
-    "**Modo Código fuente** con `Ctrl+Shift+M` para alternar entre Markdown literal y vista renderizada.",
-    "**Landing renovada** con una presentación más clara de las capacidades de Unfold."
+    "**Guardado más fiable**: conserva los cambios durante operaciones asíncronas y al cancelar Guardar como.",
+    "**Conflictos por pestaña** y vigilancia de archivos protegida frente a cambios rápidos de documento.",
+    "**Archivos independientes en el navegador**: cada pestaña guarda en su propio destino.",
+    "**Paleta de comandos corregida**: Ctrl+Shift+P ya no abre también la impresión."
   ]
 }
