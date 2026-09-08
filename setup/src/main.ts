@@ -72,7 +72,7 @@ app.innerHTML = `
       <span class="step" data-step="2">03</span>
     </nav>
 
-    <section class="pane is-current" data-pane="0">
+  <section class="pane is-current" data-pane="0">
       <h1>Te damos la bienvenida</h1>
       <p class="lead">
         Un editor Markdown que se ve como el documento final mientras escribes,
@@ -86,6 +86,7 @@ app.innerHTML = `
       <div class="actions">
         <button class="btn is-primary" data-ir="1">Continuar</button>
       </div>
+      <button class="text-link" id="mostrar-desinstalar" type="button">¿Ya tienes Unfold? Desinstalar</button>
       <p class="footnote">Versión ${VERSION} · Windows 10 y 11</p>
     </section>
 
@@ -132,6 +133,13 @@ app.innerHTML = `
       </div>
       <p class="footnote">Versión ${VERSION}</p>
     </section>
+
+    <section class="pane" data-pane="3">
+      <h1>Desinstalar Unfold</h1>
+      <p class="lead">Quita la aplicación de este equipo. Tus documentos Markdown no se borrarán.</p>
+      <label class="check uninstall-option"><input type="checkbox" id="borrar-datos" /><span class="box">${icono.check}</span><span>Borrar también preferencias y datos locales</span></label>
+      <div class="actions"><button class="btn is-quiet" id="cancelar-desinstalar">Cancelar</button><button class="btn is-danger" id="desinstalar">Desinstalar</button></div>
+    </section>
   </main>
 `;
 
@@ -149,6 +157,8 @@ const el = {
   titulo: document.querySelector<HTMLElement>("#titulo-final")!,
   lead: document.querySelector<HTMLElement>("#lead-final")!,
   tamano: document.querySelector<HTMLElement>("#pie-tamano")!,
+  desinstalar: document.querySelector<HTMLButtonElement>("#desinstalar")!,
+  borrarDatos: document.querySelector<HTMLInputElement>("#borrar-datos")!,
 };
 
 let instalado = false;
@@ -168,6 +178,13 @@ for (const boton of document.querySelectorAll<HTMLElement>("[data-ir]")) {
 document.querySelector("#cerrar")!.addEventListener("click", () => {
   void getCurrentWindow().close();
 });
+document.querySelector("#mostrar-desinstalar")!.addEventListener("click", () => mostrar(3));
+document.querySelector("#cancelar-desinstalar")!.addEventListener("click", () => mostrar(0));
+el.desinstalar.addEventListener("click", () => void (async () => {
+  el.desinstalar.disabled = true;
+  try { await invoke("desinstalar", { destino: el.ruta.value, borrarDatos: el.borrarDatos.checked }); await getCurrentWindow().close(); }
+  catch (error) { el.desinstalar.disabled = false; alert(String(error)); }
+})());
 
 document.querySelector("#elegir")!.addEventListener("click", () => {
   void (async () => {

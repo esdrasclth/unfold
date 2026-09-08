@@ -489,6 +489,11 @@ h1 {
   background: var(--accent);
   color: #fff;
 }
+.btn.is-danger { background: #b53b32; color: #fff; }
+.btn.is-danger:hover { background: #c94c42; }
+.text-link { align-self: flex-start; margin-top: 1.3rem; padding: 0; border: 0; background: transparent; color: var(--accent); font: inherit; font-size: .82rem; cursor: pointer; text-decoration: underline; text-underline-offset: 3px; }
+.text-link:hover { color: var(--accent-hover); }
+.uninstall-option { margin-top: 2rem; }
 
 .btn.is-primary:hover {
   background: var(--accent-hover);

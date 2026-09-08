@@ -78,6 +78,17 @@ fn abrir_unfold(destino: String) -> Result<(), String> {
     Ok(())
 }
 
+#[tauri::command]
+fn desinstalar(destino: String, borrar_datos: bool) -> Result<(), String> {
+    let exe = PathBuf::from(&destino).join("uninstall.exe");
+    if !exe.exists() { return Err("No se encontró el desinstalador de Unfold.".into()); }
+    let mut command = Command::new(&exe);
+    command.arg("/S");
+    if borrar_datos { command.arg("/DELETE-DATA"); }
+    command.spawn().map_err(|e| format!("No se pudo iniciar el desinstalador: {e}"))?;
+    Ok(())
+}
+
 /// Esquinas redondeadas de Windows 11, igual que en la aplicacion: la ventana
 /// no lleva decoracion del sistema y sin esto seria un rectangulo pegado.
 #[cfg(windows)]
@@ -112,7 +123,8 @@ pub fn run() {
             destino_por_defecto,
             tamano_instalador,
             instalar,
-            abrir_unfold
+            abrir_unfold,
+            desinstalar
         ])
         .setup(|app| {
             if let Some(window) = app.get_webview_window("main") {
