@@ -1,9 +1,7 @@
 {
-  "version": "0.2.1",
+  "version": "0.2.2",
   "highlights": [
-    "**Guardado más fiable**: conserva los cambios durante operaciones asíncronas y al cancelar Guardar como.",
-    "**Conflictos por pestaña** y vigilancia de archivos protegida frente a cambios rápidos de documento.",
-    "**Archivos independientes en el navegador**: cada pestaña guarda en su propio destino.",
-    "**Paleta de comandos corregida**: Ctrl+Shift+P ya no abre también la impresión."
+    "**Barra de estado siempre abajo**: los contadores de palabras y caracteres permanecen en el borde inferior, incluso con documentos vacíos y al redimensionar la ventana.",
+    "**Distribución estable** al mostrar u ocultar los avisos de actualización y conflicto."
   ]
 }

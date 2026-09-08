@@ -191,7 +191,8 @@ body {
 
 #app {
   display: grid;
-  /* La pista central nunca debe encogerse según el contenido del editor. */
+  /* Los avisos ocultos no deben desplazar el editor ni el pie a otra fila. */
+  grid-template-areas: "title" "update" "conflict" "editor" "status";
   grid-template-rows: auto auto auto minmax(0, 1fr) auto;
   height: 100%;
   min-height: 100vh;
@@ -199,6 +200,12 @@ body {
   background: var(--chrome);
   overflow: hidden;
 }
+
+#app > .titlebar { grid-area: title; }
+#app > .update-bar { grid-area: update; }
+#app > .conflict-bar { grid-area: conflict; }
+#app > .workspace { grid-area: editor; }
+#app > .statusbar { grid-area: status; }
 
 /*
  * El área central es una pista flexible y el panel del esquema necesita que

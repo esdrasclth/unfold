@@ -1,6 +1,6 @@
 [package]
 name = "unfold"
-version = "0.2.1"
+version = "0.2.2"
 description = "Editor Markdown con vista previa en vivo"
 edition = "2021"
 rust-version = "1.77.2"
