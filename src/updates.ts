@@ -61,6 +61,8 @@ export async function buscarActualizacion(
 /** Descarga, instala y reinicia. */
 export async function instalarActualizacion(handlers: UpdateHandlers): Promise<void> {
   if (!pendiente) return;
+  const version = pendiente.version;
+  const notas = pendiente.body ?? "";
 
   try {
     let descargado = 0;
@@ -74,6 +76,7 @@ export async function instalarActualizacion(handlers: UpdateHandlers): Promise<v
         handlers.onProgress(descargado, total);
       }
     });
+    localStorage.setItem("unfold:changelog-pending", JSON.stringify({ version, notas }));
 
     const { relaunch } = await import("@tauri-apps/plugin-process");
     await relaunch();

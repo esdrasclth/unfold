@@ -41,6 +41,7 @@ import { closeMarkdownMenu, openMarkdownMenu } from "./ui/markdownMenu.ts";
 import { openCommandPalette } from "./ui/commandPalette.ts";
 import { historyKey, recordVersion } from "./history.ts";
 import { openHistoryDialog } from "./ui/historyDialog.ts";
+import { backupFolder, createBackup, historyKey as backupKey, restoreLatest, setBackupFolder } from "./backups.ts";
 import { takeWelcome } from "./welcome.ts";
 import "./styles/app.css";
 import "./styles/markdown.css";
@@ -80,6 +81,7 @@ let recentMenu: RecentMenu;
 let outline: Outline;
 let autosaveTimer: number | undefined;
 let sessionSaveTimer: number | undefined;
+let backupTimer: number | undefined;
 /** La guía inicial se descarta al abrir el primer archivo si no se editó. */
 let welcomeTabId: number | null = null;
 let sourceMode = localStorage.getItem("unfold:source-mode") === "on";
@@ -221,6 +223,14 @@ function saveCurrentSession(): void {
 function scheduleSessionSave(): void {
   window.clearTimeout(sessionSaveTimer);
   sessionSaveTimer = window.setTimeout(saveCurrentSession, 250);
+}
+
+function scheduleBackup(): void {
+  window.clearTimeout(backupTimer);
+  backupTimer = window.setTimeout(() => {
+    const key = backupKey(session.path, session.name);
+    void createBackup(key, view.state.doc.toString());
+  }, 30_000);
 }
 
 // --- Vigilancia del archivo ---------------------------------------------------
@@ -504,8 +514,13 @@ const editorOptions: EditorOptions = {
     el.caret.textContent = `Ln ${line}, Col ${column}`;
     if (outlineOn) outline.refresh();
     scheduleSessionSave();
+    scheduleBackup();
   },
   onChange: (doc) => {
+    if (doc.split("\n").length >= 10_000) {
+      const started = performance.now();
+      queueMicrotask(() => console.info(`[Unfold] documento grande: ${doc.split("\n").length.toLocaleString("es")} líneas; actualización ${Math.round(performance.now() - started)} ms`));
+    }
     // La guía inicial deja de ser efímera en cuanto el usuario la edita.
     if (welcomeTabId !== null && tabs.active().id === welcomeTabId) welcomeTabId = null;
     session.dirty = true;
@@ -627,6 +642,16 @@ window.addEventListener("keydown", (event) => {
       { id: "theme", label: "Cambiar tema", run: toggleTheme },
       { id: "settings", label: "Abrir Apariencia y ajustes", run: () => toggleSettings(true) },
       { id: "history", label: "Ver historial y recuperar versión", run: () => openHistoryDialog(historyKey(session.path, session.name), view.state.doc.toString(), (content) => replaceDocument(view, content)) },
+      { id: "backup-folder", label: `Configurar carpeta de copias${backupFolder() ? ` (${backupFolder()})` : ""}`, run: () => void (async () => {
+        if (!isTauri) { notify("Las copias automáticas requieren la aplicación de escritorio"); return; }
+        const { open } = await import("@tauri-apps/plugin-dialog");
+        const folder = await open({ directory: true, defaultPath: backupFolder() ?? undefined });
+        if (typeof folder === "string") { setBackupFolder(folder); notify("Carpeta de copias guardada"); }
+      })() },
+      { id: "restore-backup", label: "Recuperar última copia automática", run: () => void (async () => {
+        const content = await restoreLatest(backupKey(session.path, session.name));
+        if (content) { replaceDocument(view, content); notify("Última copia restaurada"); } else notify("No hay una copia automática disponible");
+      })() },
     ]);
   }
 });
@@ -811,6 +836,13 @@ el.updateLater.addEventListener("click", () => {
 
 // Se consulta con retraso: la red no debe frenar el arranque del editor.
 window.setTimeout(() => void buscarActualizacion(manejadoresUpdate), 4000);
+const changelogRaw = localStorage.getItem("unfold:changelog-pending");
+if (changelogRaw) {
+  try {
+    const changelog = JSON.parse(changelogRaw) as { version?: string; notas?: string };
+    notify(`Unfold se actualizó a ${changelog.version ?? "la última versión"}${changelog.notas ? ` · ${changelog.notas.split("\n")[0]}` : ""}`);
+  } finally { localStorage.removeItem("unfold:changelog-pending"); }
+}
 
 window.addEventListener("keydown", (event) => {
   // Escape cierra la apariencia sin necesidad de llegar al aspa.
