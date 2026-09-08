@@ -11,6 +11,16 @@ export interface Tab {
   scrollTop: number;
 }
 
+export interface TabSnapshot {
+  path: string | null;
+  name: string;
+  dirty: boolean;
+  content: string;
+  anchor: number;
+  head: number;
+  scrollTop: number;
+}
+
 /**
  * Documentos abiertos.
  *
@@ -61,6 +71,50 @@ export class Tabs {
 
   dirtyTabs(): Tab[] {
     return this.items.filter((tab) => tab.dirty);
+  }
+
+  /** Serializa la sesión actual para poder recuperarla después de reiniciar. */
+  snapshot(view: EditorView, excludeId?: number): { tabs: TabSnapshot[]; active: number } {
+    this.capture(view);
+    const visible = this.items.filter((tab) => tab.id !== excludeId);
+    return {
+      tabs: visible.map((tab) => {
+        const selection = tab.state.selection.main;
+        return {
+          path: tab.path,
+          name: tab.name,
+          dirty: tab.dirty,
+          content: tab.state.doc.toString(),
+          anchor: selection.anchor,
+          head: selection.head,
+          scrollTop: tab.scrollTop,
+        };
+      }),
+      active: Math.max(0, visible.findIndex((tab) => tab.id === this.activeId)),
+    };
+  }
+
+  /** Restaura pestañas previamente serializadas, incluyendo cursor y scroll. */
+  restore(view: EditorView, snapshots: TabSnapshot[], activeIndex: number): void {
+    if (snapshots.length === 0) return;
+    this.capture(view);
+    this.items = snapshots.map((snapshot) => {
+      const state = this.makeState(snapshot.content);
+      const max = state.doc.length;
+      const anchor = Math.min(Math.max(0, snapshot.anchor), max);
+      const head = Math.min(Math.max(0, snapshot.head), max);
+      return {
+        id: this.nextId++,
+        path: snapshot.path,
+        name: snapshot.name,
+        dirty: snapshot.dirty,
+        state: state.update({ selection: { anchor, head } }).state,
+        scrollTop: Math.max(0, snapshot.scrollTop),
+      };
+    });
+    const active = this.items[Math.min(Math.max(0, activeIndex), this.items.length - 1)];
+    this.activeId = active.id;
+    this.show(view, active);
   }
 
   /** Guarda en la pestaña activa lo que hay ahora mismo en la vista. */

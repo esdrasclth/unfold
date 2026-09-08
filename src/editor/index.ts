@@ -3,7 +3,7 @@ import { insertNewlineContinueMarkup, markdown, markdownLanguage } from "@codemi
 import { bracketMatching, indentOnInput } from "@codemirror/language";
 import { languages } from "@codemirror/language-data";
 import { highlightSelectionMatches, search, searchKeymap } from "@codemirror/search";
-import { EditorState, type Extension } from "@codemirror/state";
+import { Compartment, EditorState, type Extension } from "@codemirror/state";
 import {
   EditorView,
   drawSelection,
@@ -76,6 +76,9 @@ const nativeSpellcheck = EditorView.contentAttributes.of({
   autocapitalize: "off",
 });
 
+/** Compartimento común para alternar la vista renderizada por documento. */
+const previewCompartment = new Compartment();
+
 function baseExtensions(paste: PasteOptions, links: LinkHandlers): Extension {
   return [
     history(),
@@ -95,7 +98,7 @@ function baseExtensions(paste: PasteOptions, links: LinkHandlers): Extension {
       codeLanguages: languages,
       addKeymap: false,
     }),
-    livePreview(),
+    previewCompartment.of(livePreview()),
     unfoldTheme(),
     smartPaste(paste),
     clickableLinks(links),
@@ -158,5 +161,12 @@ export function replaceDocument(view: EditorView, doc: string): void {
 export function setTypewriter(view: EditorView, active: boolean): void {
   view.dispatch({
     effects: typewriterMode.reconfigure(active ? typewriter() : []),
+  });
+}
+
+/** Activa el modo Código fuente, mostrando todos los marcadores Markdown. */
+export function setSourceMode(view: EditorView, active: boolean): void {
+  view.dispatch({
+    effects: previewCompartment.reconfigure(active ? [] : livePreview()),
   });
 }

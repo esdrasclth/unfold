@@ -54,6 +54,10 @@ ahí la propia aplicación te avisa cuando hay una versión nueva.
 
 ## Qué sabe hacer
 
+Además, Unfold restaura la sesión (pestañas, borradores, cursor y posición) al
+volver a abrirlo. El menú contextual del editor reúne las construcciones
+Markdown disponibles y `Ctrl+Shift+M` alterna el modo Código fuente.
+
 - **Vista previa en vivo** de encabezados, negrita, cursiva, tachado, código,
   citas, listas, tareas, reglas e imágenes
 - **Tablas renderizadas** y navegables con `Tab`, sin salir del Markdown
@@ -83,6 +87,7 @@ ahí la propia aplicación te avisa cuando hay una versión nueva.
 | Esquema · Apariencia | `Ctrl+Shift+O` · `Ctrl+,` |
 | Exportar HTML · Imprimir o PDF | `Ctrl+Shift+E` · `Ctrl+P` |
 | Modo enfoque · Máquina de escribir | `Ctrl+Shift+F` · `Ctrl+Shift+T` |
+| Código fuente · Menú Markdown | `Ctrl+Shift+M` · clic derecho |
 | Pegar sin formato | `Ctrl+Shift+V` |
 | En tablas: celda · fila | `Tab` / `Shift+Tab` · `Enter` |
 
@@ -129,7 +134,6 @@ un issue para comentarlo.
 
 Lo que está pendiente y sería bienvenido:
 
-- Restaurar la última sesión al abrir
 - Diagramas Mermaid
 - Notas al pie y enlaces automáticos
 - Tablas dentro de citas o listas

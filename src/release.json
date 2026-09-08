@@ -1,9 +1,9 @@
 {
-  "version": "0.1.1",
+  "version": "0.2.0",
   "highlights": [
-    "**Pestañas y archivos recientes** para trabajar con varios documentos sin perder el historial de deshacer.",
-    "**Fórmulas con KaTeX y frontmatter YAML** renderizados sin modificar el Markdown original.",
-    "**Pegado inteligente**: convierte contenido del navegador a Markdown y guarda imágenes junto al documento.",
-    "**Apariencia configurable** con tipografías, tamaño, interlineado, ancho de lectura y colores de la interfaz."
+    "**Restauración de sesión**: recupera pestañas, borradores, cursor y posición al volver a abrir.",
+    "**Menú Markdown contextual** para insertar formato, listas, tablas, fórmulas, imágenes y bloques.",
+    "**Modo Código fuente** con `Ctrl+Shift+M` para alternar entre Markdown literal y vista renderizada.",
+    "**Landing renovada** con una presentación más clara de las capacidades de Unfold."
   ]
 }

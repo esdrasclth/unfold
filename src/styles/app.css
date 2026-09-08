@@ -184,16 +184,16 @@ body {
 
 #app {
   display: grid;
-  grid-template-rows: auto auto auto 1fr auto;
+  /* La pista central nunca debe encogerse según el contenido del editor. */
+  grid-template-rows: auto auto auto minmax(0, 1fr) auto;
   height: 100vh;
   background: var(--chrome);
   overflow: hidden;
 }
 
 /*
- * Flex y no rejilla: una columna `auto` se dimensiona por el contenido, y el
- * panel del esquema necesita que mande su ancho declarado para poder animarlo
- * hasta cero.
+ * El área central es una pista flexible y el panel del esquema necesita que
+ * mande su ancho declarado para poder animarlo hasta cero.
  */
 .workspace {
   display: flex;
@@ -1268,6 +1268,16 @@ body.typewriter-mode .cm-content {
   background: var(--chrome);
   box-shadow: 0 12px 34px rgba(0, 0, 0, 0.26);
   animation: menu-in var(--fast) var(--ease);
+}
+
+.markdown-menu {
+  max-height: calc(100vh - 1rem);
+  overflow-y: auto;
+}
+
+.markdown-menu-mode {
+  margin-top: 0.25rem;
+  border-top: 1px solid var(--chrome-rule);
 }
 
 @keyframes menu-in {

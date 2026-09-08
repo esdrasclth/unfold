@@ -46,6 +46,7 @@ src/
   ui/                    Paneles, menús, diálogos e iconos
   styles/                Variables de tema y tipografía del Markdown
   tabs.ts                Documentos abiertos
+  session.ts             Persistencia y restauración de la sesión
   files.ts               Sistema de archivos, con respaldo de navegador
   watcher.ts             Vigilancia del archivo abierto
   updates.ts             Comprobación de versiones nuevas

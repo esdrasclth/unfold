@@ -19,6 +19,7 @@ const paths: Record<string, string> = {
   sliders: '<path d="M4 8h9M17 8h3M4 16h3M11 16h9"/><circle cx="15" cy="8" r="2"/><circle cx="9" cy="16" r="2"/>',
   export: '<path d="M12 3.5v11M8.5 7 12 3.5 15.5 7"/><path d="M4.5 14v4.5a2 2 0 0 0 2 2h11a2 2 0 0 0 2-2V14"/>',
   print: '<path d="M7 9V4.5h10V9"/><path d="M5.5 9h13a2 2 0 0 1 2 2v5h-3.5M6 16H2.5v-5a2 2 0 0 1 2-2z" /><path d="M7 14h10v6H7z"/>',
+  code: '<path d="m8 7-5 5 5 5M16 7l5 5-5 5M14 4l-4 16"/>',
 };
 
 /** Devuelve un SVG de 24×24 trazado con currentColor. */

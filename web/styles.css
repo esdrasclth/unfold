@@ -819,3 +819,97 @@ h2.titulo { font-size: clamp(1.55rem, 3vw, 2.15rem); letter-spacing: -0.03em; }
   }
   .ventana, .ventana:hover { transform: none; }
 }
+
+/* --------------------------------------------------------------------------
+ * Capa visual startup: más contraste, profundidad y estados de interacción,
+ * sin salir de la paleta de papel, tinta y terracota de Unfold.
+ * -------------------------------------------------------------------------- */
+:root {
+  --sombra-card: 0 1px 2px rgba(32, 26, 16, 0.035), 0 18px 46px rgba(32, 26, 16, 0.075);
+}
+
+body {
+  background:
+    radial-gradient(circle at 84% 7%, rgba(180, 87, 42, 0.075), transparent 28rem),
+    var(--canvas);
+}
+
+::selection { background: color-mix(in srgb, var(--accent) 24%, transparent); }
+
+.nav {
+  border-bottom: 1px solid color-mix(in srgb, var(--rule) 70%, transparent);
+}
+
+.nav-marca { font-size: 1.03rem; }
+.nav-cta { border: 1px solid var(--rule-suave); box-shadow: 0 1px 2px rgba(32, 26, 16, 0.04); }
+
+.hero { padding-top: clamp(3.5rem, 9vh, 7rem); }
+.hero-texto { position: relative; z-index: 1; }
+.hero h1 { font-size: clamp(2.65rem, 5vw, 4.55rem); max-width: 10.5ch; }
+.entradilla { max-width: 40ch; }
+
+.btn:focus-visible,
+.nav a:focus-visible,
+.conmutador button:focus-visible,
+.bajar:focus-visible {
+  outline: 3px solid color-mix(in srgb, var(--accent) 42%, transparent);
+  outline-offset: 3px;
+}
+
+.ventana,
+.captura { border: 1px solid color-mix(in srgb, var(--text) 10%, transparent); }
+.ventana { box-shadow: var(--sombra-card), 0 0 0 12px rgba(180, 87, 42, 0.035); }
+
+.pilares { gap: 1rem; }
+.pilares article {
+  padding: 1.45rem 1.35rem 1.55rem;
+  border: 1px solid var(--rule-suave);
+  border-radius: 16px;
+  background: color-mix(in srgb, var(--canvas) 78%, var(--chrome));
+  box-shadow: 0 1px 1px rgba(32, 26, 16, 0.025);
+  transition: transform var(--medium) var(--ease), box-shadow var(--medium) var(--ease),
+              border-color var(--medium) var(--ease);
+}
+.pilares article:hover {
+  transform: translateY(-4px);
+  border-color: color-mix(in srgb, var(--accent) 28%, var(--rule));
+  box-shadow: var(--sombra-card);
+}
+
+.lista-larga { gap: 0.7rem; }
+.lista-larga li {
+  padding: 1.25rem 1.15rem;
+  border: 1px solid var(--rule-suave);
+  border-radius: 13px;
+  background: color-mix(in srgb, var(--canvas) 82%, var(--chrome));
+  box-shadow: none;
+  transition: transform var(--medium) var(--ease), background var(--medium) var(--ease),
+              border-color var(--medium) var(--ease);
+}
+.lista-larga li:hover {
+  transform: translateY(-2px);
+  background: var(--canvas);
+  border-color: color-mix(in srgb, var(--accent) 25%, var(--rule));
+}
+
+.captura { box-shadow: var(--sombra-card); }
+.cierre { border-radius: 22px; margin: 1rem 0 0; padding-inline: 1.5rem; }
+
+@media (max-width: 900px) {
+  .hero { padding-top: 3rem; }
+  .hero h1 { max-width: 14ch; }
+}
+
+@media (max-width: 520px) {
+  .nav { padding-inline: 1rem; }
+  .hero h1 { font-size: clamp(2.35rem, 12vw, 3.2rem); }
+  .acciones .btn { width: 100%; justify-content: center; }
+  .pilares article { padding: 1.2rem; }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .pilares article,
+  .lista-larga li {
+    transition-duration: 0.01ms !important;
+  }
+}

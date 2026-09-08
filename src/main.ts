@@ -4,6 +4,7 @@ import {
   createEditor,
   createEditorState,
   replaceDocument,
+  setSourceMode,
   setTypewriter,
   type EditorOptions,
 } from "./editor/index.ts";
@@ -20,6 +21,7 @@ import {
   type OpenedFile,
 } from "./files.ts";
 import { rememberRecent } from "./recent.ts";
+import { clearSession, loadSession, saveSession } from "./session.ts";
 import { Tabs } from "./tabs.ts";
 import { confirmDialog } from "./ui/confirmDialog.ts";
 import { RecentMenu } from "./ui/recentMenu.ts";
@@ -30,6 +32,7 @@ import { SettingsPanel } from "./ui/settings.ts";
 import { mountWindowControls } from "./ui/windowControls.ts";
 import { buscarActualizacion, instalarActualizacion, omitirVersion } from "./updates.ts";
 import { FileWatcher } from "./watcher.ts";
+import { closeMarkdownMenu, openMarkdownMenu } from "./ui/markdownMenu.ts";
 import { takeWelcome } from "./welcome.ts";
 import "./styles/app.css";
 import "./styles/markdown.css";
@@ -68,8 +71,10 @@ let tabBar: TabBar;
 let recentMenu: RecentMenu;
 let outline: Outline;
 let autosaveTimer: number | undefined;
+let sessionSaveTimer: number | undefined;
 /** La guía inicial se descarta al abrir el primer archivo si no se editó. */
 let welcomeTabId: number | null = null;
+let sourceMode = localStorage.getItem("unfold:source-mode") === "on";
 /** Contenido externo pendiente de resolver mientras hay conflicto. */
 let conflictContent: string | null = null;
 
@@ -92,6 +97,7 @@ app.innerHTML = `
       <button class="icon-button" id="btn-export" title="Exportar a HTML (Ctrl+Shift+E)">${icon("export")}</button>
       <button class="icon-button" id="btn-print" title="Imprimir o guardar en PDF (Ctrl+P)">${icon("print")}</button>
       <button class="icon-button" id="btn-typewriter" title="Modo máquina de escribir (Ctrl+Shift+T)">${icon("typewriter")}</button>
+      <button class="icon-button" id="btn-source" title="Código fuente">${icon("code")}</button>
       <button class="icon-button" id="btn-focus" title="Modo enfoque (Ctrl+Shift+F)">${icon("focus")}</button>
       <button class="icon-button" id="btn-theme" title="Cambiar tema">${icon("moon")}</button>
       <button class="icon-button" id="btn-settings" title="Apariencia (Ctrl+,)">${icon("sliders")}</button>
@@ -136,6 +142,7 @@ const el = {
   caret: document.querySelector<HTMLElement>("#stat-caret")!,
   theme: document.querySelector<HTMLButtonElement>("#btn-theme")!,
   typewriter: document.querySelector<HTMLButtonElement>("#btn-typewriter")!,
+  source: document.querySelector<HTMLButtonElement>("#btn-source")!,
   outlineButton: document.querySelector<HTMLButtonElement>("#btn-outline")!,
   settings: document.querySelector<HTMLElement>("#settings")!,
   settingsButton: document.querySelector<HTMLButtonElement>("#btn-settings")!,
@@ -193,6 +200,18 @@ function renderStats(doc: string): void {
   el.read.textContent = `${Math.max(1, Math.round(words / 200))} min de lectura`;
 }
 
+/** Guarda pestañas, borradores y posición sin escribir los archivos del usuario. */
+function saveCurrentSession(): void {
+  const snapshot = tabs.snapshot(view, welcomeTabId ?? undefined);
+  if (snapshot.tabs.length === 0) clearSession();
+  else saveSession(snapshot);
+}
+
+function scheduleSessionSave(): void {
+  window.clearTimeout(sessionSaveTimer);
+  sessionSaveTimer = window.setTimeout(saveCurrentSession, 250);
+}
+
 // --- Vigilancia del archivo ---------------------------------------------------
 
 const watcher = new FileWatcher({
@@ -248,6 +267,7 @@ async function persist(prompt: boolean): Promise<void> {
   }
   session.dirty = false;
   renderHeader();
+  scheduleSessionSave();
 }
 
 function applyFile(file: OpenedFile): void {
@@ -275,6 +295,8 @@ function afterTabChange(): void {
   // El modo máquina de escribir vive en un compartimento del estado, y el
   // estado nuevo trae el suyo vacío: hay que reponerlo en cada cambio.
   applyTypewriter();
+  applySourceMode();
+  scheduleSessionSave();
   void watcher.watch(session.path);
   view.focus();
 }
@@ -401,6 +423,20 @@ function applyTypewriter(): void {
   document.body.classList.toggle("typewriter-mode", typewriterOn);
 }
 
+function applySourceMode(): void {
+  setSourceMode(view, sourceMode);
+  el.source.classList.toggle("is-on", sourceMode);
+  el.source.title = sourceMode ? "Vista renderizada" : "Código fuente";
+  document.body.classList.toggle("source-mode", sourceMode);
+}
+
+function toggleSourceMode(): void {
+  sourceMode = !sourceMode;
+  localStorage.setItem("unfold:source-mode", sourceMode ? "on" : "off");
+  applySourceMode();
+  view.focus();
+}
+
 function toggleTypewriter(): void {
   typewriterOn = !typewriterOn;
   localStorage.setItem("unfold:typewriter", typewriterOn ? "on" : "off");
@@ -451,14 +487,18 @@ const editorOptions: EditorOptions = {
   onSelection: (line, column) => {
     el.caret.textContent = `Ln ${line}, Col ${column}`;
     if (outlineOn) outline.refresh();
+    scheduleSessionSave();
   },
   onChange: (doc) => {
+    // La guía inicial deja de ser efímera en cuanto el usuario la edita.
+    if (welcomeTabId !== null && tabs.active().id === welcomeTabId) welcomeTabId = null;
     session.dirty = true;
     if (!session.path) session.name = titleFromDoc(doc);
     renderHeader();
     renderStats(doc);
     scheduleAutosave();
     if (outlineOn) outline.refresh();
+    scheduleSessionSave();
   },
   links: {
     notify,
@@ -515,8 +555,35 @@ settingsPanel = new SettingsPanel(el.settings, () => toggleSettings(false));
 renderHeader();
 renderStats(initialDocument);
 applyTypewriter();
+applySourceMode();
 applyOutline();
 view.focus();
+
+async function restoreSession(): Promise<void> {
+  const saved = loadSession();
+  if (!saved) return;
+
+  // Los archivos limpios se leen de nuevo desde disco; los sucios conservan
+  // el borrador local para no perder cambios que aún no llegaron al archivo.
+  const snapshots = [];
+  for (const snapshot of saved.tabs) {
+    if (snapshot.path && !snapshot.dirty) {
+      try {
+        snapshot.content = await readFile(snapshot.path);
+      } catch {
+        continue;
+      }
+    }
+    snapshots.push(snapshot);
+  }
+  if (snapshots.length === 0) {
+    clearSession();
+    return;
+  }
+  tabs.restore(view, snapshots, saved.active);
+  welcomeTabId = null;
+  afterTabChange();
+}
 
 document.querySelector("#btn-open")!.addEventListener("click", () => void load());
 document.querySelector("#btn-save")!.addEventListener("click", () => void persist(false));
@@ -526,9 +593,14 @@ document.querySelector("#btn-print")!.addEventListener("click", () => printDocum
 document.querySelector("#btn-focus")!.addEventListener("click", toggleFocusMode);
 el.outlineButton.addEventListener("click", toggleOutline);
 el.typewriter.addEventListener("click", toggleTypewriter);
+el.source.addEventListener("click", toggleSourceMode);
 el.theme.addEventListener("click", toggleTheme);
 el.settingsButton.addEventListener("click", () => toggleSettings());
 el.recentButton.addEventListener("click", () => recentMenu.toggle());
+view.dom.addEventListener("contextmenu", (event) => {
+  openMarkdownMenu(event, view, sourceMode, toggleSourceMode);
+});
+window.addEventListener("resize", closeMarkdownMenu);
 
 document.querySelector("#conflict-reload")!.addEventListener("click", () => resolveConflict(false));
 document.querySelector("#conflict-keep")!.addEventListener("click", () => resolveConflict(true));
@@ -563,14 +635,17 @@ if (isTauri) {
         // Si se descartó, la pestaña sigue marcada como sucia: se limpia para
         // no volver a preguntar por ella en la siguiente vuelta.
         pending.dirty = false;
+        saveCurrentSession();
       }
 
       closing = true;
+      saveCurrentSession();
       await appWindow.destroy();
     });
 
     const startup = await invoke<string | null>("startup_file");
     if (startup) await loadPath(startup);
+    else await restoreSession();
 
     await getCurrentWebview().onDragDropEvent((event) => {
       if (event.payload.type !== "drop") return;
@@ -578,6 +653,8 @@ if (isTauri) {
       if (dropped) void loadPath(dropped);
     });
   })();
+} else {
+  void restoreSession();
 }
 
 // El puntero sólo se vuelve mano sobre los enlaces mientras se mantiene Ctrl:
@@ -683,5 +760,8 @@ window.addEventListener("keydown", (event) => {
   } else if (key === "t" && event.shiftKey) {
     event.preventDefault();
     toggleTypewriter();
+  } else if (key === "m" && event.shiftKey) {
+    event.preventDefault();
+    toggleSourceMode();
   }
 });
