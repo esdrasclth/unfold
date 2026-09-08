@@ -416,6 +416,9 @@ body {
 
 .editor-host .cm-editor {
   height: 100%;
+  /* Ctrl++/Ctrl+- cambia un solo paso; la transición conserva continuidad
+   * visual mientras CodeMirror recalcula el flujo del documento. */
+  transition: font-size var(--medium) var(--ease);
 }
 
 /* --- Barra de estado -------------------------------------------------------- */

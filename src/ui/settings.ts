@@ -130,54 +130,63 @@ export class SettingsPanel {
     const bodyFont = q<HTMLSelectElement>("set-body-font");
     const codeFont = q<HTMLSelectElement>("set-code-font");
 
-    const paint = (): void => {
-      size.value = String(this.settings.fontSize);
-      line.value = String(this.settings.lineHeight);
-      measure.value = String(this.settings.measure);
-      bodyFont.value = this.settings.bodyFont;
-      codeFont.value = this.settings.codeFont;
-      q("val-size").textContent = `${this.settings.fontSize} px`;
-      q("val-line").textContent = this.settings.lineHeight.toFixed(2);
-      // Caracteres por línea = ancho / anchura media de letra. Tiene que
-      // depender también del tamaño: con letra grande caben menos en el mismo
-      // ancho, y calcularlo sólo con la medida daba una cifra falsa.
-      const columnPx = this.settings.measure * 16;
-      const averageGlyph = this.settings.fontSize * 0.5;
-      q("val-measure").textContent = `≈ ${Math.round(columnPx / averageGlyph)} caracteres`;
-      for (const swatch of this.root.querySelectorAll<HTMLElement>("[data-chrome]")) {
-        swatch.classList.toggle("is-on", swatch.dataset.chrome === this.settings.chrome);
-      }
-    };
-
-    const commit = (patch: Partial<Settings>): void => {
-      this.settings = { ...this.settings, ...patch };
-      applySettings(this.settings);
-      saveSettings(this.settings);
-      paint();
-    };
-
     // `input` y no `change`: el documento debe cambiar mientras se arrastra.
-    size.addEventListener("input", () => commit({ fontSize: Number(size.value) }));
-    line.addEventListener("input", () => commit({ lineHeight: Number(line.value) }));
-    measure.addEventListener("input", () => commit({ measure: Number(measure.value) }));
-    bodyFont.addEventListener("change", () => commit({ bodyFont: bodyFont.value }));
-    codeFont.addEventListener("change", () => commit({ codeFont: codeFont.value }));
+    size.addEventListener("input", () => this.commit({ fontSize: Number(size.value) }));
+    line.addEventListener("input", () => this.commit({ lineHeight: Number(line.value) }));
+    measure.addEventListener("input", () => this.commit({ measure: Number(measure.value) }));
+    bodyFont.addEventListener("change", () => this.commit({ bodyFont: bodyFont.value }));
+    codeFont.addEventListener("change", () => this.commit({ codeFont: codeFont.value }));
 
     q("set-chrome").addEventListener("click", (event) => {
       const button = (event.target as HTMLElement | null)?.closest<HTMLElement>("[data-chrome]");
       if (!button) return;
       // El acento va incluido en la barra: se aplica solo al elegirla.
-      commit({ chrome: button.dataset.chrome as ChromeName });
+      this.commit({ chrome: button.dataset.chrome as ChromeName });
     });
 
-    q("settings-reset").addEventListener("click", () => commit({ ...DEFAULTS }));
+    q("settings-reset").addEventListener("click", () => this.commit({ ...DEFAULTS }));
     q("settings-close").addEventListener("click", () => this.onClose());
     if (this.updates) {
       q("settings-check-updates").addEventListener("click", () => this.updates?.check());
       q("settings-reset-updates").addEventListener("click", () => this.updates?.resetDismissed());
     }
 
-    paint();
+    this.paint();
+  }
+
+  private paint(): void {
+    const q = <T extends HTMLElement>(id: string): T => this.root.querySelector<T>(`#${id}`)!;
+    q<HTMLInputElement>("set-size").value = String(this.settings.fontSize);
+    q<HTMLInputElement>("set-line").value = String(this.settings.lineHeight);
+    q<HTMLInputElement>("set-measure").value = String(this.settings.measure);
+    q<HTMLSelectElement>("set-body-font").value = this.settings.bodyFont;
+    q<HTMLSelectElement>("set-code-font").value = this.settings.codeFont;
+    q("val-size").textContent = `${this.settings.fontSize} px`;
+    q("val-line").textContent = this.settings.lineHeight.toFixed(2);
+    // Caracteres por línea = ancho / anchura media de letra. Tiene que
+    // depender también del tamaño: con letra grande caben menos en el mismo
+    // ancho, y calcularlo sólo con la medida daba una cifra falsa.
+    const columnPx = this.settings.measure * 16;
+    const averageGlyph = this.settings.fontSize * 0.5;
+    q("val-measure").textContent = `≈ ${Math.round(columnPx / averageGlyph)} caracteres`;
+    for (const swatch of this.root.querySelectorAll<HTMLElement>("[data-chrome]")) {
+      swatch.classList.toggle("is-on", swatch.dataset.chrome === this.settings.chrome);
+    }
+  }
+
+  private commit(patch: Partial<Settings>): void {
+    this.settings = { ...this.settings, ...patch };
+    applySettings(this.settings);
+    saveSettings(this.settings);
+    this.paint();
+  }
+
+  /** Ajusta el contenido un paso y mantiene sincronizado el panel de apariencia. */
+  zoomContent(direction: 1 | -1): number {
+    const { min, max, step } = LIMITS.fontSize;
+    const next = Math.min(max, Math.max(min, this.settings.fontSize + direction * step));
+    if (next !== this.settings.fontSize) this.commit({ fontSize: next });
+    return next;
   }
 
   setOpen(open: boolean): void {

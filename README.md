@@ -84,6 +84,7 @@ Markdown disponibles y `Ctrl+Shift+M` alterna el modo Código fuente.
 | Enlace · Seguir un enlace | `Ctrl+K` · `Ctrl` + clic |
 | Encabezado 1–6 · Quitar | `Ctrl+1` … `Ctrl+6` · `Ctrl+0` |
 | Buscar y reemplazar | `Ctrl+F` |
+| Acercar · Alejar el contenido | `Ctrl++` · `Ctrl+-` |
 | Esquema · Apariencia | `Ctrl+Shift+O` · `Ctrl+,` |
 | Exportar HTML · Imprimir o PDF | `Ctrl+Shift+E` · `Ctrl+P` |
 | Modo enfoque · Máquina de escribir | `Ctrl+Shift+F` · `Ctrl+Shift+T` |

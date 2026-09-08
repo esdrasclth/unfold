@@ -895,6 +895,23 @@ window.addEventListener("keydown", (event) => {
   if (!event.ctrlKey && !event.metaKey) return;
   const key = event.key.toLowerCase();
 
+  // Los navegadores reservan estos atajos para ampliar toda la interfaz. En
+  // Unfold sólo cambia el documento: el cromo conserva su tamaño y el control
+  // de Apariencia permanece sincronizado. `=` cubre Ctrl+=, que es la forma
+  // de escribir Ctrl++ en muchos teclados sin que Shift llegue como `+`.
+  // AltGr se presenta como Ctrl+Alt en algunos teclados; no debe convertirse
+  // accidentalmente en zoom al escribir un símbolo.
+  const zoomIn =
+    !event.altKey &&
+    (event.key === "+" || event.key === "=" || event.code === "NumpadAdd");
+  const zoomOut = !event.altKey && (event.key === "-" || event.code === "NumpadSubtract");
+  if (zoomIn || zoomOut) {
+    event.preventDefault();
+    const fontSize = settingsPanel.zoomContent(zoomIn ? 1 : -1);
+    notify(`Tamaño del texto: ${fontSize} px`);
+    return;
+  }
+
   if (event.key === ",") {
     event.preventDefault();
     toggleSettings();

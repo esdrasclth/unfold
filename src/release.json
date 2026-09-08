@@ -1,7 +1,7 @@
 {
-  "version": "0.2.2",
+  "version": "0.2.3",
   "highlights": [
-    "**Barra de estado siempre abajo**: los contadores de palabras y caracteres permanecen en el borde inferior, incluso con documentos vacíos y al redimensionar la ventana.",
-    "**Distribución estable** al mostrar u ocultar los avisos de actualización y conflicto."
+    "**Zoom del contenido con el teclado**: usa Ctrl++ para acercar y Ctrl+- para alejar el documento.",
+    "**Cambios suaves y persistentes**: el tamaño avanza en pasos pequeños, se conserva entre sesiones y permanece sincronizado con Apariencia."
   ]
 }
