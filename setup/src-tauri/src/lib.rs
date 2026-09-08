@@ -82,9 +82,16 @@ fn abrir_unfold(destino: String) -> Result<(), String> {
 fn desinstalar(destino: String, borrar_datos: bool) -> Result<(), String> {
     let exe = PathBuf::from(&destino).join("uninstall.exe");
     if !exe.exists() { return Err("No se encontró el desinstalador de Unfold.".into()); }
+    if borrar_datos {
+        for base in ["APPDATA", "LOCALAPPDATA"] {
+            if let Ok(root) = std::env::var(base) {
+                let data = PathBuf::from(root).join("com.esdras.unfold");
+                if data.exists() { let _ = std::fs::remove_dir_all(data); }
+            }
+        }
+    }
     let mut command = Command::new(&exe);
     command.arg("/S");
-    if borrar_datos { command.arg("/DELETE-DATA"); }
     command.spawn().map_err(|e| format!("No se pudo iniciar el desinstalador: {e}"))?;
     Ok(())
 }
