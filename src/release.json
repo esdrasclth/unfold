@@ -1,9 +1,9 @@
 {
-  "version": "0.4.1",
+  "version": "0.5.0",
   "highlights": [
-    "**El instalador adelgaza a la mitad**: la compilación llevaba dentro diecisiete megas de mapas de código que no le servían a nadie.",
-    "**Arranca con menos peso**: KaTeX ya no se carga al abrir, sino la primera vez que hay una fórmula que pintar. La mayoría de los documentos no llevan ninguna.",
-    "**Publicar dice en qué paso va** —confirmar, comprobar el remoto, subir— en vez de quedarse callado justo cuando más se espera, y tiene atajo: `Ctrl+Shift+U`.",
-    "**Los diálogos ya no dejan escapar el teclado**: con Tab te quedas dentro, y al cerrarlos el foco vuelve donde estaba."
+    "**Abre carpetas del disco** en el explorador, no sólo repositorios de GitHub: el `+` de la cabecera, y se recuerdan al reiniciar.",
+    "**Busca en todos tus documentos a la vez** con `Ctrl+Shift+L`, en carpetas y repositorios juntos. Abrir un resultado lleva el cursor a su línea.",
+    "**El historial y la sesión pasan a disco**: en el almacenamiento del navegador no cabían, y al llenarse dejaban de guardar sin avisar.",
+    "**Una sola ventana**: abrir un `.md` con Unfold ya abierto lo trae a la que tienes, en vez de arrancar otra instancia que se pisara con ella."
   ]
 }
