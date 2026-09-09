@@ -2,7 +2,8 @@
   "version": "0.4.1",
   "highlights": [
     "**El instalador adelgaza a la mitad**: la compilación llevaba dentro diecisiete megas de mapas de código que no le servían a nadie.",
-    "**Publicar dice en qué paso va** —confirmar, comprobar el remoto, subir— en vez de quedarse callado justo cuando más se espera.",
-    "**Publicar tiene atajo**: `Ctrl+Shift+U`."
+    "**Arranca con menos peso**: KaTeX ya no se carga al abrir, sino la primera vez que hay una fórmula que pintar. La mayoría de los documentos no llevan ninguna.",
+    "**Publicar dice en qué paso va** —confirmar, comprobar el remoto, subir— en vez de quedarse callado justo cuando más se espera, y tiene atajo: `Ctrl+Shift+U`.",
+    "**Los diálogos ya no dejan escapar el teclado**: con Tab te quedas dentro, y al cerrarlos el foco vuelve donde estaba."
   ]
 }
