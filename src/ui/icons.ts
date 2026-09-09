@@ -9,6 +9,8 @@ const paths: Record<string, string> = {
   file: '<path d="M6.5 3.5h7l4 4v13h-11z"/><path d="M13.5 3.5v4h4"/>',
   up: '<path d="m7 14 5-5 5 5"/>',
   down: '<path d="m7 10 5 5 5-5"/>',
+  // Igual que `down`, girado: el desplegable que abre la fila de reemplazo.
+  chevronRight: '<path d="m10 7 5 5-5 5"/>',
   close: '<path d="m6.5 6.5 11 11M17.5 6.5l-11 11"/>',
   // Líneas de texto con la del medio resaltada: la que el modo mantiene centrada.
   typewriter: '<path d="M4 7h16M4 17h16" opacity=".45"/><path d="M4 12h11"/><path d="M18.5 10.5v3"/>',

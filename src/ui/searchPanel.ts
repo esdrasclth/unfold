@@ -42,25 +42,54 @@ function summarize(view: EditorView, query: SearchQuery): string {
 export function unfoldSearchPanel(view: EditorView): Panel {
   const dom = document.createElement("div");
   dom.className = "search-panel";
+  /*
+   * Las opciones viven dentro del campo, donde se buscan, y no sueltas entre
+   * el contador y las flechas. Y reemplazar se despliega: la mayoría de las
+   * búsquedas no reemplazan nada, y tenerlo siempre puesto le costaba el doble
+   * de alto al atajo que más se usa.
+   */
   dom.innerHTML = `
     <div class="search-row">
-      <input class="search-field" id="sp-find" placeholder="Buscar" autocomplete="off" />
-      <span class="search-count" id="sp-count"></span>
-      <div class="search-toggles">
-        <button class="search-toggle" id="sp-case" title="Distinguir mayúsculas">Aa</button>
-        <button class="search-toggle" id="sp-word" title="Palabra completa">ab|</button>
-        <button class="search-toggle" id="sp-regex" title="Expresión regular">.*</button>
+      <button class="search-expand" id="sp-expand" title="Reemplazar" aria-expanded="false">
+        ${icon("chevronRight")}
+      </button>
+      <div class="search-field-wrap">
+        <input class="search-field" id="sp-find" placeholder="Buscar" autocomplete="off" />
+        <div class="search-toggles">
+          <button class="search-toggle" id="sp-case" title="Distinguir mayúsculas" aria-pressed="false">Aa</button>
+          <button class="search-toggle" id="sp-word" title="Palabra completa" aria-pressed="false">ab|</button>
+          <button class="search-toggle" id="sp-regex" title="Expresión regular" aria-pressed="false">.*</button>
+        </div>
       </div>
+      <span class="search-count" id="sp-count"></span>
       <button class="icon-button" id="sp-prev" title="Anterior (Shift+Enter)">${icon("up")}</button>
       <button class="icon-button" id="sp-next" title="Siguiente (Enter)">${icon("down")}</button>
       <button class="icon-button" id="sp-close" title="Cerrar (Esc)">${icon("close")}</button>
     </div>
-    <div class="search-row">
-      <input class="search-field" id="sp-replace" placeholder="Reemplazar por" autocomplete="off" />
-      <button class="search-action" id="sp-one">Reemplazar</button>
-      <button class="search-action" id="sp-all">Todo</button>
+    <div class="search-replace-row">
+      <div class="search-row">
+        <span class="search-expand-hueco" aria-hidden="true"></span>
+        <div class="search-field-wrap">
+          <input class="search-field" id="sp-replace" placeholder="Reemplazar por" autocomplete="off" />
+        </div>
+        <button class="search-action" id="sp-one">Reemplazar</button>
+        <button class="search-action" id="sp-all">Todo</button>
+      </div>
     </div>
   `;
+
+  const REPLACE_KEY = "unfold:search-replace";
+  const expand = dom.querySelector<HTMLButtonElement>("#sp-expand")!;
+  const setReplacing = (on: boolean): void => {
+    dom.classList.toggle("is-replacing", on);
+    expand.setAttribute("aria-expanded", String(on));
+    localStorage.setItem(REPLACE_KEY, on ? "on" : "off");
+  };
+  expand.addEventListener("click", () => {
+    const on = !dom.classList.contains("is-replacing");
+    setReplacing(on);
+    if (on) dom.querySelector<HTMLInputElement>("#sp-replace")!.focus();
+  });
 
   const find = dom.querySelector<HTMLInputElement>("#sp-find")!;
   const replace = dom.querySelector<HTMLInputElement>("#sp-replace")!;
@@ -131,6 +160,7 @@ export function unfoldSearchPanel(view: EditorView): Panel {
     dom,
     top: true,
     mount() {
+      setReplacing(localStorage.getItem(REPLACE_KEY) === "on");
       const existing = getSearchQuery(view.state);
       if (existing.search) find.value = existing.search;
       toggles.case.classList.toggle("is-on", existing.caseSensitive);
