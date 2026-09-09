@@ -30,6 +30,20 @@ export interface RepositoryPanelOptions {
   watch?: RepositoryWatch;
 }
 
+/** Desde cuántos días antes se avisa de que la sesión se acaba. */
+const AVISO_CADUCIDAD_DIAS = 14;
+
+/**
+ * Días que faltan para una caducidad en segundos Unix.
+ *
+ * Se redondea hacia arriba: faltando hora y media, «caduca mañana» describe
+ * mejor lo que va a pasar que «caduca en 0 días».
+ */
+function diasHastaCaducar(expiresAt: number | null): number | null {
+  if (!expiresAt) return null;
+  return Math.ceil((expiresAt * 1000 - Date.now()) / 86_400_000);
+}
+
 /** El octocat que ocupa el hueco del avatar mientras no hay sesión. */
 function sinConexion(): Node {
   const wrapper = document.createElement("span");
@@ -145,6 +159,8 @@ export class RepositoryPanel {
   private readonly watchTimers = new Map<number, number>();
   private readonly repositoryGenerations = new Map<number, number>();
   private disposed = false;
+  /** Última sesión conocida, para poder repintar el pie sin volver a pedirla. */
+  private account: GithubAuthStatus | null = null;
 
   private readonly inner: HTMLElement;
   private readonly list: HTMLElement;
@@ -219,7 +235,8 @@ export class RepositoryPanel {
    * inicial sobre el acento no es un adorno: es lo que se ve la mitad de las
    * veces que se abre el portátil en un tren.
    */
-  setAccount(status: GithubAuthStatus): void {
+  setAccount(status: GithubAuthStatus, repositories = this.repositories.length): void {
+    this.account = status;
     const avatar = this.root.querySelector<HTMLElement>("#repos-avatar")!;
     const name = this.root.querySelector<HTMLElement>("#repos-account-name")!;
     const meta = this.root.querySelector<HTMLElement>("#repos-account-meta")!;
@@ -255,8 +272,36 @@ export class RepositoryPanel {
     }
 
     name.textContent = user.name || user.login;
-    meta.textContent = `@${user.login}`;
-    button.title = `Sesión de GitHub iniciada como @${user.login} — administrar repositorios`;
+
+    /*
+     * La segunda línea dice una cosa, y siempre la más urgente. En marcha
+     * normal, quién eres y cuánto tienes conectado; si la sesión se va a
+     * acabar, eso, porque es lo único ahí que pide hacer algo.
+     */
+    const dias = diasHastaCaducar(status.refreshExpiresAt ?? null);
+    const caduca = dias !== null && dias <= AVISO_CADUCIDAD_DIAS;
+    button.classList.toggle("is-expiring", caduca);
+
+    if (caduca) {
+      meta.textContent =
+        dias <= 0
+          ? "La sesión ha caducado: vuelve a conectar"
+          : dias === 1
+            ? "La sesión caduca mañana"
+            : `La sesión caduca en ${dias} días`;
+    } else {
+      const cuenta =
+        repositories === 0
+          ? "sin repositorios"
+          : repositories === 1
+            ? "1 repositorio"
+            : `${repositories} repositorios`;
+      meta.textContent = `@${user.login} · ${cuenta}`;
+    }
+
+    button.title = caduca
+      ? `@${user.login} — ${meta.textContent}. Vuelve a conectar desde aquí.`
+      : `Sesión de GitHub iniciada como @${user.login} — administrar repositorios`;
   }
 
   /** Marca el documento que está en pantalla, si pertenece a un repositorio. */
@@ -317,6 +362,8 @@ export class RepositoryPanel {
       );
       if (generation !== this.generation) return;
       this.documents = new Map(loaded);
+      // El contador del pie sale del catálogo, así que se repinta con él.
+      if (this.account) this.setAccount(this.account, repositories.length);
       void this.syncWatchers();
     } catch (error) {
       if (generation !== this.generation) return;
@@ -488,26 +535,39 @@ export class RepositoryPanel {
       const open = !this.collapsedRepos.has(repository.id);
       if (open) block.classList.add("is-open");
 
-      const head = document.createElement("button");
+      /*
+       * La cabecera es una fila con dos botones y no un botón con cosas
+       * dentro: crear un documento vivía en una fila entera debajo, y una fila
+       * por repositorio es mucho sitio para una acción que cabe en el hueco
+       * que ya sobra aquí al lado del nombre.
+       */
+      const head = document.createElement("div");
       head.className = "repo-head";
-      head.type = "button";
-      head.setAttribute("aria-expanded", String(open));
-      head.innerHTML = `
+
+      const toggle = document.createElement("button");
+      toggle.className = "repo-toggle";
+      toggle.type = "button";
+      toggle.setAttribute("aria-expanded", String(open));
+      toggle.innerHTML = `
         <span class="repos-caret" aria-hidden="true">▸</span>
         <span class="repo-name"></span>
         <span class="repo-summary"></span>
       `;
-      head.querySelector<HTMLElement>(".repo-name")!.textContent = repository.fullName;
-      head.querySelector<HTMLElement>(".repo-summary")!.textContent = summaryOf(repository);
-      head.addEventListener("click", () => {
+      toggle.querySelector<HTMLElement>(".repo-name")!.textContent = repository.fullName;
+      const resumen = summaryOf(repository);
+      toggle.querySelector<HTMLElement>(".repo-summary")!.textContent = resumen;
+      // El resumen se recorta en paneles estrechos; el título lo da entero.
+      toggle.title = `${repository.fullName} — ${resumen}`;
+      toggle.addEventListener("click", () => {
         if (this.collapsedRepos.has(repository.id)) this.collapsedRepos.delete(repository.id);
         else this.collapsedRepos.add(repository.id);
         this.render();
       });
+      head.append(toggle);
+      if (!repository.missing) head.append(this.createAction(repository));
       block.append(head);
 
       if (open) {
-        if (!repository.missing) block.append(this.createAction(repository));
         const publish = this.publishAction(repository);
         if (publish) block.append(publish);
         const documents = this.documents.get(repository.id) ?? [];
@@ -528,7 +588,9 @@ export class RepositoryPanel {
     const button = document.createElement("button");
     button.className = "repos-create";
     button.type = "button";
-    button.textContent = "Nuevo documento";
+    button.title = `Nuevo documento en ${repository.fullName}`;
+    button.setAttribute("aria-label", button.title);
+    button.innerHTML = icon("plus");
     button.addEventListener("click", () => this.options.onCreate(repository));
     return button;
   }

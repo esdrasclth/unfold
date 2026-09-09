@@ -2557,6 +2557,11 @@ body.typewriter-mode .cm-content {
   box-shadow: 0 0 0 2px var(--chrome);
 }
 
+/* Y en acento cuando la sesión se acaba: el mismo sitio, otro color, sin
+   añadir ni una línea de alto al pie. */
+.repos-account.is-expiring .repos-account-avatar::after { background: var(--accent); }
+.repos-account.is-expiring .repos-account-meta { color: var(--accent-chrome); }
+
 /* El acceso a administrar sólo se anuncia cuando se apunta al pie. */
 .repos-account-go {
   flex: none;
@@ -2578,10 +2583,20 @@ body.typewriter-mode .cm-content {
 }
 
 .repo-head {
+  display: flex;
+  align-items: center;
+  gap: 0.2rem;
+  border-radius: 7px;
+}
+
+.repo-head:hover { background: var(--chrome-hover); }
+
+.repo-toggle {
   display: grid;
   grid-template-columns: 0.9rem 1fr;
   gap: 0 0.3rem;
-  width: 100%;
+  flex: 1;
+  min-width: 0;
   padding: 0.35rem 0.4rem;
   border: 0;
   border-radius: 7px;
@@ -2591,8 +2606,7 @@ body.typewriter-mode .cm-content {
   cursor: pointer;
 }
 
-.repo-head:hover,
-.repo-head:focus-visible {
+.repo-toggle:focus-visible {
   background: var(--chrome-hover);
   outline: none;
 }
@@ -2621,11 +2635,11 @@ body.typewriter-mode .cm-content {
   transition: transform var(--fast) var(--ease), color var(--fast) var(--ease);
 }
 
-.repo-head .repos-caret { color: var(--chrome-soft); }
+.repo-toggle .repos-caret { color: var(--chrome-soft); }
 .repo-head:hover .repos-caret,
 .repos-folder:hover .repos-caret { color: var(--chrome-text); }
 
-.repo.is-open > .repo-head .repos-caret,
+.repo.is-open .repo-toggle .repos-caret,
 .repos-folder.is-open .repos-caret {
   transform: rotate(90deg);
 }
@@ -2761,15 +2775,13 @@ body.typewriter-mode .cm-content {
  * los repositorios: con el mismo peso eran dos bloques grises apilados que
  * empujaban el árbol hacia abajo y no decían cuál importaba.
  */
-.repos-publish,
-.repos-create {
+.repos-publish {
   width: calc(100% - 0.8rem);
   margin: 0.1rem 0.4rem 0.3rem;
   border-radius: 7px;
   font: inherit;
   cursor: pointer;
-  transition: background var(--fast) var(--ease), border-color var(--fast) var(--ease),
-              color var(--fast) var(--ease);
+  transition: background var(--fast) var(--ease), color var(--fast) var(--ease);
 }
 
 .repos-publish {
@@ -2785,28 +2797,34 @@ body.typewriter-mode .cm-content {
   background: color-mix(in srgb, var(--accent) 26%, transparent);
 }
 
-/* Discreta: un renglón con su cruz, no un bloque. */
+/*
+ * Crear un documento cabe en el hueco que ya sobra al lado del nombre del
+ * repositorio. Ocupando una fila propia costaba veintidós píxeles por
+ * repositorio para una acción que no se usa todos los días.
+ */
 .repos-create {
-  display: flex;
-  align-items: center;
-  gap: 0.35rem;
-  padding: 0.22rem 0.5rem;
+  flex: none;
+  display: grid;
+  place-items: center;
+  width: 22px;
+  height: 22px;
+  margin-right: 0.15rem;
+  padding: 0;
   border: 0;
+  border-radius: 6px;
   background: transparent;
   color: var(--chrome-faint);
-  font-size: 11px;
-  text-align: left;
+  cursor: pointer;
+  transition: background var(--fast) var(--ease), color var(--fast) var(--ease);
 }
 
-.repos-create::before {
-  content: "+";
-  font-size: 13px;
-  line-height: 1;
-}
+.repos-create svg { width: 15px; height: 15px; }
 
-.repos-create:hover {
-  background: var(--chrome-hover);
+.repos-create:hover,
+.repos-create:focus-visible {
+  background: var(--chrome-pressed);
   color: var(--chrome-text);
+  outline: none;
 }
 
 .commit-dialog {

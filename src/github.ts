@@ -26,7 +26,16 @@ export interface GithubUser {
 export interface GithubAuthStatus {
   connected: boolean;
   user: GithubUser | null;
+  /**
+   * Caducidad del token de acceso, en segundos Unix. No sirve para avisar de
+   * nada: se renueva solo cada pocas horas sin que el usuario intervenga.
+   */
   expiresAt: number | null;
+  /**
+   * Caducidad del token de refresco. Ésta sí acaba la sesión: cuando vence hay
+   * que volver a autorizar la aplicación a mano.
+   */
+  refreshExpiresAt?: number | null;
 }
 
 export interface GithubRepository {

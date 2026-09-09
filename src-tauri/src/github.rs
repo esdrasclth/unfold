@@ -239,7 +239,12 @@ impl GithubUser {
 pub struct GithubAuthStatus {
     connected: bool,
     user: Option<GithubUser>,
+    /// Caducidad del token de acceso. Se renueva solo, así que no es un aviso
+    /// que darle a nadie: cambia cada pocas horas sin que pase nada.
     expires_at: Option<u64>,
+    /// Caducidad del token de refresco, que es la que sí acaba la sesión: el
+    /// día que vence hay que volver a autorizar a mano.
+    refresh_expires_at: Option<u64>,
 }
 
 #[derive(Deserialize)]
@@ -511,16 +516,18 @@ pub async fn github_auth_status(
             connected: false,
             user: None,
             expires_at: None,
+            refresh_expires_at: None,
         });
     };
 
     match current_user(&client, &token).await {
         Ok(user) => {
-            let expires_at = load_credential()?.and_then(|stored| stored.access_expires_at);
+            let stored = load_credential()?;
             Ok(GithubAuthStatus {
                 connected: true,
                 user: Some(user),
-                expires_at,
+                expires_at: stored.as_ref().and_then(|value| value.access_expires_at),
+                refresh_expires_at: stored.and_then(|value| value.refresh_expires_at),
             })
         }
         Err(ApiError::Unauthorized) => {
@@ -529,6 +536,7 @@ pub async fn github_auth_status(
                 connected: false,
                 user: None,
                 expires_at: None,
+                refresh_expires_at: None,
             })
         }
         Err(ApiError::Other(error)) => Err(error),

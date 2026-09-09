@@ -200,9 +200,31 @@ panel.setAccount({
   expiresAt: null,
 });
 assert.equal(root.querySelector("#repos-account-name").textContent, "Ada Lovelace");
-assert.equal(root.querySelector("#repos-account-meta").textContent, "@ada");
 assert.equal(root.querySelector(".repos-account-initial").textContent, "A");
 assert.ok(root.querySelector("#repos-manage").classList.contains("is-connected"));
+// Cuenta y contador comparten renglón: el pie no puede crecer.
+assert.equal(root.querySelector("#repos-account-meta").textContent, "@ada · 1 repositorio");
+
+// El aviso sustituye a la línea en vez de añadir otra, y sólo lo dispara el
+// token de refresco: el de acceso se renueva solo y avisar de él sería mentir.
+const enDias = (dias) => Math.floor(Date.now() / 1000) + dias * 86400;
+const sesion = (refreshExpiresAt) => ({
+  connected: true,
+  user: { login: "ada", name: "Ada Lovelace", avatarUrl: "", htmlUrl: "" },
+  expiresAt: enDias(0),
+  refreshExpiresAt,
+});
+panel.setAccount(sesion(enDias(120)));
+assert.equal(root.querySelector("#repos-account-meta").textContent, "@ada · 1 repositorio");
+assert.equal(root.querySelector("#repos-manage").classList.contains("is-expiring"), false);
+panel.setAccount(sesion(enDias(3)));
+assert.equal(root.querySelector("#repos-account-meta").textContent, "La sesión caduca en 3 días");
+assert.ok(root.querySelector("#repos-manage").classList.contains("is-expiring"));
+panel.setAccount(sesion(enDias(-1)));
+assert.equal(
+  root.querySelector("#repos-account-meta").textContent,
+  "La sesión ha caducado: vuelve a conectar",
+);
 await panel.refreshPath(documents[0].path);
 assert.equal(calls.at(-2)[0], "github_repository_state");
 assert.equal(calls.at(-1)[0], "github_repository_documents");
@@ -246,4 +268,4 @@ assert.ok(tabsRoot.querySelector(".tab-close"));
 tabsRoot.querySelector(".tab-close").dispatchEvent(new window.Event("click", { bubbles: true }));
 assert.equal(closed, 3);
 
-console.log("34 de 34 pruebas DOM de interfaz correctas");
+console.log("41 de 41 pruebas DOM de interfaz correctas");
