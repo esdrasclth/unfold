@@ -13,10 +13,10 @@ export interface TabBarHandlers {
  * interfaz que quiere estar despejada.
  */
 export class TabBar {
-  constructor(
-    private readonly root: HTMLElement,
-    handlers: TabBarHandlers,
-  ) {
+  private readonly root: HTMLElement;
+
+  constructor(root: HTMLElement, handlers: TabBarHandlers) {
+    this.root = root;
     this.root.addEventListener("click", (event) => {
       const target = event.target as HTMLElement | null;
       const close = target?.closest<HTMLElement>("[data-close]");
