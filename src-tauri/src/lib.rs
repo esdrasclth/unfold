@@ -11,6 +11,7 @@ pub mod git;
 mod github;
 mod folders;
 mod repositories;
+mod search;
 mod store;
 
 /// Aviso de que una segunda instancia quiso abrir un archivo en ésta.
@@ -124,6 +125,7 @@ pub fn run() {
             folders::open_folders,
             folders::folder_documents,
             folders::folder_create_document,
+            search::search_documents,
             store::store_read,
             store::store_write,
             store::store_clear,

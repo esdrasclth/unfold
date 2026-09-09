@@ -620,6 +620,36 @@ fn explain_push_error(error: &str) -> String {
     format!("GitHub no aceptó la publicación. ({error})")
 }
 
+/// Los repositorios conectados, listos para buscar dentro.
+///
+/// Usa el recorrido de Git y no uno propio, para que lo ignorado en
+/// `.gitignore` siga ignorado también al buscar.
+pub(crate) fn search_roots(
+    app: &AppHandle,
+    catalog: &Catalog,
+) -> Result<Vec<crate::search::Root>, String> {
+    let root = local_root(app)?;
+    let entries = {
+        let _guard = guard(catalog);
+        read_catalog(&root)?
+    };
+    Ok(entries
+        .into_iter()
+        .filter_map(|entry| {
+            let repository = git::open(Path::new(&entry.path)).ok()?;
+            let documents = git::documents(&repository).ok()?;
+            Some(crate::search::Root {
+                id: entry.id as i64,
+                name: entry.full_name.clone(),
+                documents: documents
+                    .into_iter()
+                    .map(|documento| (documento.path, documento.relative))
+                    .collect(),
+            })
+        })
+        .collect())
+}
+
 #[tauri::command]
 pub async fn github_connected_repositories(
     app: AppHandle,

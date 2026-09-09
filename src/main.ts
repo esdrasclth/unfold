@@ -43,6 +43,7 @@ import {
 import { FileWatcher } from "./watcher.ts";
 import { closeMarkdownMenu, openMarkdownMenu } from "./ui/markdownMenu.ts";
 import { openCommandPalette } from "./ui/commandPalette.ts";
+import { openDocumentSearch } from "./ui/searchDocuments.ts";
 import { historyKey, loadHistory, recordVersion } from "./history.ts";
 import { migrarDesdeLocalStorage } from "./store.ts";
 import { openHistoryDialog } from "./ui/historyDialog.ts";
@@ -585,6 +586,21 @@ function showCommit(repository: ConnectedRepository): void {
   });
 }
 
+/** Abre el buscador de todos los documentos y lleva al resultado elegido. */
+function buscarEnDocumentos(): void {
+  openDocumentSearch((path, line) => {
+    void (async () => {
+      await loadPath(path);
+      // Ya está el documento: se lleva el cursor a la línea, que es a lo que
+      // se venía. `Math.min` porque el archivo pudo cambiar desde la búsqueda.
+      const numero = Math.min(Math.max(1, line), view.state.doc.lines);
+      const posicion = view.state.doc.line(numero).from;
+      view.dispatch({ selection: { anchor: posicion }, scrollIntoView: true });
+      view.focus();
+    })();
+  });
+}
+
 async function addFolder(): Promise<void> {
   try {
     const elegida = await chooseFolder();
@@ -880,6 +896,7 @@ window.addEventListener("keydown", (event) => {
       { id: "settings", label: "Abrir Apariencia y ajustes", run: () => toggleSettings(true) },
       { id: "repositories", label: "Explorador de repositorios", shortcut: "Ctrl+Shift+B", run: () => toggleRepositories(true) },
       { id: "repositories-search", label: "Buscar un documento por nombre", run: () => { toggleRepositories(true); repositoryPanel.focusFilter(); } },
+      { id: "search-documents", label: "Buscar en todos los documentos", shortcut: "Ctrl+Shift+L", run: buscarEnDocumentos },
       { id: "publish", label: "Publicar cambios en GitHub", shortcut: "Ctrl+Shift+U", run: publishCurrent },
       { id: "github", label: "Conectar o revisar GitHub", shortcut: "Ctrl+Shift+H", run: showGithub },
       { id: "history", label: "Ver historial y recuperar versión", run: () => openHistoryDialog(historyKey(session.path, session.name), view.state.doc.toString(), (content) => replaceDocument(view, content)) },
@@ -1198,6 +1215,11 @@ window.addEventListener("keydown", (event) => {
   } else if (key === "m" && event.shiftKey) {
     event.preventDefault();
     toggleSourceMode();
+  } else if (key === "l" && event.shiftKey) {
+    // «Localizar». `Ctrl+Shift+F` ya es el modo enfoque desde la primera
+    // versión, y cambiarlo ahora rompería la memoria de quien ya lo usa.
+    event.preventDefault();
+    buscarEnDocumentos();
   } else if (key === "u" && event.shiftKey) {
     // «Subir». Publicar era la única acción de GitHub sin atajo, y es la que
     // se repite: escribir, guardar, publicar, y otra vez.

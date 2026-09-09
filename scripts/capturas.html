@@ -112,6 +112,18 @@ y lo que se lee en pantalla es lo que queda escrito en el \`.md\`.
       }),
       github_connected_repositories: () => REPOS,
       // Una carpeta del disco, para ver que convive con los repositorios.
+      // Resultados de ejemplo para el buscador de todos los documentos.
+      search_documents: ({ query }) => ({
+        truncated: false,
+        hits: !query ? [] : [
+          { rootId: -4242, rootName: "apuntes", path: "x", relative: "diario/2026-09.md",
+            line: 12, text: "Hay que revisar el diff antes de publicar nada.", from: 20, to: 24 },
+          { rootId: -4242, rootName: "apuntes", path: "x", relative: "diario/2026-09.md",
+            line: 40, text: "El diff se despliega desde la propia vista de cambios.", from: 3, to: 7 },
+          { rootId: 41, rootName: "esdrasclth/unfold", path: "y", relative: "docs/guia-de-estilo.md",
+            line: 9, text: "Revisar el diff de cada archivo antes de confirmar.", from: 12, to: 16 },
+        ],
+      }),
       open_folders: () => [{
         id: -4242, path: String.raw`C:\Users\esdras\Documentos\apuntes`,
         name: "apuntes", missing: false,

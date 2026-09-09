@@ -1698,6 +1698,81 @@ body.typewriter-mode .cm-content {
   color: var(--text-faint);
 }
 
+/* ── Buscar en todos los documentos ───────────────────────────────────────── */
+
+/* Más alto que la paleta: aquí se compara entre resultados, no se elige de una
+   lista corta que se sabe de memoria. */
+.buscador { max-height: 78vh; }
+.buscador .command-palette-list { padding: 4px 6px 8px; }
+
+/* De qué archivo son las líneas que vienen debajo. Pegado arriba, porque al
+   recorrer una lista larga se pierde de vista a los tres resultados. */
+.buscador-archivo {
+  position: sticky;
+  top: 0;
+  z-index: 1;
+  display: flex;
+  align-items: baseline;
+  gap: 0.5rem;
+  margin: 0;
+  padding: 10px 6px 4px;
+  background: var(--canvas);
+  font-family: var(--font-mono);
+  font-size: 11.5px;
+}
+
+.buscador-archivo strong { color: var(--text); font-weight: 600; }
+.buscador-archivo span { color: var(--text-faint); font-size: 10.5px; }
+
+.buscador-hit {
+  display: flex;
+  align-items: baseline;
+  gap: 0.65rem;
+  width: 100%;
+  padding: 4px 8px;
+  border: 0;
+  border-radius: 6px;
+  background: transparent;
+  color: var(--text-soft);
+  font: inherit;
+  font-size: 12.5px;
+  text-align: left;
+  cursor: pointer;
+}
+
+.buscador-linea {
+  flex: none;
+  min-width: 2.5em;
+  text-align: right;
+  font-family: var(--font-mono);
+  font-size: 11px;
+  color: var(--text-faint);
+  font-variant-numeric: tabular-nums;
+}
+
+/* La línea entera en una sola, recortada: es una lista para decidir a dónde
+   ir, y con líneas partidas se pierde el hilo al recorrerla. */
+.buscador-texto {
+  flex: 1;
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.buscador-texto mark {
+  background: var(--search-match);
+  color: var(--text);
+  border-radius: 3px;
+}
+
+.buscador-hit.is-active {
+  background: var(--accent-wash);
+  color: var(--text-body);
+}
+
+.buscador-cuenta { margin-left: auto; }
+
 .command-palette-foot {
   display: flex;
   gap: 1.1rem;

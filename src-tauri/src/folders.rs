@@ -176,6 +176,22 @@ fn walk(root: &Path) -> Vec<FolderDocument> {
     documents
 }
 
+/// Las carpetas abiertas, listas para buscar dentro.
+pub(crate) fn search_roots(app: &AppHandle) -> Result<Vec<crate::search::Root>, String> {
+    Ok(read_paths(app)?
+        .into_iter()
+        .filter(|path| Path::new(path).is_dir())
+        .map(|path| crate::search::Root {
+            id: id_of(&path),
+            name: name_of(&path),
+            documents: walk(Path::new(&path))
+                .into_iter()
+                .map(|documento| (documento.path, documento.relative))
+                .collect(),
+        })
+        .collect())
+}
+
 #[tauri::command]
 pub async fn open_folder(app: AppHandle, path: String) -> Result<Folder, String> {
     let raiz = Path::new(&path);
