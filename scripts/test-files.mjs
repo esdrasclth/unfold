@@ -1,6 +1,6 @@
 ﻿import assert from 'node:assert/strict';
 globalThis.window = {};
-const {openFile, saveFile, saveFileAs} = await import('../src/files.ts');
+const {openFile, pathIsInside, saveFile, saveFileAs} = await import('../src/files.ts');
 function handle(name, id) {
   const writes = [];
   return { name, id, writes, getFile: async () => ({text: async () => id}),
@@ -32,4 +32,10 @@ window.showOpenFilePicker = window.showSaveFilePicker;
 assert.equal(await openFile(), null);
 window.showSaveFilePicker = async () => { throw new Error('permission denied'); };
 await assert.rejects(saveFileAs('failed'), /permission denied/);
-console.log('10 de 10 pruebas de archivos correctas');
+assert.equal(pathIsInside('C:\\repos\\notas', 'C:\\repos\\notas\\docs\\nueva.md'), true);
+assert.equal(pathIsInside('C:\\repos\\notas', 'c:\\REPOS\\NOTAS\\nueva.md'), true);
+assert.equal(pathIsInside('C:\\repos\\notas', 'C:\\repos\\notas-privadas\\nueva.md'), false);
+assert.equal(pathIsInside('C:\\repos\\notas', 'C:\\repos\\notas\\..\\fuera.md'), false);
+assert.equal(pathIsInside('/repos/notas', '/repos/notas/docs/nueva.md'), true);
+assert.equal(pathIsInside('/repos/notas', '/repos/otras/nueva.md'), false);
+console.log('16 de 16 pruebas de archivos correctas');

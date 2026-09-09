@@ -88,6 +88,7 @@ pub fn run() {
             repositories::github_disconnect_repository,
             repositories::github_fetch_repository,
             repositories::github_repository_documents,
+            repositories::github_create_repository_document,
             repositories::github_touch_repository,
             repositories::github_repository_changes,
             repositories::github_repository_state,

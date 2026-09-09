@@ -19,6 +19,11 @@ const MARKDOWN_FILTER = {
   extensions: ["md", "markdown", "mdx", "txt"],
 };
 
+const REPOSITORY_MARKDOWN_FILTER = {
+  name: "Markdown",
+  extensions: ["md", "markdown"],
+};
+
 function basename(path: string): string {
   const parts = path.split(/[\\/]/);
   return parts[parts.length - 1] || path;
@@ -133,6 +138,66 @@ export async function saveFileAs(content: string): Promise<string | null> {
   if (!target) return null;
   const { writeTextFile } = await import("@tauri-apps/plugin-fs");
   await writeTextFile(target, content);
+  return target;
+}
+
+function normalizedAbsolutePath(value: string): { path: string; insensitive: boolean } | null {
+  const slash = value.replace(/\\/g, "/");
+  let prefix: string;
+  let rest: string;
+  let insensitive = false;
+
+  const drive = slash.match(/^([a-zA-Z]:)\/(.*)$/);
+  const network = slash.match(/^\/\/([^/]+)\/([^/]+)(?:\/(.*))?$/);
+  if (drive) {
+    prefix = drive[1].toLowerCase();
+    rest = drive[2];
+    insensitive = true;
+  } else if (network) {
+    prefix = `//${network[1]}/${network[2]}`.toLowerCase();
+    rest = network[3] ?? "";
+    insensitive = true;
+  } else if (slash.startsWith("/")) {
+    prefix = "";
+    rest = slash.slice(1);
+  } else {
+    return null;
+  }
+
+  const parts: string[] = [];
+  for (const part of rest.split("/")) {
+    if (!part || part === ".") continue;
+    if (part === "..") {
+      if (parts.length === 0) return null;
+      parts.pop();
+    } else {
+      parts.push(insensitive ? part.toLowerCase() : part);
+    }
+  }
+  return { path: `${prefix}/${parts.join("/")}`.replace(/\/$/, ""), insensitive };
+}
+
+/** Comprueba el límite de carpeta, no sólo un prefijo textual parecido. */
+export function pathIsInside(folder: string, target: string): boolean {
+  const root = normalizedAbsolutePath(folder);
+  const candidate = normalizedAbsolutePath(target);
+  if (!root || !candidate || root.insensitive !== candidate.insensitive) return false;
+  return candidate.path.startsWith(`${root.path}/`);
+}
+
+/** Elige un documento sugiriendo una carpeta; el backend valida y escribe. */
+export async function chooseFileAsIn(folder: string): Promise<string | null> {
+  if (!isTauri) return null;
+  const { save } = await import("@tauri-apps/plugin-dialog");
+  const separator = folder.includes("\\") ? "\\" : "/";
+  const target = await save({
+    defaultPath: `${folder.replace(/[\\/]$/, "")}${separator}nuevo-documento.md`,
+    filters: [REPOSITORY_MARKDOWN_FILTER],
+  });
+  if (!target) return null;
+  if (!pathIsInside(folder, target)) {
+    throw new Error("El documento debe guardarse dentro del repositorio seleccionado");
+  }
   return target;
 }
 

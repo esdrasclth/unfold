@@ -131,6 +131,7 @@ correcta.
   inventar nada.
 - **Confirmar y publicar**: marcas qué archivos entran, escribes el mensaje, y
   Unfold confirma, sincroniza con el remoto y publica.
+- **Crear documentos** dentro de la copia local, sin salir del explorador.
 
 ### Lo que todavía no hace
 

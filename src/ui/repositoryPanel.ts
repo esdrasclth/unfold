@@ -22,6 +22,8 @@ export interface RepositoryPanelOptions {
   onManage: () => void;
   /** Abre la vista de cambios para confirmar y publicar. */
   onPublish: (repository: ConnectedRepository) => void;
+  /** Crea un documento nuevo dentro de la copia local. */
+  onCreate: (repository: ConnectedRepository) => void;
   /** Punto de inyección para pruebas DOM; en la aplicación siempre se vigila. */
   watchRepositories?: boolean;
   watch?: RepositoryWatch;
@@ -437,6 +439,7 @@ export class RepositoryPanel {
       block.append(head);
 
       if (open) {
+        if (!repository.missing) block.append(this.createAction(repository));
         const publish = this.publishAction(repository);
         if (publish) block.append(publish);
         const documents = this.documents.get(repository.id) ?? [];
@@ -451,6 +454,15 @@ export class RepositoryPanel {
       fragment.append(block);
     }
     return fragment;
+  }
+
+  private createAction(repository: ConnectedRepository): Node {
+    const button = document.createElement("button");
+    button.className = "repos-create";
+    button.type = "button";
+    button.textContent = "+ Nuevo documento";
+    button.addEventListener("click", () => this.options.onCreate(repository));
+    return button;
   }
 
   /**

@@ -10,6 +10,7 @@ import {
 } from "./editor/index.ts";
 import { exportHtml, printDocument, type ExportContext } from "./export/index.ts";
 import {
+  chooseFileAsIn,
   extensionForImage,
   isTauri,
   makeAssetResolver,
@@ -46,7 +47,11 @@ import { historyKey, recordVersion } from "./history.ts";
 import { openHistoryDialog } from "./ui/historyDialog.ts";
 import { openGithubDialog } from "./ui/githubDialog.ts";
 import { githubAuthStatus, type GithubAuthStatus } from "./github.ts";
-import { connectedRepositories, type ConnectedRepository } from "./repositories.ts";
+import {
+  connectedRepositories,
+  createRepositoryDocumentFile,
+  type ConnectedRepository,
+} from "./repositories.ts";
 import { backupFolder, createBackup, restoreLatest, setBackupFolder } from "./backups.ts";
 import { takeWelcome } from "./welcome.ts";
 import "./styles/app.css";
@@ -555,6 +560,21 @@ function showCommit(repository: ConnectedRepository): void {
   });
 }
 
+async function createRepositoryDocument(repository: ConnectedRepository): Promise<void> {
+  try {
+    const target = await chooseFileAsIn(repository.path);
+    if (!target) return;
+    const path = await createRepositoryDocumentFile(repository.id, target);
+    if (!path) return;
+    applyFile({ path, name: path.split(/[\\/]/).pop() ?? path, content: "" });
+    await repositoryPanel.refreshRepository(repository.id, true);
+    notify("Documento creado en el repositorio");
+  } catch (error) {
+    console.error("No se pudo crear el documento", error);
+    notify("No se pudo crear el documento en el repositorio");
+  }
+}
+
 /**
  * Publica el repositorio del documento que está en pantalla.
  *
@@ -725,6 +745,7 @@ repositoryPanel = new RepositoryPanel(el.repositories, {
   onOpen: (path) => void loadPath(path),
   onManage: showGithub,
   onPublish: showCommit,
+  onCreate: (repository) => void createRepositoryDocument(repository),
 });
 window.addEventListener("beforeunload", () => repositoryPanel.dispose());
 mountWindowControls(document.querySelector<HTMLElement>("#window-controls")!);

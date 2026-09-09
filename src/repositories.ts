@@ -125,6 +125,12 @@ export async function repositoryDocuments(id: number): Promise<RepositoryDocumen
   return invoke<RepositoryDocument[]>("github_repository_documents", { id });
 }
 
+/** Valida físicamente la ruta y crea el documento dentro del checkout. */
+export async function createRepositoryDocumentFile(id: number, target: string): Promise<string> {
+  requireDesktop();
+  return invoke<string>("github_create_repository_document", { id, target });
+}
+
 export async function repositoryChanges(id: number): Promise<Change[]> {
   requireDesktop();
   return invoke<Change[]>("github_repository_changes", { id });

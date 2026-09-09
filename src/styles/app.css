@@ -2392,7 +2392,8 @@ body.typewriter-mode .cm-content {
  * con casillas, el mensaje y la identidad con la que se va a firmar.
  */
 
-.repos-publish {
+.repos-publish,
+.repos-create {
   width: calc(100% - 0.8rem);
   margin: 0.1rem 0.4rem 0.3rem;
   padding: 0.3rem 0.5rem;
@@ -2406,7 +2407,12 @@ body.typewriter-mode .cm-content {
   transition: background var(--fast) var(--ease), border-color var(--fast) var(--ease);
 }
 
-.repos-publish:hover {
+.repos-create {
+  color: var(--chrome-soft);
+}
+
+.repos-publish:hover,
+.repos-create:hover {
   border-color: var(--accent-chrome);
   background: var(--accent-chrome-wash);
 }

@@ -774,6 +774,69 @@ pub async fn github_repository_documents(
     .await
 }
 
+fn physical_document_target(repository: &Path, target: &Path) -> Result<PathBuf, String> {
+    if !target.is_absolute() {
+        return Err("La ruta del documento debe ser absoluta".to_owned());
+    }
+    let extension = target.extension().and_then(|value| value.to_str());
+    if !extension.is_some_and(|value| {
+        value.eq_ignore_ascii_case("md") || value.eq_ignore_ascii_case("markdown")
+    }) {
+        return Err("El documento debe tener extensión .md o .markdown".to_owned());
+    }
+
+    let root = repository
+        .canonicalize()
+        .map_err(|error| format!("No se pudo comprobar la carpeta del repositorio: {error}"))?;
+    let parent = target
+        .parent()
+        .ok_or_else(|| "La ruta del documento no tiene una carpeta válida".to_owned())?
+        .canonicalize()
+        .map_err(|error| format!("No se pudo comprobar la carpeta elegida: {error}"))?;
+    if !parent.starts_with(&root) {
+        return Err("El documento debe guardarse físicamente dentro del repositorio".to_owned());
+    }
+
+    match std::fs::symlink_metadata(target) {
+        Ok(metadata) => {
+            if metadata.is_dir() {
+                return Err("La ruta elegida es una carpeta".to_owned());
+            }
+            // También se resuelve el último componente: un enlace llamado
+            // `nota.md` podría apuntar fuera aunque su carpeta esté dentro.
+            let physical = target
+                .canonicalize()
+                .map_err(|error| format!("No se pudo comprobar el documento elegido: {error}"))?;
+            if !physical.starts_with(&root) {
+                return Err(
+                    "El documento elegido apunta fuera del repositorio y no se modificó".to_owned(),
+                );
+            }
+        }
+        Err(error) if error.kind() == std::io::ErrorKind::NotFound => {}
+        Err(error) => return Err(format!("No se pudo comprobar el documento elegido: {error}")),
+    }
+    Ok(target.to_path_buf())
+}
+
+fn create_repository_document(repository: &Path, target: &Path) -> Result<String, String> {
+    let target = physical_document_target(repository, target)?;
+    std::fs::write(&target, b"")
+        .map_err(|error| format!("No se pudo crear el documento: {error}"))?;
+    Ok(target.to_string_lossy().into_owned())
+}
+
+#[tauri::command]
+pub async fn github_create_repository_document(
+    app: AppHandle,
+    catalog: State<'_, Catalog>,
+    id: u64,
+    target: String,
+) -> Result<String, String> {
+    let entry = entry_of(&app, &catalog, id)?;
+    blocking(move || create_repository_document(Path::new(&entry.path), Path::new(&target))).await
+}
+
 /// Apunta que se abrió un documento del repositorio, para ordenar la lista.
 #[tauri::command]
 pub async fn github_touch_repository(
@@ -888,6 +951,25 @@ mod tests {
         let described = describe(entry(9, "esdrasclth/desaparecido"));
         assert!(described.missing);
         assert!(described.branch.is_none());
+    }
+
+    #[test]
+    fn document_creation_stays_physically_inside_the_repository() {
+        let temp = tempfile::tempdir().unwrap();
+        let repository = temp.path().join("repository");
+        let docs = repository.join("docs");
+        let outside = temp.path().join("outside");
+        std::fs::create_dir_all(&docs).unwrap();
+        std::fs::create_dir_all(&outside).unwrap();
+
+        let inside = docs.join("nueva.md");
+        assert_eq!(
+            create_repository_document(&repository, &inside).unwrap(),
+            inside.to_string_lossy()
+        );
+        assert!(inside.exists());
+        assert!(create_repository_document(&repository, &outside.join("fuera.md")).is_err());
+        assert!(create_repository_document(&repository, &docs.join("datos.txt")).is_err());
     }
 
     /// Un código de GitHub no le dice nada a quien lo lee por primera vez. Lo
