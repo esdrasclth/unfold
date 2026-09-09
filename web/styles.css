@@ -37,6 +37,7 @@
   --accent: #b4572a;
   --accent-wash: color-mix(in srgb, var(--accent) 11%, transparent);
   --accent-tenue: color-mix(in srgb, var(--accent) 6%, transparent);
+  --positivo: #2f9e66;
   --code-bg: rgba(32, 26, 16, 0.045);
   --rule: rgba(32, 26, 16, 0.11);
   --rule-suave: rgba(32, 26, 16, 0.07);
@@ -145,19 +146,76 @@ kbd { font-size: 0.78em; }
 
 .nav-links a:hover { color: var(--text); }
 
-.nav-cta {
-  color: var(--text) !important;
-  background: var(--wash);
-  padding: 0.36rem 0.85rem;
+/* La sección que se está leyendo se marca sola; lo enciende demo.js. */
+.nav-links a.activo { color: var(--text); }
+
+.nav-links a::after {
+  content: "";
+  display: block;
+  height: 1.5px;
+  margin-top: 2px;
+  border-radius: 2px;
+  background: var(--accent);
+  transform: scaleX(0);
+  transform-origin: left;
+  transition: transform var(--medium) var(--ease);
+}
+
+.nav-links a.activo::after { transform: scaleX(1); }
+
+.nav-acciones { display: flex; align-items: center; gap: 0.6rem; }
+
+.nav-codigo {
+  display: flex;
+  align-items: center;
+  gap: 0.42rem;
+  font-size: 0.92rem;
+  color: var(--text-soft);
+  text-decoration: none;
+  padding: 0.36rem 0.7rem;
   border-radius: 9px;
-  transition: background var(--fast) var(--ease);
+  transition: color var(--fast) var(--ease), background var(--fast) var(--ease);
 }
 
-.nav-cta:hover { background: var(--wash-strong); }
+.nav-codigo svg { width: 16px; height: 16px; flex: none; }
+.nav-codigo:hover { color: var(--text); background: var(--wash); }
 
-@media (max-width: 720px) {
-  .nav-links a:not(.nav-cta) { display: none; }
+.nav-cta {
+  color: #fdfcfa;
+  background: var(--accent);
+  font-size: 0.92rem;
+  font-weight: 560;
+  text-decoration: none;
+  padding: 0.44rem 1rem;
+  border-radius: 9px;
+  box-shadow: 0 1px 2px rgba(32, 26, 16, 0.12);
+  transition: background var(--fast) var(--ease), transform var(--fast) var(--ease);
 }
+
+.nav-cta:hover { background: color-mix(in srgb, var(--accent) 88%, #17150f); }
+.nav-cta:active { transform: translateY(1px); }
+
+@media (max-width: 860px) {
+  .nav-links { display: none; }
+}
+
+@media (max-width: 520px) {
+  .nav-codigo span { display: none; }
+}
+
+/* El primer tabulador salta el menú y va al contenido. */
+.saltar {
+  position: absolute;
+  left: -9999px;
+  z-index: 40;
+  padding: 0.6rem 1rem;
+  border-radius: 0 0 10px 0;
+  background: var(--accent);
+  color: #fdfcfa;
+  text-decoration: none;
+}
+
+.saltar:focus { left: 0; top: 0; }
 
 /* ── Estructura ─────────────────────────────────────────────────────────── */
 
@@ -166,6 +224,18 @@ main { max-width: 1280px; margin: 0 auto; padding: 0 clamp(1.25rem, 5vw, 3.5rem)
 section + section { box-shadow: inset 0 1px 0 var(--rule-suave); }
 
 h2.titulo { font-size: clamp(1.55rem, 3vw, 2.15rem); letter-spacing: -0.03em; }
+
+/* El sobretítulo que nombra la sección antes de que se lea el título. */
+.etiqueta {
+  margin-bottom: 0.5rem;
+  font-family: var(--font-mono);
+  font-size: 0.74rem;
+  letter-spacing: 0.13em;
+  text-transform: uppercase;
+  color: var(--accent);
+}
+
+.bajada-ancha { max-width: 64ch; }
 
 /* ── Portada ────────────────────────────────────────────────────────────── */
 
@@ -197,16 +267,42 @@ h2.titulo { font-size: clamp(1.55rem, 3vw, 2.15rem); letter-spacing: -0.03em; }
   pointer-events: none;
 }
 
-.sobretitulo {
-  font-family: var(--font-mono);
-  font-size: 0.8rem;
-  letter-spacing: 0.09em;
-  text-transform: uppercase;
-  color: var(--text-faint);
-  margin-bottom: 1.5rem;
+/* La píldora que anuncia la novedad de la versión y lleva a su sección. */
+.novedad {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.5rem;
+  margin-bottom: 1.6rem;
+  padding: 0.34rem 0.85rem 0.34rem 0.7rem;
+  border: 1px solid color-mix(in srgb, var(--accent) 24%, var(--rule));
+  border-radius: 999px;
+  background: var(--accent-tenue);
+  font-size: 0.85rem;
+  color: var(--text-soft);
+  text-decoration: none;
+  transition: background var(--fast) var(--ease), border-color var(--fast) var(--ease);
 }
 
-.sobretitulo span { color: var(--accent); }
+.novedad strong { color: var(--accent); font-weight: 600; }
+.novedad:hover { background: var(--accent-wash); border-color: color-mix(in srgb, var(--accent) 42%, transparent); }
+
+.novedad-punto {
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+  background: var(--accent);
+  box-shadow: 0 0 0 3px var(--accent-wash);
+}
+
+.novedad-galon {
+  width: 14px;
+  height: 14px;
+  color: var(--accent);
+  transform: rotate(-90deg);
+  transition: transform var(--medium) var(--ease);
+}
+
+.novedad:hover .novedad-galon { transform: rotate(-90deg) translateY(-2px); }
 
 .hero h1 {
   font-size: clamp(2.2rem, 3.6vw, 3.05rem);
@@ -262,6 +358,7 @@ h2.titulo { font-size: clamp(1.55rem, 3vw, 2.15rem); letter-spacing: -0.03em; }
 
 .btn-suave { background: var(--wash); color: var(--text); }
 .btn-suave:hover { background: var(--wash-strong); }
+.btn-octocat { width: 17px; height: 17px; flex: none; }
 
 .btn-grande { padding: 0.95rem 1.9rem; font-size: 1.04rem; border-radius: 13px; }
 .btn-grande .btn-galon { width: 22px; height: 22px; }
@@ -273,6 +370,7 @@ h2.titulo { font-size: clamp(1.55rem, 3vw, 2.15rem); letter-spacing: -0.03em; }
 .hero-demo { min-width: 0; }
 
 .ventana {
+  position: relative;
   border-radius: 14px;
   overflow: hidden;
   background: var(--canvas);
@@ -348,7 +446,24 @@ h2.titulo { font-size: clamp(1.55rem, 3vw, 2.15rem); letter-spacing: -0.03em; }
   border-radius: 8px 8px 0 0;
 }
 
+/*
+ * El cuerpo de la ventana es una rejilla de dos columnas: el carril de
+ * repositorios y la hoja. En el primer acto el carril mide cero y la hoja lo
+ * ocupa todo; al entrar el segundo, el carril se abre y empuja el texto, que
+ * es exactamente lo que hace el panel de la aplicación.
+ */
+.ventana-cuerpo {
+  position: relative;
+  display: grid;
+  grid-template-columns: 0fr 1fr;
+  background: var(--canvas);
+  transition: grid-template-columns var(--lento) var(--ease);
+}
+
+.ventana-cuerpo.con-carril { grid-template-columns: 0.32fr 1fr; }
+
 .ventana-hoja {
+  min-width: 0;
   background: var(--canvas);
   padding: 1.6rem clamp(1.1rem, 3vw, 2rem) 1.8rem;
   /*
@@ -359,6 +474,186 @@ h2.titulo { font-size: clamp(1.55rem, 3vw, 2.15rem); letter-spacing: -0.03em; }
    */
   min-height: clamp(330px, 40vh, 460px);
 }
+
+/* ── El carril de repositorios de la demostración ───────────────────────── */
+
+.ventana-carril {
+  min-width: 0;
+  overflow: hidden;
+  background: var(--chrome);
+  border-right: 1px solid var(--rule-suave);
+  font-size: 0.78rem;
+  opacity: 0;
+  transition: opacity var(--lento) var(--ease);
+}
+
+.con-carril .ventana-carril { opacity: 1; }
+
+.ventana-carril > *,
+.carril-lista li {
+  white-space: nowrap;
+  padding-inline: 0.85rem;
+}
+
+.carril-titulo {
+  margin: 0.9rem 0 0.7rem;
+  font-family: var(--font-mono);
+  font-size: 0.63rem;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+  color: var(--text-faint);
+}
+
+.carril-repo { display: grid; gap: 0.1rem; margin-bottom: 0.75rem; }
+.carril-nombre { color: var(--text); font-weight: 560; }
+.carril-rama { font-size: 0.72rem; color: var(--text-faint); }
+
+.carril-lista { list-style: none; margin: 0; padding: 0; display: grid; gap: 0.28rem; }
+
+.carril-lista li {
+  display: flex;
+  align-items: center;
+  gap: 0.45rem;
+  padding-block: 0.16rem;
+  color: var(--text-soft);
+  border-radius: 6px;
+}
+
+.carril-lista li:first-child { background: var(--accent-wash); color: var(--text-body); }
+
+/* En un teléfono la ventana entera mide poco más de 300 px: con la proporción
+   de escritorio el carril no llega ni para el nombre del repositorio. */
+@media (max-width: 620px) {
+  .ventana-cuerpo.con-carril { grid-template-columns: 0.46fr 1fr; }
+  .ventana-carril { font-size: 0.72rem; }
+  .carril-rama { font-size: 0.64rem; }
+  .ventana-carril > *,
+  .carril-lista li { padding-inline: 0.6rem; }
+}
+
+/*
+ * El mismo punto que la aplicación pone junto a cada documento: terracota
+ * mientras hay algo sin confirmar, y hueco cuando ya está sincronizado.
+ */
+.punto-estado {
+  width: 6px;
+  height: 6px;
+  flex: none;
+  border-radius: 50%;
+  background: var(--accent);
+  transition: background var(--medium) var(--ease), box-shadow var(--medium) var(--ease);
+}
+
+.punto-estado.es-sync {
+  background: transparent;
+  box-shadow: inset 0 0 0 1px var(--text-faint);
+}
+
+/* ── La hoja de publicar de la demostración ─────────────────────────────── */
+
+/*
+ * Sube desde abajo, por encima de la hoja, en vez de empujarla. Si creciera en
+ * el flujo, la ventana entera cambiaría de alto a mitad de la animación y el
+ * texto de al lado daría un salto cada vez que el bucle vuelve a empezar.
+ */
+.ventana-publicar {
+  position: absolute;
+  z-index: 2;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  display: grid;
+  gap: 0.55rem;
+  padding: 0.85rem clamp(0.9rem, 2.4vw, 1.3rem) 1rem;
+  background: var(--chrome);
+  border-top: 1px solid var(--rule);
+  box-shadow: 0 -14px 30px rgba(32, 26, 16, 0.09);
+  font-size: 0.8rem;
+  transform: translateY(101%);
+  opacity: 0;
+  transition: transform var(--lento) var(--ease), opacity var(--medium) var(--ease);
+}
+
+.ventana-publicar.abierta { transform: none; opacity: 1; }
+
+.publicar-cab { display: flex; justify-content: space-between; align-items: baseline; }
+.publicar-cab strong { color: var(--text); font-weight: 600; }
+.publicar-cab span { font-size: 0.74rem; color: var(--text-faint); }
+
+.publicar-fila {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  padding: 0.35rem 0.5rem;
+  border-radius: 7px;
+  background: var(--canvas);
+  font-family: var(--font-mono);
+  font-size: 0.74rem;
+  color: var(--text-body);
+}
+
+.publicar-caja {
+  width: 11px;
+  height: 11px;
+  flex: none;
+  border-radius: 3px;
+  border: 1.5px solid var(--accent);
+  background: var(--accent);
+  position: relative;
+}
+
+.publicar-caja::after {
+  content: "";
+  position: absolute;
+  left: 2.5px;
+  top: 0.5px;
+  width: 3px;
+  height: 6px;
+  border: solid var(--chrome);
+  border-width: 0 1.5px 1.5px 0;
+  transform: rotate(42deg);
+}
+
+.publicar-ruta { flex: 1; min-width: 0; overflow: hidden; text-overflow: ellipsis; }
+.publicar-diff i { color: var(--positivo); font-style: normal; }
+.publicar-diff b { color: var(--accent); font-weight: 400; }
+
+.publicar-mensaje {
+  display: flex;
+  align-items: center;
+  min-height: 2.1rem;
+  padding: 0.4rem 0.6rem;
+  border: 1px solid var(--rule);
+  border-radius: 7px;
+  background: var(--canvas);
+  color: var(--text-body);
+}
+
+.cursor-mensaje {
+  display: inline-block;
+  width: 1.5px;
+  height: 1em;
+  margin-left: 1px;
+  background: var(--accent);
+  animation: parpadeo 1.1s steps(1) infinite;
+}
+
+.ventana-publicar:not(.escribiendo) .cursor-mensaje { display: none; }
+
+.publicar-boton {
+  padding: 0.45rem;
+  border-radius: 8px;
+  background: var(--accent);
+  color: #fdfcfa;
+  font-size: 0.78rem;
+  font-weight: 560;
+  text-align: center;
+  transition: transform var(--fast) var(--ease), background var(--medium) var(--ease);
+}
+
+/* Pulsado: el mismo hundimiento que hace un botón de verdad. */
+.publicar-boton.pulsado { transform: scale(0.975); }
+.publicar-boton.hecho { background: var(--positivo); }
 
 .lineas { font-size: 0.95rem; line-height: 1.75; color: var(--text-body); }
 .ln { min-height: 1.75em; }
@@ -541,6 +836,36 @@ h2.titulo { font-size: clamp(1.55rem, 3vw, 2.15rem); letter-spacing: -0.03em; }
   .bajar { display: none; }
 }
 
+/* ── Cifras ─────────────────────────────────────────────────────────────── */
+
+/* Cuatro datos y ni uno más: lo que se puede leer de un vistazo al terminar
+   la portada, antes de que empiece la explicación larga. */
+.cifras { padding: clamp(1.6rem, 3.5vw, 2.4rem) 0; }
+
+.cifras dl {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 1rem;
+  margin: 0;
+  text-align: center;
+}
+
+.cifras div + div { box-shadow: inset 1px 0 0 var(--rule-suave); }
+
+.cifras dt {
+  font-size: clamp(1.25rem, 2.4vw, 1.7rem);
+  font-weight: 640;
+  letter-spacing: -0.03em;
+  color: var(--text);
+}
+
+.cifras dd { margin: 0.1rem 0 0; font-size: 0.86rem; color: var(--text-faint); }
+
+@media (max-width: 620px) {
+  .cifras dl { grid-template-columns: repeat(2, 1fr); gap: 1.4rem 1rem; }
+  .cifras div:nth-child(odd) { box-shadow: none; }
+}
+
 /* ── Pilares ────────────────────────────────────────────────────────────── */
 
 .pilares {
@@ -567,7 +892,7 @@ h2.titulo { font-size: clamp(1.55rem, 3vw, 2.15rem); letter-spacing: -0.03em; }
 
 .captura-cabecera {
   display: flex;
-  align-items: center;
+  align-items: flex-end;
   justify-content: space-between;
   gap: 1rem;
   flex-wrap: wrap;
@@ -604,35 +929,80 @@ h2.titulo { font-size: clamp(1.55rem, 3vw, 2.15rem); letter-spacing: -0.03em; }
 
 .caracteristicas { padding: clamp(2.8rem, 6vw, 4.5rem) 0; }
 
-.lista-larga {
-  list-style: none;
-  margin: 2.2rem 0 0;
-  padding: 0;
+/*
+ * Cuatro grupos en columnas, y no catorce fichas sueltas en una rejilla. La
+ * lista plana obligaba a leerlas todas para encontrar una; agrupadas por el
+ * momento en que hacen falta —escribir, moverte, publicar, ajustar— se puede
+ * ir directo a la columna que interesa.
+ */
+.grupos {
   display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
-  gap: 0 clamp(2rem, 5vw, 4rem);
+  grid-template-columns: repeat(auto-fit, minmax(238px, 1fr));
+  gap: clamp(1.6rem, 3vw, 2.6rem);
+  margin-top: clamp(2rem, 4vw, 2.8rem);
 }
 
-.lista-larga li {
+.grupo { min-width: 0; }
+
+.grupo-titulo {
+  display: flex;
+  align-items: baseline;
+  gap: 0.55rem;
+  padding-bottom: 0.75rem;
+  margin-bottom: 0.3rem;
+  border-bottom: 1px solid var(--rule);
+  font-size: 1.02rem;
+}
+
+.grupo-num { font-family: var(--font-mono); font-size: 0.74rem; color: var(--accent); }
+
+.grupo ul { list-style: none; margin: 0; padding: 0; }
+
+.grupo li {
+  padding: 0.95rem 0.7rem;
+  margin-inline: -0.7rem;
+  border-radius: 10px;
+  box-shadow: inset 0 1px 0 var(--rule-suave);
+  transition: background var(--medium) var(--ease);
+}
+
+.grupo li:first-child { box-shadow: none; }
+.grupo li:hover { background: var(--wash); box-shadow: none; }
+
+.grupo h4 { margin: 0 0 0.22rem; font-size: 0.95rem; font-weight: 600; color: var(--text); }
+.grupo p { font-size: 0.9rem; color: var(--text-soft); }
+
+/* ── Atajos ─────────────────────────────────────────────────────────────── */
+
+.atajos {
+  margin-top: clamp(2.4rem, 5vw, 3.4rem);
+  padding: clamp(1.4rem, 3vw, 2rem);
+  border: 1px solid var(--rule-suave);
+  border-radius: 16px;
+  background: color-mix(in srgb, var(--canvas) 78%, var(--chrome));
+}
+
+.atajos h3 { font-size: 1rem; margin-bottom: 1rem; }
+
+.atajos dl {
   display: grid;
-  grid-template-columns: 2.6rem 1fr;
-  gap: 0 0.4rem;
-  padding: 1.35rem 0;
+  grid-template-columns: repeat(auto-fit, minmax(400px, 1fr));
+  gap: 0 clamp(1.5rem, 4vw, 3.5rem);
+  margin: 0;
+}
+
+.atajos div {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 1rem;
+  padding: 0.55rem 0;
   box-shadow: inset 0 1px 0 var(--rule-suave);
 }
 
-.idx {
-  grid-row: 1 / span 2;
-  font-family: var(--font-mono);
-  font-size: 0.78rem;
-  color: var(--text-faint);
-  padding-top: 0.28rem;
-  transition: color var(--medium) var(--ease);
-}
-
-.lista-larga li:hover .idx { color: var(--accent); }
-.lista-larga h3 { font-size: 1rem; margin-bottom: 0.28rem; }
-.lista-larga p { font-size: 0.92rem; color: var(--text-soft); }
+.atajos dt { font-size: 0.9rem; color: var(--text-soft); }
+.atajos dd { margin: 0; white-space: nowrap; }
+.atajos kbd { background: var(--canvas); border: 1px solid var(--rule-suave); }
 
 /* ── Cómo funciona ──────────────────────────────────────────────────────── */
 
@@ -705,9 +1075,45 @@ h2.titulo { font-size: clamp(1.55rem, 3vw, 2.15rem); letter-spacing: -0.03em; }
    en el mismo formato, y repetirla ayuda a leerla. */
 .pasos-github { margin-top: 2rem; }
 
+/*
+ * Las dos pantallas que cuentan la parte que no se puede contar con texto: qué
+ * se elige y qué se ve justo antes de publicar.
+ *
+ * Van a todo el ancho y una debajo de otra, no en dos columnas. En dos
+ * columnas caben, pero el diff se queda en letra de seis píxeles y la única
+ * imagen que justifica estar aquí deja de leerse, que es justo lo contrario de
+ * lo que se pretendía.
+ */
+.github-figuras {
+  display: grid;
+  gap: clamp(2rem, 4vw, 3rem);
+  margin-top: clamp(2.2rem, 5vw, 3rem);
+}
+
+.github-figuras figure { margin: 0; }
+
+.github-figuras img {
+  display: block;
+  width: 100%;
+  height: auto;
+  border: 1px solid color-mix(in srgb, var(--text) 10%, transparent);
+  border-radius: 14px;
+  box-shadow: var(--sombra-alta);
+}
+
+.github-figuras figcaption {
+  margin: 1rem auto 0;
+  max-width: 62ch;
+  text-align: center;
+  font-size: 0.93rem;
+  color: var(--text-soft);
+}
+
+.github-figuras figcaption strong { color: var(--text); font-weight: 600; }
+
 .github-notas {
   display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(255px, 1fr));
+  grid-template-columns: repeat(auto-fit, minmax(238px, 1fr));
   gap: clamp(1.2rem, 3vw, 2.2rem);
   margin-top: clamp(2.2rem, 5vw, 3.2rem);
   padding-top: clamp(1.8rem, 4vw, 2.4rem);
@@ -760,6 +1166,63 @@ h2.titulo { font-size: clamp(1.55rem, 3vw, 2.15rem); letter-spacing: -0.03em; }
 
 .aviso strong { color: var(--text); }
 .aviso a { color: var(--accent); text-underline-offset: 3px; }
+
+/* ── Dudas ──────────────────────────────────────────────────────────────── */
+
+.dudas { padding: clamp(2.8rem, 6vw, 4.5rem) 0; }
+
+.preguntas { margin-top: 2rem; max-width: 74ch; }
+
+.preguntas details {
+  border-bottom: 1px solid var(--rule-suave);
+}
+
+.preguntas summary {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 1rem;
+  padding: 1.05rem 0;
+  list-style: none;
+  cursor: pointer;
+  font-weight: 560;
+  color: var(--text);
+  transition: color var(--fast) var(--ease);
+}
+
+.preguntas summary::-webkit-details-marker { display: none; }
+.preguntas summary:hover { color: var(--accent); }
+
+/* El signo, dibujado con dos trazos: al abrirse, el vertical desaparece. */
+.preguntas summary::after {
+  content: "";
+  flex: none;
+  width: 13px;
+  height: 13px;
+  margin-top: 0.35rem;
+  background:
+    linear-gradient(var(--accent), var(--accent)) center / 100% 1.5px no-repeat,
+    linear-gradient(var(--accent), var(--accent)) center / 1.5px 100% no-repeat;
+  transition: transform var(--medium) var(--ease);
+}
+
+.preguntas details[open] summary::after {
+  background: linear-gradient(var(--accent), var(--accent)) center / 100% 1.5px no-repeat;
+  transform: rotate(180deg);
+}
+
+.preguntas p {
+  padding: 0 0 1.25rem;
+  max-width: 68ch;
+  font-size: 0.95rem;
+  color: var(--text-soft);
+}
+
+.preguntas summary:focus-visible {
+  outline: 3px solid color-mix(in srgb, var(--accent) 42%, transparent);
+  outline-offset: 2px;
+  border-radius: 6px;
+}
 
 /* ── Cierre ─────────────────────────────────────────────────────────────── */
 
@@ -834,10 +1297,6 @@ h2.titulo { font-size: clamp(1.55rem, 3vw, 2.15rem); letter-spacing: -0.03em; }
 .nav { box-shadow: 0 0 0 rgba(32, 26, 16, 0); transition: box-shadow var(--medium) var(--ease); }
 .desplazado .nav { box-shadow: 0 1px 0 var(--rule-suave), 0 8px 24px rgba(32, 26, 16, 0.05); }
 
-/* Las filas de la lista larga acercan su índice al pasar el ratón. */
-.lista-larga li { transition: transform var(--medium) var(--ease); }
-.lista-larga li:hover { transform: translateX(3px); }
-
 /* Y los pilares levantan un poco su número. */
 .pilar-num { transition: transform var(--medium) var(--ease), color var(--medium) var(--ease); }
 .pilares article:hover .pilar-num { transform: translateY(-2px); }
@@ -908,22 +1367,6 @@ body {
   box-shadow: var(--sombra-card);
 }
 
-.lista-larga { gap: 0.7rem; }
-.lista-larga li {
-  padding: 1.25rem 1.15rem;
-  border: 1px solid var(--rule-suave);
-  border-radius: 13px;
-  background: color-mix(in srgb, var(--canvas) 82%, var(--chrome));
-  box-shadow: none;
-  transition: transform var(--medium) var(--ease), background var(--medium) var(--ease),
-              border-color var(--medium) var(--ease);
-}
-.lista-larga li:hover {
-  transform: translateY(-2px);
-  background: var(--canvas);
-  border-color: color-mix(in srgb, var(--accent) 25%, var(--rule));
-}
-
 .captura { box-shadow: var(--sombra-card); }
 .cierre { border-radius: 22px; margin: 1rem 0 0; padding-inline: 1.5rem; }
 
@@ -941,7 +1384,7 @@ body {
 
 @media (prefers-reduced-motion: reduce) {
   .pilares article,
-  .lista-larga li {
+  .grupo li {
     transition-duration: 0.01ms !important;
   }
 }

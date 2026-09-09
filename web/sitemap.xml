@@ -6,12 +6,20 @@
     <changefreq>monthly</changefreq>
     <priority>1.0</priority>
     <image:image>
-      <image:loc>https://unfold.brandsofts.com/captura-claro.png</image:loc>
-      <image:title>Unfold en tema claro</image:title>
+      <image:loc>https://unfold.brandsofts.com/captura-claro.jpg</image:loc>
+      <image:title>Unfold en tema claro, con el explorador de repositorios de GitHub</image:title>
     </image:image>
     <image:image>
-      <image:loc>https://unfold.brandsofts.com/captura-oscuro.png</image:loc>
-      <image:title>Unfold en tema oscuro</image:title>
+      <image:loc>https://unfold.brandsofts.com/captura-oscuro.jpg</image:loc>
+      <image:title>Unfold en tema oscuro, con el explorador de repositorios de GitHub</image:title>
+    </image:image>
+    <image:image>
+      <image:loc>https://unfold.brandsofts.com/captura-repositorios.jpg</image:loc>
+      <image:title>Elegir qué repositorios de GitHub ve Unfold</image:title>
+    </image:image>
+    <image:image>
+      <image:loc>https://unfold.brandsofts.com/captura-publicar.jpg</image:loc>
+      <image:title>Revisar el diff de cada archivo antes de confirmar y publicar</image:title>
     </image:image>
   </url>
 </urlset>

@@ -4,12 +4,12 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>Unfold · Editor Markdown para Windows que se lee como quedará</title>
-<meta name="description" content="Editor Markdown gratuito y de código abierto para Windows, con vista previa en vivo y sin panel dividido. Arranca en 250 ms, ocupa 5 MB y edita y publica repositorios de GitHub sin salir de la aplicación.">
+<meta name="description" content="Editor Markdown gratuito y de código abierto para Windows, con vista previa en vivo y sin panel dividido. Arranca en 250 ms, ocupa 5 MB y edita, revisa el diff y publica repositorios de GitHub sin salir de la aplicación.">
 <meta name="author" content="Esdras Clother">
 <meta name="robots" content="index, follow, max-image-preview:large, max-snippet:-1">
 <link rel="canonical" href="https://unfold.brandsofts.com/">
 
-<!-- Open Graph. La imagen es la captura real de la aplicación: 1080x760, así
+<!-- Open Graph. La imagen es la captura real de la aplicación: 1080x640, así
      que en tarjetas anchas se recorta un poco arriba y abajo. Se declaran sus
      medidas para que quien la lea no tenga que descargarla para saberlas. -->
 <meta property="og:type" content="website">
@@ -17,18 +17,18 @@
 <meta property="og:locale" content="es_ES">
 <meta property="og:url" content="https://unfold.brandsofts.com/">
 <meta property="og:title" content="Unfold · Editor Markdown para Windows que se lee como quedará">
-<meta property="og:description" content="Sin panel dividido, sin previsualización aparte. Escribes en un sitio y lees en ese mismo sitio. Gratis, de código abierto y con GitHub integrado.">
-<meta property="og:image" content="https://unfold.brandsofts.com/captura-claro.png">
-<meta property="og:image:type" content="image/png">
+<meta property="og:description" content="Sin panel dividido, sin previsualización aparte. Escribes en un sitio y lees en ese mismo sitio. Gratis, de código abierto y con tus repositorios de GitHub dentro.">
+<meta property="og:image" content="https://unfold.brandsofts.com/captura-claro.jpg">
+<meta property="og:image:type" content="image/jpeg">
 <meta property="og:image:width" content="1080">
-<meta property="og:image:height" content="760">
-<meta property="og:image:alt" content="Unfold con un documento Markdown abierto, el esquema lateral a la izquierda y una tabla ya renderizada.">
+<meta property="og:image:height" content="640">
+<meta property="og:image:alt" content="Unfold con el explorador de repositorios de GitHub a la izquierda y un documento Markdown abierto con una tabla ya renderizada.">
 
 <meta name="twitter:card" content="summary_large_image">
 <meta name="twitter:title" content="Unfold · Editor Markdown para Windows que se lee como quedará">
-<meta name="twitter:description" content="Sin panel dividido, sin previsualización aparte. Escribes en un sitio y lees en ese mismo sitio. Gratis, de código abierto y con GitHub integrado.">
-<meta name="twitter:image" content="https://unfold.brandsofts.com/captura-claro.png">
-<meta name="twitter:image:alt" content="Unfold con un documento Markdown abierto y una tabla renderizada.">
+<meta name="twitter:description" content="Sin panel dividido, sin previsualización aparte. Escribes en un sitio y lees en ese mismo sitio. Gratis, de código abierto y con tus repositorios de GitHub dentro.">
+<meta name="twitter:image" content="https://unfold.brandsofts.com/captura-claro.jpg">
+<meta name="twitter:image:alt" content="Unfold con el explorador de repositorios de GitHub y un documento Markdown abierto.">
 
 <!-- Una sola, y clara: la página no cambia con el tema del sistema. -->
 <meta name="theme-color" content="#fdfcfa">
@@ -49,7 +49,7 @@
   "@type": "SoftwareApplication",
   "name": "Unfold",
   "url": "https://unfold.brandsofts.com/",
-  "description": "Editor Markdown para Windows con vista previa en vivo dentro del propio texto, sin panel dividido, con integración de GitHub para editar y publicar repositorios.",
+  "description": "Editor Markdown para Windows con vista previa en vivo dentro del propio texto, sin panel dividido, con integración de GitHub para editar, revisar el diff y publicar repositorios.",
   "applicationCategory": "DeveloperApplication",
   "applicationSubCategory": "Editor de texto",
   "operatingSystem": "Windows 10, Windows 11",
@@ -60,12 +60,17 @@
   "softwareHelp": "https://github.com/esdrasclth/unfold#readme",
   "license": "https://github.com/esdrasclth/unfold/blob/main/LICENSE",
   "isAccessibleForFree": true,
-  "screenshot": "https://unfold.brandsofts.com/captura-claro.png",
+  "screenshot": [
+    "https://unfold.brandsofts.com/captura-claro.jpg",
+    "https://unfold.brandsofts.com/captura-repositorios.jpg",
+    "https://unfold.brandsofts.com/captura-publicar.jpg"
+  ],
   "featureList": [
     "Vista previa en vivo dentro del texto, sin panel dividido",
     "Tablas renderizadas y navegables con Tab",
     "Fórmulas con KaTeX y frontmatter YAML",
     "Explorador de repositorios de GitHub con árbol y búsqueda",
+    "Vista previa del diff de cada archivo antes de confirmar",
     "Confirmar y publicar cambios en GitHub desde la aplicación",
     "Exportar a HTML autocontenido y a PDF"
   ],
@@ -86,6 +91,57 @@
     "url": "https://github.com/esdrasclth"
   },
   "codeRepository": "https://github.com/esdrasclth/unfold"
+}
+</script>
+
+<!-- Las mismas preguntas que responde la sección «Dudas», en el vocabulario
+     que entienden los buscadores. Si allí cambia una respuesta, aquí también. -->
+<script type="application/ld+json">
+{
+  "@context": "https://schema.org",
+  "@type": "FAQPage",
+  "mainEntity": [
+    {
+      "@type": "Question",
+      "name": "¿Unfold cambia mis archivos Markdown al abrirlos?",
+      "acceptedAnswer": {
+        "@type": "Answer",
+        "text": "No. El buffer contiene el Markdown literal y guardar escribe lo que ya había. Unfold no serializa el documento desde una estructura intermedia, así que no reordena listas ni normaliza comillas."
+      }
+    },
+    {
+      "@type": "Question",
+      "name": "¿Qué permisos necesita la integración con GitHub?",
+      "acceptedAnswer": {
+        "@type": "Answer",
+        "text": "Sólo los repositorios que le concedas al instalar la GitHub App, y puedes cambiarlos cuando quieras. La sesión se guarda en el Administrador de credenciales de Windows, cifrada por el sistema. Unfold nunca guarda tu contraseña."
+      }
+    },
+    {
+      "@type": "Question",
+      "name": "¿Hace falta tener Git instalado?",
+      "acceptedAnswer": {
+        "@type": "Answer",
+        "text": "No. Unfold lleva su propio motor Git nativo, así que clona, confirma, sincroniza y publica sin depender de un Git externo."
+      }
+    },
+    {
+      "@type": "Question",
+      "name": "¿Por qué Windows muestra un aviso de SmartScreen?",
+      "acceptedAnswer": {
+        "@type": "Answer",
+        "text": "Porque el instalador no está firmado con un certificado comercial, que cuesta unos cientos de euros al año. Los hashes SHA-256 de cada archivo están publicados en las notas de cada versión para poder comprobarlo."
+      }
+    },
+    {
+      "@type": "Question",
+      "name": "¿Hay versión para macOS o Linux?",
+      "acceptedAnswer": {
+        "@type": "Answer",
+        "text": "Todavía no. Hoy sólo se compila para Windows 10 y 11. El código es abierto y las compilaciones para macOS y Linux están en la lista de lo pendiente."
+      }
+    }
+  ]
 }
 </script>
 
@@ -120,6 +176,8 @@
 </head>
 <body>
 
+<a class="saltar" href="#contenido">Saltar al contenido</a>
+
 <!-- La marca, una sola vez; el resto la reutiliza con <use>. -->
 <svg width="0" height="0" style="position:absolute" aria-hidden="true">
   <symbol id="marca" viewBox="0 0 1024 1024">
@@ -128,6 +186,19 @@
     <path d="M352 512L512 668L672 512" fill="none" stroke="#b4572a" stroke-width="68"
           stroke-linecap="round" stroke-linejoin="round"/>
   </symbol>
+  <symbol id="galon" viewBox="0 0 1024 1024">
+    <path d="M352 512L512 668L672 512" fill="none" stroke="currentColor" stroke-width="90"
+          stroke-linecap="round" stroke-linejoin="round"/>
+  </symbol>
+  <symbol id="octocat" viewBox="0 0 16 16">
+    <path fill="currentColor" d="M8 0C3.58 0 0 3.58 0 8c0 3.54 2.29 6.53 5.47 7.59.4.07.55-.17.55-.38
+      0-.19-.01-.82-.01-1.49-2.01.37-2.53-.49-2.69-.94-.09-.23-.48-.94-.82-1.13-.28-.15-.68-.52-.01-.53.63-.01
+      1.08.58 1.23.82.72 1.21 1.87.87 2.33.66.07-.52.28-.87.51-1.07-1.78-.2-3.64-.89-3.64-3.95
+      0-.87.31-1.59.82-2.15-.08-.2-.36-1.02.08-2.12 0 0 .67-.21 2.2.82.64-.18 1.32-.27 2-.27.68 0
+      1.36.09 2 .27 1.53-1.04 2.2-.82 2.2-.82.44 1.1.16 1.92.08 2.12.51.56.82 1.27.82 2.15 0
+      3.07-1.87 3.75-3.65 3.95.29.25.54.73.54 1.48 0 1.07-.01 1.93-.01 2.2 0 .21.15.46.55.38A8.01
+      8.01 0 0 0 16 8c0-4.42-3.58-8-8-8z"/>
+  </symbol>
 </svg>
 
 <header class="nav">
@@ -135,22 +206,36 @@
     <svg class="logo" viewBox="0 0 1024 1024" aria-hidden="true"><use href="#marca"/></svg>
     <span>Unfold</span>
   </a>
-  <nav class="nav-links">
-    <a href="#github">GitHub</a>
+  <nav class="nav-links" aria-label="Secciones">
     <a href="#caracteristicas">Características</a>
+    <a href="#github">GitHub</a>
     <a href="#como-funciona">Cómo funciona</a>
     <a href="#instalar">Instalar</a>
-    <a class="nav-cta" href="https://github.com/esdrasclth/unfold">Código</a>
+    <a href="#dudas">Dudas</a>
   </nav>
+  <div class="nav-acciones">
+    <a class="nav-codigo" href="https://github.com/esdrasclth/unfold" aria-label="Ver el código en GitHub">
+      <svg viewBox="0 0 16 16" aria-hidden="true"><use href="#octocat"/></svg>
+      <span>Código</span>
+    </a>
+    <a class="nav-cta" href="https://github.com/esdrasclth/unfold/releases/latest/download/Unfold-Setup.exe">
+      Descargar
+    </a>
+  </div>
 </header>
 
 <main id="top">
 
-<section class="hero">
+<section class="hero" id="contenido">
   <div class="hero-wash" aria-hidden="true"></div>
 
   <div class="hero-texto">
-    <p class="sobretitulo"><span>Windows</span> · <span>gratis</span> · <span>código abierto</span></p>
+    <a class="novedad" href="#github">
+      <span class="novedad-punto" aria-hidden="true"></span>
+      <strong>Novedad 0.3</strong>
+      <span>GitHub dentro del editor</span>
+      <svg class="novedad-galon" viewBox="0 0 1024 1024" aria-hidden="true"><use href="#galon"/></svg>
+    </a>
 
     <h1 class="titulo" data-plegar="600"><span class="mk"># </span>El Markdown se despliega<br>mientras lo escribes.</h1>
 
@@ -163,13 +248,13 @@
     <div class="acciones">
       <a class="btn btn-primario" id="descargar"
          href="https://github.com/esdrasclth/unfold/releases/latest/download/Unfold-Setup.exe">
-        <svg viewBox="0 0 1024 1024" aria-hidden="true" class="btn-galon">
-          <path d="M352 512L512 668L672 512" fill="none" stroke="currentColor" stroke-width="90"
-                stroke-linecap="round" stroke-linejoin="round"/>
-        </svg>
+        <svg viewBox="0 0 1024 1024" aria-hidden="true" class="btn-galon"><use href="#galon"/></svg>
         Descargar para Windows
       </a>
-      <a class="btn btn-suave" href="https://github.com/esdrasclth/unfold">Ver el código</a>
+      <a class="btn btn-suave" href="https://github.com/esdrasclth/unfold">
+        <svg viewBox="0 0 16 16" aria-hidden="true" class="btn-octocat"><use href="#octocat"/></svg>
+        Ver el código
+      </a>
     </div>
 
     <p class="meta" id="meta">Windows 10 y 11 · 7,7 MB · sin instalador de administrador</p>
@@ -178,7 +263,7 @@
   <!-- La demostración: la propia mecánica del editor, en vivo. -->
   <div class="hero-demo">
     <div class="ventana" id="demo" role="img"
-         aria-label="Animación: se escribe Markdown y sus marcadores se ocultan solos, dejando encabezados, tareas y una tabla ya con formato.">
+         aria-label="Animación: se escribe Markdown y sus marcadores se ocultan solos, dejando encabezados, tareas y una tabla ya con formato; después aparece el explorador de repositorios de GitHub y el documento se confirma y se publica.">
       <div class="ventana-barra">
         <div class="ventana-titulo">
           <svg class="logo logo-xs" viewBox="0 0 1024 1024" aria-hidden="true"><use href="#marca"/></svg>
@@ -187,19 +272,57 @@
         <div class="ventana-botones"><i></i><i></i><i class="cerrar"></i></div>
       </div>
       <div class="ventana-pestanas"><span class="pestana">notas.md</span></div>
-      <div class="ventana-hoja"><div class="lineas" id="lineas"></div></div>
+      <div class="ventana-cuerpo">
+        <!-- El carril de repositorios entra en el segundo acto. Vive aquí, y no
+             dentro de la hoja, porque en la aplicación tampoco es parte del
+             documento: es una columna hermana que empuja el texto. -->
+        <aside class="ventana-carril" id="carril" aria-hidden="true">
+          <p class="carril-titulo">Repositorios</p>
+          <div class="carril-repo">
+            <span class="carril-nombre">esdrasclth/notas</span>
+            <span class="carril-rama" id="carril-rama">main · 1 sin confirmar</span>
+          </div>
+          <ul class="carril-lista">
+            <li><i class="punto-estado" id="punto-notas"></i>notas.md</li>
+            <li><i class="punto-estado es-sync"></i>ideas.md</li>
+            <li><i class="punto-estado es-sync"></i>archivo/2025.md</li>
+          </ul>
+        </aside>
+        <div class="ventana-hoja"><div class="lineas" id="lineas"></div></div>
+      </div>
+      <!-- La hoja de publicación sube desde abajo en el segundo acto. -->
+      <div class="ventana-publicar" id="publicar" aria-hidden="true">
+        <div class="publicar-cab">
+          <strong>Publicar cambios</strong>
+          <span id="publicar-estado">1 de 1</span>
+        </div>
+        <div class="publicar-fila">
+          <i class="publicar-caja marcada" aria-hidden="true"></i>
+          <span class="publicar-ruta">notas.md</span>
+          <span class="publicar-diff"><i>+4</i> <b>−1</b></span>
+        </div>
+        <div class="publicar-mensaje"><span id="publicar-texto"></span><i class="cursor-mensaje"></i></div>
+        <div class="publicar-boton" id="publicar-boton">Confirmar y publicar</div>
+      </div>
     </div>
     <p class="pie-demo">No es un vídeo: es la misma mecánica, dibujada aquí.</p>
   </div>
 
   <span class="centinela" aria-hidden="true"></span>
 
-  <a class="bajar" href="#pilares" aria-label="Seguir leyendo">
-    <svg viewBox="0 0 1024 1024" aria-hidden="true">
-      <path d="M352 512L512 668L672 512" fill="none" stroke="currentColor" stroke-width="80"
-            stroke-linecap="round" stroke-linejoin="round"/>
-    </svg>
+  <a class="bajar" href="#cifras" aria-label="Seguir leyendo">
+    <svg viewBox="0 0 1024 1024" aria-hidden="true"><use href="#galon"/></svg>
   </a>
+</section>
+
+<!-- Los cuatro números que resumen la propuesta, antes de contarla despacio. -->
+<section class="cifras" id="cifras" aria-label="En cifras">
+  <dl>
+    <div><dt>250 ms</dt><dd>en abrirse</dd></div>
+    <div><dt>5 MB</dt><dd>instalado</dd></div>
+    <div><dt>0 €</dt><dd>y licencia MIT</dd></div>
+    <div><dt>Windows</dt><dd>10 y 11</dd></div>
+  </dl>
 </section>
 
 <section class="pilares" id="pilares">
@@ -232,45 +355,139 @@
 
 <section class="captura-seccion">
   <div class="captura-cabecera">
-    <h2 class="titulo"><span class="mk">## </span>Así se ve</h2>
+    <div>
+      <p class="etiqueta">La aplicación</p>
+      <h2 class="titulo"><span class="mk">## </span>Así se ve</h2>
+    </div>
     <div class="conmutador" role="group" aria-label="Tema de la aplicación">
       <button type="button" class="activo" data-tema="claro">Claro</button>
       <button type="button" data-tema="oscuro">Oscuro</button>
     </div>
   </div>
-  <p class="bajada">La aplicación trae los dos temas y doce colores de barra. Pruébalos aquí.</p>
+  <p class="bajada">
+    Un documento de un repositorio conectado, con el explorador a la izquierda y
+    el estado de cada archivo al lado. Los dos temas y doce colores de barra
+    vienen incluidos; pruébalos aquí.
+  </p>
   <figure class="captura">
-    <img id="captura" src="captura-claro.png" width="1080" height="760"
-         alt="Unfold con un documento abierto, el esquema lateral a la izquierda y una tabla renderizada.">
+    <img id="captura" src="captura-claro.jpg" width="1080" height="640"
+         alt="Unfold con el explorador de repositorios de GitHub a la izquierda, un documento abierto con encabezados, tareas y una tabla renderizada.">
   </figure>
 </section>
 
 <section id="caracteristicas" class="caracteristicas">
+  <p class="etiqueta">Todo lo que trae</p>
   <h2 class="titulo"><span class="mk">## </span>Qué sabe hacer</h2>
+  <p class="bajada bajada-ancha">
+    Catorce cosas, agrupadas por el momento en el que las necesitas.
+  </p>
 
-  <ol class="lista-larga">
-    <li><span class="idx">01</span><h3>Vista previa en vivo</h3><p>Encabezados, negrita, cursiva, tachado, código, citas, listas, tareas, reglas e imágenes.</p></li>
-    <li><span class="idx">02</span><h3>Tablas de verdad</h3><p>Se dibujan como tablas y se recorren con <kbd>Tab</kbd>, sin dejar de ser Markdown en el archivo.</p></li>
-    <li><span class="idx">03</span><h3>Fórmulas y frontmatter</h3><p><code>$…$</code> y <code>$$…$$</code> con KaTeX. El bloque YAML del principio se muestra aparte, como ficha.</p></li>
-    <li><span class="idx">04</span><h3>Pestañas y recientes</h3><p>Cada pestaña con su propio historial de deshacer. Los últimos archivos, a un clic.</p></li>
-    <li><span class="idx">05</span><h3>Esquema lateral</h3><p>Sacado del árbol sintáctico, plegable y ajustable. Una almohadilla dentro de un bloque de código no aparece.</p></li>
-    <li><span class="idx">06</span><h3>Pegar con formato</h3><p>Desde el navegador, el HTML se convierte a Markdown. Una imagen se guarda junto al documento.</p></li>
-    <li><span class="idx">07</span><h3>Exportar</h3><p>HTML autocontenido, en un solo archivo, y PDF a través de la impresión del sistema.</p></li>
-    <li><span class="idx">08</span><h3>Vigila el archivo</h3><p>Si lo editas desde otro programa, Unfold avisa en vez de pisarlo al guardar.</p></li>
-    <li><span class="idx">09</span><h3>A tu gusto</h3><p>Tipografía, tamaño, interlineado, ancho de columna, modo enfoque y máquina de escribir.</p></li>
-    <li><span class="idx">10</span><h3>Retoma tu sesión</h3><p>Al volver a abrir, recupera pestañas, borradores, cursor y posición sin tocar tus archivos.</p></li>
-    <li><span class="idx">11</span><h3>Escribe a tu manera</h3><p>Usa el menú contextual para insertar Markdown o alterna al modo Código fuente con <kbd>Ctrl+Shift+M</kbd>.</p></li>
-    <li><span class="idx">12</span><h3>Repositorios de GitHub</h3><p>Conecta los que elijas y ábrelos desde un explorador con árbol de carpetas y búsqueda por nombre.</p></li>
-    <li><span class="idx">13</span><h3>Confirmar y publicar</h3><p>Marcas los archivos, escribes el mensaje y Unfold confirma, sincroniza con el remoto y publica.</p></li>
-    <li><span class="idx">14</span><h3>La ventana te recuerda</h3><p>Vuelve con el tamaño, el sitio y el estado maximizado con los que la dejaste.</p></li>
-  </ol>
+  <div class="grupos">
+    <section class="grupo">
+      <h3 class="grupo-titulo"><span class="grupo-num">01</span> Escribir</h3>
+      <ul>
+        <li>
+          <h4>Vista previa en vivo</h4>
+          <p>Encabezados, negrita, cursiva, tachado, código, citas, listas, tareas, reglas e imágenes.</p>
+        </li>
+        <li>
+          <h4>Tablas de verdad</h4>
+          <p>Se dibujan como tablas y se recorren con <kbd>Tab</kbd>, sin dejar de ser Markdown en el archivo.</p>
+        </li>
+        <li>
+          <h4>Fórmulas y frontmatter</h4>
+          <p><code>$…$</code> y <code>$$…$$</code> con KaTeX. El bloque YAML del principio se muestra aparte, como ficha.</p>
+        </li>
+        <li>
+          <h4>Pegar con formato</h4>
+          <p>Desde el navegador, el HTML se convierte a Markdown. Una imagen se guarda junto al documento.</p>
+        </li>
+      </ul>
+    </section>
+
+    <section class="grupo">
+      <h3 class="grupo-titulo"><span class="grupo-num">02</span> Moverte</h3>
+      <ul>
+        <li>
+          <h4>Pestañas y recientes</h4>
+          <p>Cada pestaña con su propio historial de deshacer. Los últimos archivos, a un clic.</p>
+        </li>
+        <li>
+          <h4>Esquema lateral</h4>
+          <p>Sacado del árbol sintáctico, plegable y ajustable. Una almohadilla dentro de un bloque de código no aparece.</p>
+        </li>
+        <li>
+          <h4>Retoma tu sesión</h4>
+          <p>Al volver a abrir, recupera pestañas, borradores, cursor y posición sin tocar tus archivos.</p>
+        </li>
+        <li>
+          <h4>La ventana te recuerda</h4>
+          <p>Vuelve con el tamaño, el sitio y el estado maximizado con los que la dejaste.</p>
+        </li>
+      </ul>
+    </section>
+
+    <section class="grupo">
+      <h3 class="grupo-titulo"><span class="grupo-num">03</span> Publicar</h3>
+      <ul>
+        <li>
+          <h4>Repositorios de GitHub</h4>
+          <p>Conecta los que elijas y ábrelos desde un explorador con árbol de carpetas y búsqueda por nombre.</p>
+        </li>
+        <li>
+          <h4>Diff antes de confirmar</h4>
+          <p>Despliega cualquier archivo de la vista de cambios y lee lo que añade y lo que quita, línea a línea.</p>
+        </li>
+        <li>
+          <h4>Confirmar y publicar</h4>
+          <p>Marcas los archivos, escribes el mensaje y Unfold confirma, sincroniza con el remoto y publica.</p>
+        </li>
+        <li>
+          <h4>Exportar</h4>
+          <p>HTML autocontenido, en un solo archivo, y PDF a través de la impresión del sistema.</p>
+        </li>
+      </ul>
+    </section>
+
+    <section class="grupo">
+      <h3 class="grupo-titulo"><span class="grupo-num">04</span> A tu manera</h3>
+      <ul>
+        <li>
+          <h4>Vigila el archivo</h4>
+          <p>Si lo editas desde otro programa, Unfold avisa en vez de pisarlo al guardar.</p>
+        </li>
+        <li>
+          <h4>Apariencia</h4>
+          <p>Tipografía, tamaño, interlineado, ancho de columna, modo enfoque y máquina de escribir.</p>
+        </li>
+        <li>
+          <h4>Escribe como prefieras</h4>
+          <p>Menú contextual para insertar Markdown, o modo Código fuente con <kbd>Ctrl+Shift+M</kbd>.</p>
+        </li>
+      </ul>
+    </section>
+  </div>
+
+  <div class="atajos">
+    <h3>Atajos esenciales</h3>
+    <dl>
+      <div><dt>Nuevo · Abrir · Guardar</dt><dd><kbd>Ctrl+N</kbd> <kbd>Ctrl+O</kbd> <kbd>Ctrl+S</kbd></dd></div>
+      <div><dt>Negrita · Cursiva · Enlace</dt><dd><kbd>Ctrl+B</kbd> <kbd>Ctrl+I</kbd> <kbd>Ctrl+K</kbd></dd></div>
+      <div><dt>Esquema · Repositorios</dt><dd><kbd>Ctrl+Shift+O</kbd> <kbd>Ctrl+Shift+B</kbd></dd></div>
+      <div><dt>GitHub · Apariencia</dt><dd><kbd>Ctrl+Shift+H</kbd> <kbd>Ctrl+,</kbd></dd></div>
+      <div><dt>Enfoque · Máquina de escribir</dt><dd><kbd>Ctrl+Shift+F</kbd> <kbd>Ctrl+Shift+T</kbd></dd></div>
+      <div><dt>Código fuente · Exportar</dt><dd><kbd>Ctrl+Shift+M</kbd> <kbd>Ctrl+Shift+E</kbd></dd></div>
+    </dl>
+  </div>
 </section>
 
 <section id="github" class="github">
+  <p class="etiqueta">Integración con GitHub · nuevo en 0.3</p>
   <h2 class="titulo"><span class="mk">## </span>Tu documentación, donde ya vive</h2>
-  <p class="bajada">
+  <p class="bajada bajada-ancha">
     Conecta los repositorios que quieras y edita su Markdown como cualquier otro
-    archivo. Unfold sólo ve los que le concedas, y nunca guarda tu contraseña.
+    archivo. Unfold lleva su propio motor Git: no hace falta tener Git instalado,
+    sólo ve los repositorios que le concedas y nunca guarda tu contraseña.
   </p>
 
   <ol class="pasos pasos-github">
@@ -290,7 +507,7 @@
       <div>
         <h3>Elige los repositorios</h3>
         <p>
-          Tú decides a cuáles damos acceso, y puedes cambiarlo cuando quieras.
+          Tú decides a cuáles das acceso, y puedes cambiarlo cuando quieras.
           Unfold clona los que conectes y los deja listos para leer sin
           conexión.
         </p>
@@ -302,12 +519,31 @@
         <h3>Escribe y publica</h3>
         <p>
           Un explorador con árbol de carpetas y búsqueda por nombre. Marcas qué
-          archivos entran, escribes el mensaje y Unfold confirma, sincroniza y
-          publica.
+          archivos entran, revisas su diff, escribes el mensaje y Unfold
+          confirma, sincroniza y publica.
         </p>
       </div>
     </li>
   </ol>
+
+  <div class="github-figuras">
+    <figure>
+      <img src="captura-repositorios.jpg" width="1080" height="640" loading="lazy"
+           alt="Diálogo de GitHub en Unfold: la cuenta conectada, dos repositorios conectados con su rama y sus cambios sin confirmar, y otros tres disponibles para conectar.">
+      <figcaption>
+        <strong>Los que tú elijas.</strong> Los conectados muestran su rama y lo
+        que llevan sin confirmar; el resto espera a que pulses «Conectar».
+      </figcaption>
+    </figure>
+    <figure>
+      <img src="captura-publicar.jpg" width="1080" height="640" loading="lazy"
+           alt="Vista de publicar cambios en Unfold: tres archivos con casilla y estado, el diff de uno de ellos desplegado con las líneas añadidas y quitadas, el mensaje del commit y la identidad con la que se va a firmar.">
+      <figcaption>
+        <strong>Ves el diff antes de subirlo.</strong> Cada archivo se despliega
+        con sus líneas añadidas y quitadas, sin salir de la vista de cambios.
+      </figcaption>
+    </figure>
+  </div>
 
   <div class="github-notas">
     <article>
@@ -316,6 +552,14 @@
         Cada documento lleva su estado al lado: sin cambios, modificado, todavía
         no está en Git, o en conflicto. El repositorio dice su rama, lo que
         falta por confirmar y lo que falta por publicar.
+      </p>
+    </article>
+    <article>
+      <h3>Confirmas lo que revisaste</h3>
+      <p>
+        Lo que entra en el commit es exactamente lo que marcaste. Si un archivo
+        cambia entre que lo revisas y publicas, Unfold se detiene y te lo dice
+        en vez de subir algo que no habías visto.
       </p>
     </article>
     <article>
@@ -339,6 +583,7 @@
 
 <section id="como-funciona" class="explicacion">
   <div class="explicacion-texto">
+    <p class="etiqueta">Por dentro</p>
     <h2 class="titulo"><span class="mk">## </span>Cómo funciona</h2>
     <p>
       El buffer de CodeMirror contiene el Markdown tal cual. Un plugin recorre
@@ -375,6 +620,7 @@
 </section>
 
 <section id="instalar" class="instalar">
+  <p class="etiqueta">En un minuto</p>
   <h2 class="titulo"><span class="mk">## </span>Instalar</h2>
   <ol class="pasos">
     <li><span class="paso-num">01</span><div><h3>Descarga el instalador</h3><p><code>Unfold-Setup.exe</code>, unos 7,7 MB.</p></div></li>
@@ -392,14 +638,70 @@
   </div>
 </section>
 
+<section id="dudas" class="dudas">
+  <p class="etiqueta">Antes de descargar</p>
+  <h2 class="titulo"><span class="mk">## </span>Dudas razonables</h2>
+
+  <div class="preguntas">
+    <details>
+      <summary>¿Unfold cambia mis archivos al abrirlos?</summary>
+      <p>
+        No. El buffer contiene el Markdown literal y guardar escribe lo que ya
+        había. Unfold no serializa el documento desde una estructura intermedia,
+        así que no reordena tus listas ni normaliza tus comillas.
+      </p>
+    </details>
+    <details>
+      <summary>¿Qué permisos necesita la integración con GitHub?</summary>
+      <p>
+        Sólo los repositorios que le concedas al instalar la GitHub App, y
+        puedes cambiarlos cuando quieras desde github.com. La sesión se guarda en
+        el Administrador de credenciales de Windows, cifrada por el sistema.
+        Unfold nunca ve ni guarda tu contraseña.
+      </p>
+    </details>
+    <details>
+      <summary>¿Hace falta tener Git instalado?</summary>
+      <p>
+        No. Unfold lleva su propio motor Git nativo, así que clona, confirma,
+        sincroniza y publica sin depender de un Git externo ni de la línea de
+        órdenes.
+      </p>
+    </details>
+    <details>
+      <summary>¿Y si alguien publica antes que yo en la misma rama?</summary>
+      <p>
+        Unfold sincroniza antes de subir. Si la historia divergió, se detiene y
+        lo explica en vez de dejar un rechazo críptico: tu commit queda hecho y
+        a salvo, listo para publicarse cuando resuelvas la diferencia. Fusionar
+        desde la propia aplicación es lo siguiente en la lista.
+      </p>
+    </details>
+    <details>
+      <summary>¿Por qué Windows muestra un aviso de SmartScreen?</summary>
+      <p>
+        Porque el instalador no está firmado con un certificado comercial, que
+        cuesta unos cientos de euros al año. Los hashes SHA-256 de cada archivo
+        están publicados en las notas de cada versión para poder comprobarlo.
+      </p>
+    </details>
+    <details>
+      <summary>¿Hay versión para macOS o Linux?</summary>
+      <p>
+        Todavía no: hoy sólo se compila para Windows 10 y 11. El código es
+        abierto y las compilaciones para macOS y Linux están en la lista de lo
+        pendiente, junto con las notas al pie y las ramas y pull requests desde
+        la aplicación.
+      </p>
+    </details>
+  </div>
+</section>
+
 <section class="cierre">
   <h2 class="cierre-titulo">Escribes en un sitio<br>y lees en ese mismo sitio.</h2>
   <a class="btn btn-primario btn-grande"
      href="https://github.com/esdrasclth/unfold/releases/latest/download/Unfold-Setup.exe">
-    <svg viewBox="0 0 1024 1024" aria-hidden="true" class="btn-galon">
-      <path d="M352 512L512 668L672 512" fill="none" stroke="currentColor" stroke-width="90"
-            stroke-linecap="round" stroke-linejoin="round"/>
-    </svg>
+    <svg viewBox="0 0 1024 1024" aria-hidden="true" class="btn-galon"><use href="#galon"/></svg>
     Descargar Unfold
   </a>
   <p class="meta" id="meta-cierre">Windows 10 y 11</p>
@@ -412,8 +714,9 @@
     <svg class="logo logo-xs" viewBox="0 0 1024 1024" aria-hidden="true"><use href="#marca"/></svg>
     <span>Unfold</span>
   </div>
-  <nav>
+  <nav aria-label="Enlaces del proyecto">
     <a href="https://github.com/esdrasclth/unfold">Código</a>
+    <a href="https://github.com/esdrasclth/unfold/releases">Versiones</a>
     <a href="https://github.com/esdrasclth/unfold/blob/main/CONTRIBUTING.md">Contribuir</a>
     <a href="https://github.com/esdrasclth/unfold/issues">Incidencias</a>
     <a href="https://github.com/esdrasclth/unfold/blob/main/LICENSE">Licencia MIT</a>
@@ -424,14 +727,15 @@
   /*
    * Descargas. La vista de página la recoge PostHog sola, pero lo que hay que
    * saber de esta web es cuánta gente llega a pulsar «Descargar», y desde
-   * dónde: el botón de arriba lo pulsa quien ya venía decidido, el del final
-   * quien se ha leído la página entera. Distinguirlos es lo que hace útil el
-   * dato.
+   * dónde: el de la barra lo pulsa quien ya venía decidido, el del final quien
+   * se ha leído la página entera. Distinguirlos es lo que hace útil el dato.
    */
   for (const enlace of document.querySelectorAll('a[href*="Unfold-Setup.exe"]')) {
     enlace.addEventListener("click", () => {
       window.posthog?.capture("descarga_iniciada", {
-        origen: enlace.closest("section")?.classList.contains("cierre") ? "cierre" : "portada",
+        origen: enlace.classList.contains("nav-cta") ? "barra"
+          : enlace.closest("section")?.classList.contains("cierre") ? "cierre"
+          : "portada",
       });
     });
   }

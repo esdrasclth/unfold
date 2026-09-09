@@ -8,6 +8,12 @@
  * siguiente, los marcadores se encogen hasta ocupar cero y en su sitio
  * aparecen la viñeta, la casilla o la tabla. Ese es el orden de causas que hay
  * en la aplicación: la línea se pliega porque el cursor la ha dejado.
+ *
+ * Tiene dos actos. El primero es ese: escribir Markdown y verlo plegarse. El
+ * segundo cuenta lo que la versión 0.3 añadió y no se veía por ninguna parte:
+ * el documento pertenece a un repositorio, y desde la misma ventana se
+ * confirma y se publica. El orden importa —primero se escribe, después se
+ * publica— porque es el orden en que ocurre de verdad.
  */
 
 const GUION = [
@@ -212,6 +218,18 @@ const contenedor = document.getElementById("lineas");
 const demo = document.getElementById("demo");
 const menosMovimiento = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
 
+/* Las piezas del segundo acto, el de GitHub. */
+const cuerpo = demo?.querySelector(".ventana-cuerpo");
+const publicar = document.getElementById("publicar");
+const publicarTexto = document.getElementById("publicar-texto");
+const publicarBoton = document.getElementById("publicar-boton");
+const publicarEstado = document.getElementById("publicar-estado");
+const puntoNotas = document.getElementById("punto-notas");
+const carrilRama = document.getElementById("carril-rama");
+
+const MENSAJE = "Aclara las notas de la reunión";
+const BOTON_INICIAL = "Confirmar y publicar";
+
 /*
  * Una puerta que la animación atraviesa en cada pausa. Mientras la ventana
  * está oculta o la demostración fuera de la pantalla se queda cerrada, y no se
@@ -236,6 +254,20 @@ async function pausa(ms) {
   await puerta;
 }
 
+/** Deja el segundo acto como estaba antes de empezar. */
+function reiniciarGithub() {
+  if (!cuerpo) return;
+  cuerpo.classList.remove("con-carril");
+  publicar.classList.remove("abierta", "escribiendo");
+  publicarBoton.classList.remove("pulsado", "hecho");
+  publicarBoton.textContent = BOTON_INICIAL;
+  publicarEstado.textContent = "1 de 1";
+  publicarTexto.textContent = "";
+  puntoNotas.classList.remove("es-sync");
+  carrilRama.textContent = "main · 1 sin confirmar";
+}
+
+/** El estado final de los dos actos, para quien pide menos movimiento. */
 function estatico() {
   for (const entrada of GUION) {
     const { nodo, huecos } = construir(entrada);
@@ -243,6 +275,56 @@ function estatico() {
     nodo.classList.add("plegada");
     contenedor.appendChild(nodo);
   }
+  if (!cuerpo) return;
+  cuerpo.classList.add("con-carril");
+  publicar.classList.add("abierta");
+  publicarTexto.textContent = MENSAJE;
+  publicarBoton.classList.add("hecho");
+  publicarBoton.textContent = "Publicado en main";
+  puntoNotas.classList.add("es-sync");
+  carrilRama.textContent = "main · sincronizado";
+}
+
+/**
+ * Segundo acto: el documento pertenece a un repositorio y se publica.
+ *
+ * Cada paso espera al anterior porque son consecuencia unos de otros, igual
+ * que en la aplicación: el carril aparece porque el documento es de un
+ * repositorio, la hoja sube porque hay algo que confirmar, y el punto pasa a
+ * sincronizado porque el remoto aceptó el commit.
+ */
+async function actoGithub() {
+  cuerpo.classList.add("con-carril");
+  await pausa(1100);
+
+  publicar.classList.add("abierta");
+  await pausa(760);
+
+  publicar.classList.add("escribiendo");
+  for (const caracter of MENSAJE) {
+    publicarTexto.textContent += caracter;
+    await pausa(RITMO + Math.random() * 30);
+  }
+  publicar.classList.remove("escribiendo");
+  await pausa(560);
+
+  publicarBoton.classList.add("pulsado");
+  await pausa(170);
+  publicarBoton.classList.remove("pulsado");
+  publicarBoton.textContent = "Sincronizando con el remoto…";
+  await pausa(1150);
+
+  publicarBoton.classList.add("hecho");
+  publicarBoton.textContent = "Publicado en main";
+  publicarEstado.textContent = "hace un momento";
+  puntoNotas.classList.add("es-sync");
+  carrilRama.textContent = "main · sincronizado";
+  await pausa(2600);
+
+  publicar.classList.remove("abierta");
+  await pausa(620);
+  cuerpo.classList.remove("con-carril");
+  await pausa(700);
 }
 
 async function reproducir() {
@@ -251,6 +333,7 @@ async function reproducir() {
 
   for (;;) {
     contenedor.textContent = "";
+    reiniciarGithub();
     let anterior = null;
 
     for (const entrada of GUION) {
@@ -278,7 +361,10 @@ async function reproducir() {
 
     cursor.remove();
     anterior.classList.add("plegada");
-    await pausa(3000);
+    await pausa(1100);
+
+    if (cuerpo) await actoGithub();
+    else await pausa(2600);
   }
 }
 
@@ -373,12 +459,18 @@ if (!menosMovimiento && !document.hidden) {
   const grupos = [
     [".hero-texto > *", 80],
     [".hero-demo", 0],
+    [".cifras div", 70],
     [".pilares article", 90],
-    [".captura-cabecera, .bajada, .captura", 70],
-    [".lista-larga li", 45],
+    [".captura-cabecera, .captura-seccion .bajada, .captura", 70],
+    [".pasos-github li", 90],
+    [".github-figuras figure", 110],
+    [".github-notas article", 70],
+    [".grupo", 90],
+    [".atajos", 0],
     [".explicacion-texto, .pares", 110],
-    [".pasos li", 90],
+    [".instalar .pasos li", 90],
     [".aviso", 0],
+    [".preguntas details", 40],
     [".cierre > *", 90],
   ];
 
@@ -422,13 +514,52 @@ const captura = document.getElementById("captura");
 const botones = document.querySelectorAll(".conmutador button");
 
 // Se precarga la otra para que el cambio sea instantáneo y no parpadee.
-if (captura) new Image().src = "captura-oscuro.png";
+if (captura) new Image().src = "captura-oscuro.jpg";
 
 for (const boton of botones) {
   boton.addEventListener("click", () => {
     for (const otro of botones) otro.classList.toggle("activo", otro === boton);
-    captura.src = `captura-${boton.dataset.tema}.png`;
+    captura.src = `captura-${boton.dataset.tema}.jpg`;
   });
+}
+
+/* ── La barra marca la sección que se está leyendo ──────────────────────── */
+
+/*
+ * Con un observador y no midiendo posiciones en cada píxel de desplazamiento.
+ * El margen superior descuenta la propia barra, para que una sección cuente
+ * como leída cuando está debajo de ella y no cuando roza el borde de arriba.
+ */
+const enlacesNav = [...document.querySelectorAll(".nav-links a")];
+const secciones = enlacesNav
+  .map((enlace) => document.querySelector(enlace.getAttribute("href")))
+  .filter(Boolean)
+  // En orden de documento, no en el de la barra: de eso depende cuál gana
+  // cuando se ven dos a la vez, y las dos listas podrían dejar de coincidir.
+  .sort((a, b) => (a.compareDocumentPosition(b) & Node.DOCUMENT_POSITION_FOLLOWING ? -1 : 1));
+
+if (secciones.length) {
+  const vistas = new Set();
+  const vigilanteNav = new IntersectionObserver(
+    (entradas) => {
+      for (const entrada of entradas) {
+        if (entrada.isIntersecting) vistas.add(entrada.target);
+        else vistas.delete(entrada.target);
+      }
+      // La primera en orden de documento gana: al bajar despacio, dos secciones
+      // pueden verse a la vez y la de arriba es la que se está leyendo.
+      const activa = secciones.find((seccion) => vistas.has(seccion));
+      for (const enlace of enlacesNav) {
+        enlace.classList.toggle(
+          "activo",
+          Boolean(activa) && enlace.getAttribute("href") === `#${activa.id}`,
+        );
+      }
+    },
+    { rootMargin: "-25% 0px -55% 0px" },
+  );
+
+  for (const seccion of secciones) vigilanteNav.observe(seccion);
 }
 
 /* ── Versión publicada ──────────────────────────────────────────────────── */
