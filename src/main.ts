@@ -840,7 +840,7 @@ window.addEventListener("keydown", (event) => {
       { id: "settings", label: "Abrir Apariencia y ajustes", run: () => toggleSettings(true) },
       { id: "repositories", label: "Explorador de repositorios", shortcut: "Ctrl+Shift+B", run: () => toggleRepositories(true) },
       { id: "repositories-search", label: "Buscar un documento por nombre", run: () => { toggleRepositories(true); repositoryPanel.focusFilter(); } },
-      { id: "publish", label: "Publicar cambios en GitHub", run: publishCurrent },
+      { id: "publish", label: "Publicar cambios en GitHub", shortcut: "Ctrl+Shift+U", run: publishCurrent },
       { id: "github", label: "Conectar o revisar GitHub", shortcut: "Ctrl+Shift+H", run: showGithub },
       { id: "history", label: "Ver historial y recuperar versión", run: () => openHistoryDialog(historyKey(session.path, session.name), view.state.doc.toString(), (content) => replaceDocument(view, content)) },
       { id: "backup-folder", label: `Configurar carpeta de copias${backupFolder() ? ` (${backupFolder()})` : ""}`, run: () => void (async () => {
@@ -1145,5 +1145,10 @@ window.addEventListener("keydown", (event) => {
   } else if (key === "m" && event.shiftKey) {
     event.preventDefault();
     toggleSourceMode();
+  } else if (key === "u" && event.shiftKey) {
+    // «Subir». Publicar era la única acción de GitHub sin atajo, y es la que
+    // se repite: escribir, guardar, publicar, y otra vez.
+    event.preventDefault();
+    publishCurrent();
   }
 });

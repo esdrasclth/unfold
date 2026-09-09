@@ -44,6 +44,13 @@ const documents = [{
 }];
 
 const calls = [];
+/** Lo que registra `listen`, para poder emitir eventos a mano en la prueba. */
+const oyentesDeEvento = [];
+const emitir = (nombre, payload) => {
+  for (const { event, handler } of oyentesDeEvento) {
+    if (event === nombre) window[`_${handler}`]({ event, id: 0, payload });
+  }
+};
 let changesFingerprint = "abc:blob:old";
 const replies = {
   github_connected_repositories: () => [repository],
@@ -88,9 +95,20 @@ const replies = {
     configureUrl: "https://github.com/settings/installations/1",
   }),
   github_touch_repository: () => undefined,
+  "plugin:event|listen": ({ event, handler }) => {
+    oyentesDeEvento.push({ event, handler });
+    return oyentesDeEvento.length;
+  },
+  "plugin:event|unlisten": () => undefined,
   github_logout: () => undefined,
 };
+window.__TAURI_EVENT_PLUGIN_INTERNALS__ = { unregisterListener: () => {} };
 window.__TAURI_INTERNALS__ = {
+  transformCallback: (callback) => {
+    const id = oyentesDeEvento.length + 1000;
+    window[`_${id}`] = callback;
+    return id;
+  },
   invoke: async (command, args) => {
     calls.push([command, args]);
     if (!(command in replies)) throw new Error(`Invocación sin sustituir: ${command}`);
@@ -99,8 +117,12 @@ window.__TAURI_INTERNALS__ = {
 };
 
 const flush = async () => {
-  await new Promise((resolve) => setImmediate(resolve));
-  await new Promise((resolve) => setImmediate(resolve));
+  // Publicar carga el módulo de eventos con `import()` antes de llamar al
+  // backend, y eso es E/S de verdad: con `setImmediate` a secas la aserción
+  // llegaba antes que la llamada.
+  for (let vuelta = 0; vuelta < 3; vuelta += 1) {
+    await new Promise((resolve) => setTimeout(resolve, 5));
+  }
 };
 const key = (value) => {
   const event = new window.Event("keydown", { bubbles: true, cancelable: true });
@@ -168,10 +190,33 @@ assert.equal(calls.filter(([command]) => command === "github_repository_diff").l
 const refreshedCheckbox = document.querySelector('.commit-change input[type="checkbox"]');
 refreshedCheckbox.checked = true;
 refreshedCheckbox.dispatchEvent(new window.Event("change", { bubbles: true }));
+
+// Publicar son tres pasos y dos salen a la red: el botón tiene que decir en
+// cuál va, o una espera larga no se distingue de un cuelgue.
+let terminarPublicacion;
+const publicacion = new Promise((resolve) => { terminarPublicacion = resolve; });
+const publishOriginal = replies.github_publish;
+replies.github_publish = () => publicacion;
+
 document.querySelector(".commit-actions .github-primary").dispatchEvent(new window.Event("click", { bubbles: true }));
 await flush();
 const publishCall = calls.findLast(([command]) => command === "github_publish");
 assert.deepEqual(publishCall[1].paths, [{ relative: "guia.md", fingerprint: "abc:blob:reviewed" }]);
+assert.equal(document.querySelector(".commit-working")?.textContent, "Confirmando los cambios…");
+
+emitir("github://publish-progress", { id: repository.id, phase: "syncing" });
+await flush();
+assert.equal(document.querySelector(".commit-working")?.textContent, "Comprobando el remoto…");
+emitir("github://publish-progress", { id: repository.id, phase: "pushing" });
+await flush();
+assert.equal(document.querySelector(".commit-working")?.textContent, "Publicando en GitHub…");
+// El avance de otro repositorio no pinta nada en este diálogo.
+emitir("github://publish-progress", { id: repository.id + 1, phase: "syncing" });
+await flush();
+assert.equal(document.querySelector(".commit-working")?.textContent, "Publicando en GitHub…");
+
+terminarPublicacion(publishOriginal());
+await flush();
 document.querySelector(".github-close").dispatchEvent(new window.Event("click", { bubbles: true }));
 
 // Panel: cachea documentos, actualiza sólo uno y expone crear dentro del repo.
@@ -268,4 +313,4 @@ assert.ok(tabsRoot.querySelector(".tab-close"));
 tabsRoot.querySelector(".tab-close").dispatchEvent(new window.Event("click", { bubbles: true }));
 assert.equal(closed, 3);
 
-console.log("41 de 41 pruebas DOM de interfaz correctas");
+console.log("46 de 46 pruebas DOM de interfaz correctas");

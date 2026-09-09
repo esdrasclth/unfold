@@ -25,6 +25,7 @@ use tauri::{AppHandle, Emitter, Manager, State};
 const CATALOG_FILE: &str = "github-repositories.json";
 const CATALOG_VERSION: u32 = 1;
 const CLONE_PROGRESS_EVENT: &str = "github://clone-progress";
+const PUBLISH_PROGRESS_EVENT: &str = "github://publish-progress";
 
 /// Serializa las lecturas y escrituras del catálogo.
 ///
@@ -407,7 +408,8 @@ pub async fn github_publish(
 
     let report = {
         let entry = entry.clone();
-        blocking(move || publish(entry, paths, message, identity)).await?
+        let app = app.clone();
+        blocking(move || publish(Some(&app), entry, paths, message, identity)).await?
     };
 
     touch(&app, &catalog, id)?;
@@ -415,6 +417,7 @@ pub async fn github_publish(
 }
 
 fn publish(
+    app: Option<&AppHandle>,
     entry: RepositoryEntry,
     paths: Vec<git::ReviewedPath>,
     message: String,
@@ -442,13 +445,14 @@ fn publish(
         ));
     }
 
+    announce(app, entry.id, PublishPhase::Committing);
     let author = git2::Signature::now(&identity.name, &identity.email)
         .map_err(|error| format!("La identidad del autor no es válida: {}", error.message()))?;
     let commit = git::commit(&repository, &paths, message.trim(), &author)
         .map_err(|error| format!("No se pudo confirmar: {}", error.message()))?
         .to_string();
 
-    Ok(sync_and_push(&repository, entry, Some(commit)))
+    Ok(sync_and_push(app, &repository, entry, Some(commit)))
 }
 
 /// Publica los commits que ya estén hechos, sin crear ninguno.
@@ -466,6 +470,7 @@ pub async fn github_push_pending(
     let entry = entry_of(&app, &catalog, id)?;
     let report = {
         let entry = entry.clone();
+        let hilo = app.clone();
         blocking(move || {
             let repository = git::open(Path::new(&entry.path))
                 .map_err(|_| format!("Ya no hay una copia local de «{}»", entry.full_name))?;
@@ -475,7 +480,7 @@ pub async fn github_push_pending(
                     entry.full_name
                 ));
             }
-            Ok(sync_and_push(&repository, entry, None))
+            Ok(sync_and_push(Some(&hilo), &repository, entry, None))
         })
         .await?
     };
@@ -485,7 +490,31 @@ pub async fn github_push_pending(
 
 /// Sincroniza con el remoto y publica. `commit` es sólo el que se acabe de
 /// crear, para poder contarlo en el informe; este paso no crea ninguno.
+/// En qué paso va la publicación. Los nombres viajan tal cual al frontend.
+#[derive(Debug, Clone, Copy, Serialize)]
+#[serde(rename_all = "camelCase")]
+pub enum PublishPhase {
+    Committing,
+    Syncing,
+    Pushing,
+}
+
+#[derive(Debug, Clone, Serialize)]
+#[serde(rename_all = "camelCase")]
+pub struct PublishProgress {
+    pub id: u64,
+    pub phase: PublishPhase,
+}
+
+fn announce(app: Option<&AppHandle>, id: u64, phase: PublishPhase) {
+    // Si nadie escucha, da igual: publicar no depende de que el aviso llegue.
+    if let Some(app) = app {
+        let _ = app.emit(PUBLISH_PROGRESS_EVENT, PublishProgress { id, phase });
+    }
+}
+
 fn sync_and_push(
+    app: Option<&AppHandle>,
     repository: &git2::Repository,
     entry: RepositoryEntry,
     commit: Option<String>,
@@ -509,6 +538,7 @@ fn sync_and_push(
         .ok()
         .and_then(|head| head.shorthand().ok().map(str::to_owned))
         .unwrap_or_else(|| entry.default_branch.clone());
+    announce(app, entry.id, PublishPhase::Syncing);
     let advance = match git::fetch(repository, &branch) {
         Ok(advance) => advance,
         Err(error) => {
@@ -541,6 +571,7 @@ fn sync_and_push(
         _ => {}
     }
 
+    announce(app, entry.id, PublishPhase::Pushing);
     let refspec = format!("refs/heads/{branch}:refs/heads/{branch}");
     if let Err(error) = git::push(repository, &refspec) {
         return stop(Some(advance), explain_push_error(&error));

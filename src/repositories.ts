@@ -115,6 +115,22 @@ export interface CloneProgress {
 }
 
 const CLONE_PROGRESS_EVENT = "github://clone-progress";
+const PUBLISH_PROGRESS_EVENT = "github://publish-progress";
+
+/** En qué paso va la publicación. Los tres los emite el backend. */
+export type PublishPhase = "committing" | "syncing" | "pushing";
+
+export interface PublishProgress {
+  id: number;
+  phase: PublishPhase;
+}
+
+/** Lo que se enseña en cada paso, en el orden en que ocurren. */
+export const PUBLISH_PHASE_LABEL: Record<PublishPhase, string> = {
+  committing: "Confirmando los cambios…",
+  syncing: "Comprobando el remoto…",
+  pushing: "Publicando en GitHub…",
+};
 
 function requireDesktop(): void {
   if (!isTauri) throw new Error("Los repositorios requieren la aplicación de escritorio");
@@ -220,6 +236,21 @@ export async function onCloneProgress(
   if (!isTauri) return () => {};
   const { listen } = await import("@tauri-apps/api/event");
   return listen<CloneProgress>(CLONE_PROGRESS_EVENT, (event) => handle(event.payload));
+}
+
+/**
+ * Avisa de en qué paso va la publicación.
+ *
+ * Clonar ya informaba del avance; publicar no, y son dos pasos de red seguidos
+ * —comprobar el remoto y subir— en los que el botón se quedaba quieto sin
+ * decir si seguía vivo.
+ */
+export async function onPublishProgress(
+  handle: (progress: PublishProgress) => void,
+): Promise<() => void> {
+  if (!isTauri) return () => {};
+  const { listen } = await import("@tauri-apps/api/event");
+  return listen<PublishProgress>(PUBLISH_PROGRESS_EVENT, (event) => handle(event.payload));
 }
 
 /** Frase para cada resultado de traer cambios, en el orden en que importan. */

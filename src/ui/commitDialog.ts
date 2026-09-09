@@ -2,8 +2,10 @@ import {
   commitIdentity,
   publish,
   pushPending,
+  onPublishProgress,
   repositoryChanges,
   repositoryDiff,
+  PUBLISH_PHASE_LABEL,
   type Change,
   type ConnectedRepository,
   type DocumentState,
@@ -574,9 +576,30 @@ export function openCommitDialog(
   };
 
   const run = async (): Promise<void> => {
-    working = "Confirmando y publicando…";
+    working = PUBLISH_PHASE_LABEL.committing;
     problem = null;
     render();
+
+    /*
+     * Publicar son tres pasos y dos salen a la red. Con un solo texto fijo, la
+     * espera larga —comprobar el remoto y subir— no se distinguía de que la
+     * aplicación se hubiera quedado colgada.
+     */
+    // Se espera al oyente antes de arrancar: cuesta un tic y evita la carrera
+    // de que el primer paso ocurra antes de que haya nadie escuchando. Si
+    // registrarlo falla se publica igual: el avance es una cortesía, y quedarse
+    // sin publicar por no poder contarlo sería un mal negocio.
+    let unlisten: () => void | Promise<void> = () => {};
+    try {
+      unlisten = await onPublishProgress((progress) => {
+        if (closed || progress.id !== repository.id) return;
+        working = PUBLISH_PHASE_LABEL[progress.phase];
+        render();
+      });
+    } catch (error) {
+      console.warn("No se pudo seguir el avance de la publicación", error);
+    }
+
     try {
       const reviewed = changes
         .filter((change) => selected.has(change.relative))
@@ -587,6 +610,13 @@ export function openCommitDialog(
       problem = messageOf(error);
     } finally {
       working = null;
+      // Cerrar el oyente es limpieza, no parte del resultado: si falla, la
+      // publicación ya ocurrió y su informe no se toca.
+      try {
+        await unlisten();
+      } catch (error) {
+        console.warn("No se pudo cerrar el oyente de avance", error);
+      }
       if (!closed && !report) render();
     }
   };

@@ -145,6 +145,8 @@ y lo que se lee en pantalla es lo que queda escrito en el \`.md\`.
       "plugin:fs|unwatch": () => undefined,
     };
 
+    window.__TAURI_EVENT_PLUGIN_INTERNALS__ = { unregisterListener: () => {} };
+
     window.__TAURI_INTERNALS__ = {
       // Sin esto `getCurrentWindow()` revienta, y con él toda la rama de
       // arranque del escritorio: la que restaura la sesión.
