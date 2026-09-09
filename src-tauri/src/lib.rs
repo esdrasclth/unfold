@@ -9,6 +9,7 @@ const WINDOW_STATE: StateFlags = StateFlags::SIZE
 
 pub mod git;
 mod github;
+mod folders;
 mod repositories;
 
 /// Ruta pasada por linea de comandos, para poder asociar Unfold a los .md
@@ -89,6 +90,11 @@ pub fn run() {
             repositories::github_fetch_repository,
             repositories::github_repository_documents,
             repositories::github_create_repository_document,
+            folders::open_folder,
+            folders::close_folder,
+            folders::open_folders,
+            folders::folder_documents,
+            folders::folder_create_document,
             repositories::github_touch_repository,
             repositories::github_repository_changes,
             repositories::github_repository_state,

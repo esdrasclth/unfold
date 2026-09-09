@@ -1,6 +1,14 @@
 import { icon } from "./icons.ts";
 import type { GithubAuthStatus } from "../github.ts";
 import {
+  asDocument,
+  asRoot,
+  closeFolder,
+  folderDocuments,
+  isFolder,
+  openFolders,
+} from "../folders.ts";
+import {
   connectedRepositories,
   repositoryDocuments,
   repositoryState,
@@ -25,6 +33,8 @@ export interface RepositoryPanelOptions {
   onPublish: (repository: ConnectedRepository) => void;
   /** Crea un documento nuevo dentro de la copia local. */
   onCreate: (repository: ConnectedRepository) => void;
+  /** Abre una carpeta del disco en el explorador. */
+  onAddFolder: () => void;
   /** Punto de inyección para pruebas DOM; en la aplicación siempre se vigila. */
   watchRepositories?: boolean;
   watch?: RepositoryWatch;
@@ -112,6 +122,9 @@ function buildTree(documents: RepositoryDocument[]): Folder {
 
 /** Resumen de una línea: rama, cambios y distancia con el remoto. */
 function summaryOf(repository: ConnectedRepository): string {
+  if (isFolder(repository)) {
+    return repository.missing ? "La carpeta ya no está" : repository.path;
+  }
   if (repository.missing) return "Sin copia local";
 
   const parts = [repository.branch ?? repository.defaultBranch];
@@ -174,7 +187,8 @@ export class RepositoryPanel {
     this.root.innerHTML = `
       <div class="repos-inner">
         <div class="repos-head">
-          <span>Repositorios</span>
+          <span>Explorador</span>
+          <button class="repos-icon" id="repos-add-folder" type="button" title="Abrir una carpeta del disco">${icon("plus")}</button>
           <button class="repos-icon" id="repos-refresh" type="button" title="Actualizar el explorador">${icon("refresh")}</button>
         </div>
         <input class="repos-filter" id="repos-filter" type="search" placeholder="Buscar por nombre…"
@@ -214,6 +228,7 @@ export class RepositoryPanel {
     });
 
     this.root.querySelector("#repos-refresh")!.addEventListener("click", () => void this.refresh(true));
+    this.root.querySelector("#repos-add-folder")!.addEventListener("click", () => this.options.onAddFolder());
     this.root.querySelector("#repos-manage")!.addEventListener("click", () => this.options.onManage());
     // El estado de sesión tarda en llegar —sale a la red—, así que el pie
     // arranca pintado como «sin cuenta» en vez de con el hueco del avatar
@@ -331,9 +346,18 @@ export class RepositoryPanel {
     this.render();
 
     try {
-      const repositories = await connectedRepositories();
+      /*
+        * Dos catálogos, una sola lista. Las carpetas van primero porque son
+        * del disco de aquí: se abren y se cierran en el acto, mientras que un
+        * repositorio arrastra una copia y una sesión detrás.
+        */
+      const [conectados, carpetas] = await Promise.all([
+        connectedRepositories(),
+        openFolders().catch(() => []),
+      ]);
       if (generation !== this.generation) return;
-      repositories.sort((left, right) => left.fullName.localeCompare(right.fullName));
+      conectados.sort((left, right) => left.fullName.localeCompare(right.fullName));
+      const repositories = [...carpetas.map(asRoot), ...conectados];
       this.repositories = repositories;
       for (const repository of repositories) {
         this.repositoryGenerations.set(
@@ -352,7 +376,10 @@ export class RepositoryPanel {
             return [repository.id, this.documents.get(repository.id)!] as const;
           }
           try {
-            return [repository.id, await repositoryDocuments(repository.id)] as const;
+            const documentos = isFolder(repository)
+              ? (await folderDocuments(repository.id)).map(asDocument)
+              : await repositoryDocuments(repository.id);
+            return [repository.id, documentos] as const;
           } catch {
             // Un repositorio ilegible no puede dejar sin explorador a los
             // demás: se queda vacío y su resumen ya dice que algo pasa.
@@ -363,7 +390,7 @@ export class RepositoryPanel {
       if (generation !== this.generation) return;
       this.documents = new Map(loaded);
       // El contador del pie sale del catálogo, así que se repinta con él.
-      if (this.account) this.setAccount(this.account, repositories.length);
+      if (this.account) this.setAccount(this.account, conectados.length);
       void this.syncWatchers();
     } catch (error) {
       if (generation !== this.generation) return;
@@ -394,6 +421,16 @@ export class RepositoryPanel {
     const generation = (this.repositoryGenerations.get(id) ?? 0) + 1;
     this.repositoryGenerations.set(id, generation);
     try {
+      // Una carpeta no tiene estado que consultar: lo único que cambia de ella
+      // es lo que hay dentro, así que se relee el árbol y ya.
+      if (isFolder({ id })) {
+        const documentos = (await folderDocuments(id)).map(asDocument);
+        if (this.disposed || this.repositoryGenerations.get(id) !== generation) return;
+        this.documents.set(id, documentos);
+        this.problem = null;
+        this.render();
+        return;
+      }
       const repository = await repositoryState(id);
       if (this.disposed || this.repositoryGenerations.get(id) !== generation) return;
       let documents: RepositoryDocument[] | null = null;
@@ -570,6 +607,7 @@ export class RepositoryPanel {
       });
       head.append(toggle);
       if (!repository.missing) head.append(this.createAction(repository));
+      if (isFolder(repository)) head.append(this.closeFolderAction(repository));
       block.append(head);
 
       if (open) {
@@ -587,6 +625,23 @@ export class RepositoryPanel {
       fragment.append(block);
     }
     return fragment;
+  }
+
+  /**
+   * Quita la carpeta del explorador. No borra nada del disco, y por eso no
+   * pregunta: volver a abrirla es un clic.
+   */
+  private closeFolderAction(repository: ConnectedRepository): Node {
+    const button = document.createElement("button");
+    button.className = "repos-create repos-close-folder";
+    button.type = "button";
+    button.title = `Quitar «${repository.fullName}» del explorador`;
+    button.setAttribute("aria-label", button.title);
+    button.innerHTML = icon("close");
+    button.addEventListener("click", () => {
+      void closeFolder(repository.id).then(() => this.refresh(true));
+    });
+    return button;
   }
 
   private createAction(repository: ConnectedRepository): Node {

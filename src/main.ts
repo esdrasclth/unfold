@@ -52,6 +52,7 @@ import {
   createRepositoryDocumentFile,
   type ConnectedRepository,
 } from "./repositories.ts";
+import { chooseFolder, folderCreateDocument, isFolder, openFolder } from "./folders.ts";
 import { backupFolder, createBackup, restoreLatest, setBackupFolder } from "./backups.ts";
 import { takeWelcome } from "./welcome.ts";
 import "./styles/app.css";
@@ -575,11 +576,29 @@ function showCommit(repository: ConnectedRepository): void {
   });
 }
 
+async function addFolder(): Promise<void> {
+  try {
+    const elegida = await chooseFolder();
+    if (!elegida) return;
+    const carpeta = await openFolder(elegida);
+    toggleRepositories(true);
+    await repositoryPanel.refresh(true);
+    notify(`«${carpeta.name}» está en el explorador`);
+  } catch (error) {
+    console.error("No se pudo abrir la carpeta", error);
+    notify(typeof error === "string" ? error : "No se pudo abrir la carpeta");
+  }
+}
+
 async function createRepositoryDocument(repository: ConnectedRepository): Promise<void> {
   try {
     const target = await chooseFileAsIn(repository.path);
     if (!target) return;
-    const { path, created } = await createRepositoryDocumentFile(repository.id, target);
+    // La carpeta y el repositorio validan igual, pero cada uno conoce su
+    // propia raíz: el comando se elige por el signo del identificador.
+    const { path, created } = isFolder(repository)
+      ? await folderCreateDocument(repository.id, target)
+      : await createRepositoryDocumentFile(repository.id, target);
     // Se lee del disco en los dos casos: el recién creado llega vacío, y el que
     // ya estaba llega con su contenido, que es justo lo que no hay que perder.
     await loadPath(path);
@@ -775,6 +794,7 @@ repositoryPanel = new RepositoryPanel(el.repositories, {
   onManage: showGithub,
   onPublish: showCommit,
   onCreate: (repository) => void createRepositoryDocument(repository),
+  onAddFolder: () => void addFolder(),
 });
 window.addEventListener("beforeunload", () => repositoryPanel.dispose());
 mountWindowControls(document.querySelector<HTMLElement>("#window-controls")!);

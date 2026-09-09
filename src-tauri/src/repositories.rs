@@ -838,7 +838,7 @@ pub struct CreatedDocument {
 /// que ya existía. Aquí no se mira si el destino existe: de eso se encarga la
 /// apertura, que resuelve las dos cosas —si estaba y si se puede crear— en un
 /// solo paso del sistema de archivos.
-fn document_target_root(repository: &Path, target: &Path) -> Result<PathBuf, String> {
+pub(crate) fn document_target_root(repository: &Path, target: &Path) -> Result<PathBuf, String> {
     if !target.is_absolute() {
         return Err("La ruta del documento debe ser absoluta".to_owned());
     }
@@ -878,7 +878,10 @@ fn document_target_root(repository: &Path, target: &Path) -> Result<PathBuf, Str
 /// la carrera: entre comprobar que la ruta estaba libre y escribir en ella
 /// cabía un enlace recién puesto apuntando fuera del repositorio, y aquí ya no
 /// hay hueco donde ponerlo, porque `create_new` tampoco sigue enlaces.
-fn create_repository_document(repository: &Path, target: &Path) -> Result<CreatedDocument, String> {
+pub(crate) fn create_repository_document(
+    repository: &Path,
+    target: &Path,
+) -> Result<CreatedDocument, String> {
     let root = document_target_root(repository, target)?;
     let documento = |created| CreatedDocument {
         path: target.to_string_lossy().into_owned(),
