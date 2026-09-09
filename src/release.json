@@ -1,11 +1,8 @@
 {
-  "version": "0.4.0",
+  "version": "0.4.1",
   "highlights": [
-    "**Revisa el diff antes de publicar**: cada archivo de la vista de cambios se despliega con sus líneas añadidas y quitadas, y lo que entra en el commit es exactamente lo que revisaste.",
-    "**Documentos nuevos dentro del repositorio**, desde el propio explorador. Si el nombre ya está ocupado se abre ese documento en vez de vaciarlo.",
-    "**Tu cuenta de GitHub, a la vista** al pie del explorador: foto, usuario, cuántos repositorios llevas conectados y un aviso si la sesión va a caducar.",
-    "**El explorador se pone al día solo** cuando el repositorio cambia en el disco, y relee sólo el que cambió en vez de todos.",
-    "**La barra de arriba, agrupada** por lo que hace cada cosa; y el esquema y el árbol de repositorios, con guías que dejan ver de qué cuelga cada documento.",
-    "**Buscar ocupa la mitad** (`Ctrl+F`), con reemplazar desplegable, y la paleta de comandos (`Ctrl+Shift+P`) ya enseña los atajos de cada acción."
+    "**El instalador adelgaza a la mitad**: la compilación llevaba dentro diecisiete megas de mapas de código que no le servían a nadie.",
+    "**Publicar dice en qué paso va** —confirmar, comprobar el remoto, subir— en vez de quedarse callado justo cuando más se espera.",
+    "**Publicar tiene atajo**: `Ctrl+Shift+U`."
   ]
 }
