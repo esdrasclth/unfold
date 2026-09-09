@@ -1,7 +1,10 @@
 {
-  "version": "0.2.3",
+  "version": "0.3.0",
   "highlights": [
-    "**Zoom del contenido con el teclado**: usa Ctrl++ para acercar y Ctrl+- para alejar el documento.",
-    "**Cambios suaves y persistentes**: el tamaño avanza en pasos pequeños, se conserva entre sesiones y permanece sincronizado con Apariencia."
+    "**GitHub dentro de Unfold**: conecta tus repositorios y abre su Markdown desde un explorador con árbol de carpetas y búsqueda por nombre (Ctrl+Shift+B).",
+    "**Confirmar y publicar sin salir**: marca los archivos, escribe el mensaje y Unfold confirma, sincroniza con el remoto y publica.",
+    "**Indicadores de estado**: cada documento dice si está sincronizado, modificado, sin añadir o en conflicto.",
+    "**La ventana te recuerda**: vuelve con el tamaño, el sitio y el estado maximizado con los que la dejaste.",
+    "**La barra de pestañas ya no desaparece** con un solo documento, así que siempre puedes cerrarlo."
   ]
 }
