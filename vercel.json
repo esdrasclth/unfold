@@ -5,7 +5,6 @@
   "buildCommand": "echo 'la web es estatica: no hay nada que compilar'",
   "outputDirectory": "web",
   "cleanUrls": true,
-  "trailingSlash": false,
   "rewrites": [
     {
       "source": "/ingest/static/:path*",
