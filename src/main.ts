@@ -55,7 +55,7 @@ import {
   type ConnectedRepository,
 } from "./repositories.ts";
 import { chooseFolder, folderCreateDocument, isFolder, openFolder } from "./folders.ts";
-import { backupFolder, createBackup, restoreLatest, setBackupFolder } from "./backups.ts";
+import { backupFolder, createBackup, limpiarIndiceViejo, restoreLatest, setBackupFolder } from "./backups.ts";
 import { takeWelcome } from "./welcome.ts";
 import "./styles/app.css";
 import "./styles/markdown.css";
@@ -846,6 +846,7 @@ view.focus();
  */
 async function prepararEstado(): Promise<void> {
   await migrarDesdeLocalStorage();
+  limpiarIndiceViejo();
   await loadHistory();
 }
 

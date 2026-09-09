@@ -7,6 +7,7 @@ const WINDOW_STATE: StateFlags = StateFlags::SIZE
     .union(StateFlags::MAXIMIZED)
     .union(StateFlags::FULLSCREEN);
 
+mod backups;
 pub mod git;
 mod github;
 mod folders;
@@ -126,6 +127,8 @@ pub fn run() {
             folders::folder_documents,
             folders::folder_create_document,
             search::search_documents,
+            backups::backup_write,
+            backups::backup_latest,
             store::store_read,
             store::store_write,
             store::store_clear,
