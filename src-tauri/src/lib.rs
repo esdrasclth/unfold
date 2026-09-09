@@ -1,4 +1,11 @@
 use tauri::Manager;
+use tauri_plugin_window_state::{StateFlags, WindowExt};
+
+/// Qué se recuerda de la ventana entre sesiones.
+const WINDOW_STATE: StateFlags = StateFlags::SIZE
+    .union(StateFlags::POSITION)
+    .union(StateFlags::MAXIMIZED)
+    .union(StateFlags::FULLSCREEN);
 
 pub mod git;
 mod github;
@@ -54,6 +61,20 @@ pub fn run() {
         .plugin(tauri_plugin_opener::init())
         .plugin(tauri_plugin_updater::Builder::new().build())
         .plugin(tauri_plugin_process::init())
+        // La ventana vuelve como se dejó: tamaño, sitio y si estaba
+        // maximizada. Es lo que hace cualquier aplicación de escritorio, y
+        // reabrir siempre en el centro obligaba a recolocarla cada vez.
+        //
+        // Se piden esas cuatro banderas y no todas a propósito. `VISIBLE`
+        // devolvería la ventana visible antes de tiempo y con ella el
+        // destello blanco que se evita mostrándola ya pintada; `DECORATIONS`
+        // podría reponer la barra de título del sistema, que se quita para
+        // poder usar la propia.
+        .plugin(
+            tauri_plugin_window_state::Builder::default()
+                .with_state_flags(WINDOW_STATE)
+                .build(),
+        )
         .invoke_handler(tauri::generate_handler![
             startup_file,
             github::github_start_device_flow,
@@ -77,6 +98,10 @@ pub fn run() {
             // La ventana se crea oculta y se muestra ya pintada: asi no se ve
             // el destello blanco del WebView al arrancar.
             if let Some(window) = app.get_webview_window("main") {
+                // Antes de mostrarla: recolocarla ya visible se vería como un
+                // salto. Si no hay nada guardado —primer arranque— no hace
+                // nada y manda lo que diga la configuración.
+                let _ = window.restore_state(WINDOW_STATE);
                 apply_rounded_corners(&window);
                 window.show()?;
             }
