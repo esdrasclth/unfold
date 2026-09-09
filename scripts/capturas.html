@@ -96,6 +96,14 @@ y lo que se lee en pantalla es lo que queda escrito en el \`.md\`.
       + '<path d="M16 96c4-19 16-28 32-28s28 9 32 28z" fill="#fdfcfa"/></svg>',
     );
 
+    const SESION = JSON.stringify({
+      version: 1, active: 0,
+      tabs: [{
+        name: "guia-de-estilo.md", path: rutaDe(41, "docs/guia-de-estilo.md"),
+        content: DOCUMENTO, dirty: false, anchor: 0, head: 0, scrollTop: 0, state: {},
+      }],
+    });
+
     const RESPUESTAS = {
       startup_file: () => null,
       github_auth_status: () => ({
@@ -162,6 +170,9 @@ y lo que se lee en pantalla es lo que queda escrito en el \`.md\`.
         additions: 2, deletions: 1, shownLines: 6, totalLines: 6,
         fingerprint: "a:blob:2",
       }),
+      store_read: ({ name }) => (name === "session" ? SESION : null),
+      store_write: () => ({ bytes: 0 }),
+      store_clear: () => undefined,
       "plugin:fs|read_text_file": () => Array.from(new TextEncoder().encode(DOCUMENTO)),
       "plugin:fs|watch": () => 1,
       "plugin:fs|unwatch": () => undefined,
@@ -193,26 +204,14 @@ y lo que se lee en pantalla es lo que queda escrito en el \`.md\`.
     localStorage.clear();
     localStorage.setItem("unfold:repositories", "on");
     localStorage.setItem("unfold:bienvenida-vista", "0.3.0");
-    localStorage.setItem("unfold:session", JSON.stringify({
-      version: 1, active: 0,
-      tabs: [{
-        name: "guia-de-estilo.md", path: rutaDe(41, "docs/guia-de-estilo.md"),
-        content: DOCUMENTO, dirty: false, anchor: 0, head: 0, scrollTop: 0, state: {},
-      }],
-    }));
     localStorage.setItem(
       "unfold:theme",
       new URLSearchParams(location.search).get("tema") === "oscuro" ? "dark" : "light",
     );
 
-    // La aplicación guarda la sesión a los 250 ms de arrancar, y eso llega
-    // antes de que restaure: sin congelar la clave, el documento sembrado se
-    // pisa con la pestaña vacía del arranque.
-    const guardarOriginal = localStorage.setItem.bind(localStorage);
-    localStorage.setItem = (clave, valor) => {
-      if (clave === "unfold:session") return;
-      guardarOriginal(clave, valor);
-    };
+    // La sesión ya no pasa por `localStorage`: `store_write` la recibe y la
+    // descarta, así que el documento sembrado no se pisa con la pestaña vacía
+    // del arranque.
     </script>
   </head>
   <body>

@@ -79,8 +79,10 @@ Markdown disponibles y `Ctrl+Shift+M` alterna el modo Código fuente.
   pisarlo
 - **Apariencia configurable**: tipografía, tamaño, interlineado, ancho de
   columna y doce colores de barra
-- **Repositorios de GitHub**: explorador con árbol de carpetas, búsqueda por
-  nombre e indicadores de estado por documento
+- **Explorador de documentos**: abre una carpeta del disco o conecta un
+  repositorio de GitHub, y navega su árbol con búsqueda por nombre e
+  indicadores de estado por documento
+- **Buscar en todos los documentos** a la vez, no sólo en el que tienes abierto
 - **Confirmar y publicar** desde la aplicación, sincronizando antes con el
   remoto, con vista previa del diff de cada archivo
 - **La ventana te recuerda**: vuelve con el tamaño, el sitio y el estado
@@ -99,12 +101,30 @@ Markdown disponibles y `Ctrl+Shift+M` alterna el modo Código fuente.
 | Buscar y reemplazar | `Ctrl+F` |
 | Acercar · Alejar el contenido | `Ctrl++` · `Ctrl+-` |
 | Esquema · Apariencia | `Ctrl+Shift+O` · `Ctrl+,` |
-| Repositorios · Cuenta de GitHub | `Ctrl+Shift+B` · `Ctrl+Shift+H` |
+| Explorador · Cuenta de GitHub | `Ctrl+Shift+B` · `Ctrl+Shift+H` |
+| Buscar en todos los documentos | `Ctrl+Shift+L` |
+| Publicar cambios | `Ctrl+Shift+U` |
 | Exportar HTML · Imprimir o PDF | `Ctrl+Shift+E` · `Ctrl+P` |
 | Modo enfoque · Máquina de escribir | `Ctrl+Shift+F` · `Ctrl+Shift+T` |
 | Código fuente · Menú Markdown | `Ctrl+Shift+M` · clic derecho |
 | Pegar sin formato | `Ctrl+Shift+V` |
 | En tablas: celda · fila | `Tab` / `Shift+Tab` · `Enter` |
+
+## El explorador
+
+`Ctrl+Shift+B` abre el panel lateral. Dentro caben dos clases de raíz, y se
+navegan igual porque para escribir son lo mismo: **carpetas del disco**, que se
+abren con el `+` de la cabecera y se recuerdan al reiniciar, y **repositorios
+de GitHub**, que además llevan el estado de cada documento.
+
+El árbol filtra por nombre —sin distinguir mayúsculas ni tildes— y
+`Ctrl+Shift+L` busca por lo que los documentos dicen dentro, en todas las
+raíces a la vez. Los resultados salen agrupados por archivo, y abrir uno lleva
+el cursor a la línea encontrada.
+
+El recorrido de una carpeta se salta las carpetas ocultas y `node_modules`, y
+no sigue enlaces simbólicos. En un repositorio manda `.gitignore`, también al
+buscar.
 
 ## GitHub integrado
 
@@ -196,6 +216,7 @@ Lo que está pendiente y sería bienvenido:
 - Ramas y pull requests desde la aplicación
 - Notas al pie y enlaces automáticos
 - Tablas dentro de citas o listas
+- Reemplazar en varios documentos a la vez
 - Compilaciones para macOS y Linux
 
 ## Licencia

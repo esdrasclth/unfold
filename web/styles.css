@@ -925,6 +925,11 @@ h2.titulo { font-size: clamp(1.55rem, 3vw, 2.15rem); letter-spacing: -0.03em; }
 
 .captura img { display: block; width: 100%; height: auto; }
 
+/* Una captura suelta dentro de una sección de texto, con su pie debajo. */
+.captura-suelta { margin-top: clamp(2.4rem, 5vw, 3.4rem); }
+.pie-figura { margin-top: 1rem; }
+.pie-figura strong { color: var(--text); }
+
 /* ── Características ────────────────────────────────────────────────────── */
 
 .caracteristicas { padding: clamp(2.8rem, 6vw, 4.5rem) 0; }

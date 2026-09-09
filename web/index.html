@@ -9,7 +9,7 @@
 <meta name="robots" content="index, follow, max-image-preview:large, max-snippet:-1">
 <link rel="canonical" href="https://unfold.brandsofts.com/">
 
-<!-- Open Graph. La imagen es la captura real de la aplicación: 1080x640, así
+<!-- Open Graph. La imagen es la captura real de la aplicación: 1080x535, así
      que en tarjetas anchas se recorta un poco arriba y abajo. Se declaran sus
      medidas para que quien la lea no tenga que descargarla para saberlas. -->
 <meta property="og:type" content="website">
@@ -21,7 +21,7 @@
 <meta property="og:image" content="https://unfold.brandsofts.com/captura-claro.jpg">
 <meta property="og:image:type" content="image/jpeg">
 <meta property="og:image:width" content="1080">
-<meta property="og:image:height" content="640">
+<meta property="og:image:height" content="535">
 <meta property="og:image:alt" content="Unfold con el explorador de repositorios de GitHub a la izquierda y un documento Markdown abierto con una tabla ya renderizada.">
 
 <meta name="twitter:card" content="summary_large_image">
@@ -365,13 +365,13 @@
     </div>
   </div>
   <p class="bajada">
-    Un documento de un repositorio conectado, con el explorador a la izquierda y
-    el estado de cada archivo al lado. Los dos temas y doce colores de barra
-    vienen incluidos; pruébalos aquí.
+    El explorador con una carpeta del disco y dos repositorios conectados, y un
+    documento abierto al lado. Los dos temas y doce colores de barra vienen
+    incluidos; pruébalos aquí.
   </p>
   <figure class="captura">
-    <img id="captura" src="captura-claro.jpg" width="1080" height="640"
-         alt="Unfold con el explorador de repositorios de GitHub a la izquierda, un documento abierto con encabezados, tareas y una tabla renderizada.">
+    <img id="captura" src="captura-claro.jpg" width="1080" height="535"
+         alt="Unfold con el explorador a la izquierda —una carpeta del disco y dos repositorios de GitHub— y un documento abierto con encabezados, tareas y una tabla renderizada.">
   </figure>
 </section>
 
@@ -379,7 +379,7 @@
   <p class="etiqueta">Todo lo que trae</p>
   <h2 class="titulo"><span class="mk">## </span>Qué sabe hacer</h2>
   <p class="bajada bajada-ancha">
-    Catorce cosas, agrupadas por el momento en el que las necesitas.
+    Diecisiete cosas, agrupadas por el momento en el que las necesitas.
   </p>
 
   <div class="grupos">
@@ -417,6 +417,14 @@
           <p>Sacado del árbol sintáctico, plegable y ajustable. Una almohadilla dentro de un bloque de código no aparece.</p>
         </li>
         <li>
+          <h4>Explorador de documentos</h4>
+          <p>Abre una carpeta del disco o conecta un repositorio, y navega su árbol con búsqueda por nombre.</p>
+        </li>
+        <li>
+          <h4>Buscar en todos</h4>
+          <p>Con <kbd>Ctrl+Shift+L</kbd>, en todas tus carpetas y repositorios a la vez. Abrir un resultado lleva a su línea.</p>
+        </li>
+        <li>
           <h4>Retoma tu sesión</h4>
           <p>Al volver a abrir, recupera pestañas, borradores, cursor y posición sin tocar tus archivos.</p>
         </li>
@@ -432,7 +440,7 @@
       <ul>
         <li>
           <h4>Repositorios de GitHub</h4>
-          <p>Conecta los que elijas y ábrelos desde un explorador con árbol de carpetas y búsqueda por nombre.</p>
+          <p>Conecta los que elijas y ábrelos desde el explorador, junto a tus carpetas del disco, con el estado de cada documento al lado.</p>
         </li>
         <li>
           <h4>Diff antes de confirmar</h4>
@@ -468,12 +476,23 @@
     </section>
   </div>
 
+  <figure class="captura captura-suelta">
+    <img src="captura-buscar.jpg" width="1080" height="535" loading="lazy"
+         alt="Buscar en todos los documentos: los resultados salen agrupados por archivo, con el número de línea y la coincidencia resaltada.">
+  </figure>
+  <p class="bajada bajada-ancha pie-figura">
+    <strong>Buscar en todos a la vez.</strong> Con <kbd>Ctrl+Shift+L</kbd>, en
+    tus carpetas y repositorios juntos. Los resultados se agrupan por archivo y
+    abrir uno lleva el cursor a su línea.
+  </p>
+
   <div class="atajos">
     <h3>Atajos esenciales</h3>
     <dl>
       <div><dt>Nuevo · Abrir · Guardar</dt><dd><kbd>Ctrl+N</kbd> <kbd>Ctrl+O</kbd> <kbd>Ctrl+S</kbd></dd></div>
       <div><dt>Negrita · Cursiva · Enlace</dt><dd><kbd>Ctrl+B</kbd> <kbd>Ctrl+I</kbd> <kbd>Ctrl+K</kbd></dd></div>
-      <div><dt>Esquema · Repositorios</dt><dd><kbd>Ctrl+Shift+O</kbd> <kbd>Ctrl+Shift+B</kbd></dd></div>
+      <div><dt>Esquema · Explorador</dt><dd><kbd>Ctrl+Shift+O</kbd> <kbd>Ctrl+Shift+B</kbd></dd></div>
+      <div><dt>Buscar en todos · Publicar</dt><dd><kbd>Ctrl+Shift+L</kbd> <kbd>Ctrl+Shift+U</kbd></dd></div>
       <div><dt>GitHub · Apariencia</dt><dd><kbd>Ctrl+Shift+H</kbd> <kbd>Ctrl+,</kbd></dd></div>
       <div><dt>Enfoque · Máquina de escribir</dt><dd><kbd>Ctrl+Shift+F</kbd> <kbd>Ctrl+Shift+T</kbd></dd></div>
       <div><dt>Código fuente · Exportar</dt><dd><kbd>Ctrl+Shift+M</kbd> <kbd>Ctrl+Shift+E</kbd></dd></div>
@@ -518,7 +537,8 @@
       <div>
         <h3>Escribe y publica</h3>
         <p>
-          Un explorador con árbol de carpetas y búsqueda por nombre. Marcas qué
+          Los repositorios se navegan en el mismo explorador que tus carpetas,
+          con el estado de cada documento al lado. Marcas qué
           archivos entran, revisas su diff, escribes el mensaje y Unfold
           confirma, sincroniza y publica.
         </p>
@@ -536,7 +556,7 @@
       </figcaption>
     </figure>
     <figure>
-      <img src="captura-publicar.jpg" width="1080" height="640" loading="lazy"
+      <img src="captura-publicar.jpg" width="1080" height="535" loading="lazy"
            alt="Vista de publicar cambios en Unfold: tres archivos con casilla y estado, el diff de uno de ellos desplegado con las líneas añadidas y quitadas, el mensaje del commit y la identidad con la que se va a firmar.">
       <figcaption>
         <strong>Ves el diff antes de subirlo.</strong> Cada archivo se despliega

@@ -37,7 +37,8 @@ ${release.highlights.map((highlight) => `- ${highlight}`).join("\n")}
 - Marca una tarea haciendo clic en su casilla.
 - Sigue un enlace con \`Ctrl\` + clic.
 - Recorre una tabla con \`Tab\` y \`Shift+Tab\`; pulsa \`Enter\` para añadir una fila.
-- Abre el esquema con \`Ctrl+Shift+O\` y ajusta la apariencia con \`Ctrl+,\`.
+- Abre el esquema con \`Ctrl+Shift+O\` y el explorador con \`Ctrl+Shift+B\`.
+- Busca en todos tus documentos a la vez con \`Ctrl+Shift+L\`.
 - Usa \`Ctrl+F\` para buscar y reemplazar en el documento.
 
 ## Atajos esenciales
@@ -49,6 +50,8 @@ ${release.highlights.map((highlight) => `- ${highlight}`).join("\n")}
 | Cerrar · Cambiar pestaña | \`Ctrl+W\` · \`Ctrl+Tab\` |
 | Enfoque · Máquina de escribir | \`Ctrl+Shift+F\` · \`Ctrl+Shift+T\` |
 | Código fuente · Menú Markdown | \`Ctrl+Shift+M\` · clic derecho |
+| Explorador · Buscar en todos | \`Ctrl+Shift+B\` · \`Ctrl+Shift+L\` |
+| GitHub · Publicar cambios | \`Ctrl+Shift+H\` · \`Ctrl+Shift+U\` |
 | Exportar HTML · Imprimir/PDF | \`Ctrl+Shift+E\` · \`Ctrl+P\` |
 `;
 

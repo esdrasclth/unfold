@@ -21,5 +21,9 @@
       <image:loc>https://unfold.brandsofts.com/captura-publicar.jpg</image:loc>
       <image:title>Revisar el diff de cada archivo antes de confirmar y publicar</image:title>
     </image:image>
+    <image:image>
+      <image:loc>https://unfold.brandsofts.com/captura-buscar.jpg</image:loc>
+      <image:title>Buscar en todos los documentos a la vez</image:title>
+    </image:image>
   </url>
 </urlset>
