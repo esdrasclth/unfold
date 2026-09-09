@@ -135,7 +135,9 @@ correcta.
   Unfold confirma, sincroniza con el remoto y publica. Lo que entra en el
   commit es exactamente lo que revisaste: si un archivo cambia por el camino,
   se detiene y lo dice.
-- **Crear documentos** dentro de la copia local, sin salir del explorador.
+- **Crear documentos** dentro de la copia local, sin salir del explorador. Si
+  el nombre ya está ocupado se abre ese documento, con lo que tuviera dentro,
+  en vez de vaciarlo.
 
 ### Lo que todavía no hace
 

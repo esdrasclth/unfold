@@ -564,14 +564,28 @@ async function createRepositoryDocument(repository: ConnectedRepository): Promis
   try {
     const target = await chooseFileAsIn(repository.path);
     if (!target) return;
-    const path = await createRepositoryDocumentFile(repository.id, target);
-    if (!path) return;
-    applyFile({ path, name: path.split(/[\\/]/).pop() ?? path, content: "" });
-    await repositoryPanel.refreshRepository(repository.id, true);
-    notify("Documento creado en el repositorio");
+    const { path, created } = await createRepositoryDocumentFile(repository.id, target);
+    // Se lee del disco en los dos casos: el recién creado llega vacío, y el que
+    // ya estaba llega con su contenido, que es justo lo que no hay que perder.
+    await loadPath(path);
+    if (created) await repositoryPanel.refreshRepository(repository.id, true);
+    notify(
+      created
+        ? "Documento creado en el repositorio"
+        : "Ese documento ya existía: se ha abierto sin tocarlo",
+    );
   } catch (error) {
     console.error("No se pudo crear el documento", error);
-    notify("No se pudo crear el documento en el repositorio");
+    // Los motivos del backend están escritos para leerse —qué extensión hace
+    // falta, que la ruta es una carpeta—, así que se enseñan en vez de taparlos
+    // con un «no se pudo» que obliga a adivinar.
+    notify(
+      typeof error === "string"
+        ? error
+        : error instanceof Error
+          ? error.message
+          : "No se pudo crear el documento en el repositorio",
+    );
   }
 }
 

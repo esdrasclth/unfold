@@ -145,10 +145,20 @@ export async function repositoryDocuments(id: number): Promise<RepositoryDocumen
   return invoke<RepositoryDocument[]>("github_repository_documents", { id });
 }
 
+/** Un documento del repositorio, recién creado o encontrado donde ya estaba. */
+export interface CreatedDocument {
+  path: string;
+  /** Falso cuando el documento ya estaba: se abre tal cual, sin tocarlo. */
+  created: boolean;
+}
+
 /** Valida físicamente la ruta y crea el documento dentro del checkout. */
-export async function createRepositoryDocumentFile(id: number, target: string): Promise<string> {
+export async function createRepositoryDocumentFile(
+  id: number,
+  target: string,
+): Promise<CreatedDocument> {
   requireDesktop();
-  return invoke<string>("github_create_repository_document", { id, target });
+  return invoke<CreatedDocument>("github_create_repository_document", { id, target });
 }
 
 export async function repositoryChanges(id: number): Promise<Change[]> {

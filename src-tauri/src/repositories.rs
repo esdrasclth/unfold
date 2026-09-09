@@ -792,7 +792,22 @@ pub async fn github_repository_documents(
     .await
 }
 
-fn physical_document_target(repository: &Path, target: &Path) -> Result<PathBuf, String> {
+/// Un documento del repositorio listo para abrirse en el editor.
+#[derive(Debug, Serialize)]
+#[serde(rename_all = "camelCase")]
+pub struct CreatedDocument {
+    pub path: String,
+    /// Falso cuando el documento ya estaba: se abre tal cual, sin tocarlo.
+    pub created: bool,
+}
+
+/// Comprueba que el destino se puede escribir dentro del repositorio.
+///
+/// Devuelve la raíz canónica, que hace falta después para juzgar un archivo
+/// que ya existía. Aquí no se mira si el destino existe: de eso se encarga la
+/// apertura, que resuelve las dos cosas —si estaba y si se puede crear— en un
+/// solo paso del sistema de archivos.
+fn document_target_root(repository: &Path, target: &Path) -> Result<PathBuf, String> {
     if !target.is_absolute() {
         return Err("La ruta del documento debe ser absoluta".to_owned());
     }
@@ -810,38 +825,64 @@ fn physical_document_target(repository: &Path, target: &Path) -> Result<PathBuf,
         .parent()
         .ok_or_else(|| "La ruta del documento no tiene una carpeta válida".to_owned())?
         .canonicalize()
-        .map_err(|error| format!("No se pudo comprobar la carpeta elegida: {error}"))?;
+        .map_err(|error| {
+            if error.kind() == std::io::ErrorKind::NotFound {
+                "La carpeta elegida ya no existe".to_owned()
+            } else {
+                format!("No se pudo comprobar la carpeta elegida: {error}")
+            }
+        })?;
     if !parent.starts_with(&root) {
         return Err("El documento debe guardarse físicamente dentro del repositorio".to_owned());
     }
-
-    match std::fs::symlink_metadata(target) {
-        Ok(metadata) => {
-            if metadata.is_dir() {
-                return Err("La ruta elegida es una carpeta".to_owned());
-            }
-            // También se resuelve el último componente: un enlace llamado
-            // `nota.md` podría apuntar fuera aunque su carpeta esté dentro.
-            let physical = target
-                .canonicalize()
-                .map_err(|error| format!("No se pudo comprobar el documento elegido: {error}"))?;
-            if !physical.starts_with(&root) {
-                return Err(
-                    "El documento elegido apunta fuera del repositorio y no se modificó".to_owned(),
-                );
-            }
-        }
-        Err(error) if error.kind() == std::io::ErrorKind::NotFound => {}
-        Err(error) => return Err(format!("No se pudo comprobar el documento elegido: {error}")),
-    }
-    Ok(target.to_path_buf())
+    Ok(root)
 }
 
-fn create_repository_document(repository: &Path, target: &Path) -> Result<String, String> {
-    let target = physical_document_target(repository, target)?;
-    std::fs::write(&target, b"")
-        .map_err(|error| format!("No se pudo crear el documento: {error}"))?;
-    Ok(target.to_string_lossy().into_owned())
+/// Crea el documento; si ya existía, lo devuelve intacto para abrirlo.
+///
+/// Se abre con `create_new`, que falla si la ruta ya existe. Eso cierra dos
+/// cosas a la vez. La primera, y la que se nota a diario: un botón que dice
+/// «nuevo documento» no puede vaciar un archivo con contenido, por mucho que
+/// el diálogo de guardar de Windows haya ofrecido sustituirlo. La segunda es
+/// la carrera: entre comprobar que la ruta estaba libre y escribir en ella
+/// cabía un enlace recién puesto apuntando fuera del repositorio, y aquí ya no
+/// hay hueco donde ponerlo, porque `create_new` tampoco sigue enlaces.
+fn create_repository_document(repository: &Path, target: &Path) -> Result<CreatedDocument, String> {
+    let root = document_target_root(repository, target)?;
+    let documento = |created| CreatedDocument {
+        path: target.to_string_lossy().into_owned(),
+        created,
+    };
+
+    let fallo = match std::fs::OpenOptions::new()
+        .write(true)
+        .create_new(true)
+        .open(target)
+    {
+        Ok(_) => return Ok(documento(true)),
+        Err(error) => error,
+    };
+
+    // Qué salió mal se decide mirando la ruta, no el código del error: Windows
+    // contesta «acceso denegado» a una carpeta y `AlreadyExists` a un archivo,
+    // y traducir esa tabla por sistema operativo envejece peor que preguntar.
+    let Ok(metadata) = std::fs::symlink_metadata(target) else {
+        // No hay nada ahí, así que no estorbaba nadie: el fallo es de escritura.
+        return Err(format!("No se pudo crear el documento: {fallo}"));
+    };
+    if metadata.is_dir() {
+        return Err("La ruta elegida es una carpeta, no un documento".to_owned());
+    }
+    // El último componente también se resuelve: un enlace llamado `nota.md`
+    // podría apuntar fuera aunque su carpeta esté dentro, y abrirlo sería
+    // enseñar en el editor algo que no pertenece al repositorio.
+    let physical = target
+        .canonicalize()
+        .map_err(|error| format!("No se pudo comprobar el documento elegido: {error}"))?;
+    if !physical.starts_with(&root) {
+        return Err("El documento elegido apunta fuera del repositorio y no se modificó".to_owned());
+    }
+    Ok(documento(false))
 }
 
 #[tauri::command]
@@ -850,7 +891,7 @@ pub async fn github_create_repository_document(
     catalog: State<'_, Catalog>,
     id: u64,
     target: String,
-) -> Result<String, String> {
+) -> Result<CreatedDocument, String> {
     let entry = entry_of(&app, &catalog, id)?;
     blocking(move || create_repository_document(Path::new(&entry.path), Path::new(&target))).await
 }
@@ -981,13 +1022,43 @@ mod tests {
         std::fs::create_dir_all(&outside).unwrap();
 
         let inside = docs.join("nueva.md");
-        assert_eq!(
-            create_repository_document(&repository, &inside).unwrap(),
-            inside.to_string_lossy()
-        );
+        let creado = create_repository_document(&repository, &inside).unwrap();
+        assert_eq!(creado.path, inside.to_string_lossy());
+        assert!(creado.created);
         assert!(inside.exists());
+
         assert!(create_repository_document(&repository, &outside.join("fuera.md")).is_err());
         assert!(create_repository_document(&repository, &docs.join("datos.txt")).is_err());
+        assert!(create_repository_document(&repository, &repository.join("perdida/nueva.md")).is_err());
+        assert!(create_repository_document(&repository, Path::new("relativa.md")).is_err());
+    }
+
+    /// La promesa del botón es «nuevo documento», no «sustituye este archivo».
+    /// El diálogo de guardar de Windows ofrece reemplazar lo que ya existe, y
+    /// aceptar ahí no puede costarle a nadie un documento entero: lo que se
+    /// hace es abrirlo, con lo que tenía dentro.
+    #[test]
+    fn an_existing_document_is_opened_instead_of_emptied() {
+        let temp = tempfile::tempdir().unwrap();
+        let repository = temp.path().join("repository");
+        std::fs::create_dir_all(&repository).unwrap();
+
+        let ocupado = repository.join("guia.md");
+        std::fs::write(&ocupado, "# No me pierdas\n").unwrap();
+
+        let abierto = create_repository_document(&repository, &ocupado).unwrap();
+        assert_eq!(abierto.path, ocupado.to_string_lossy());
+        assert!(!abierto.created, "no se creó: ya estaba");
+        assert_eq!(std::fs::read_to_string(&ocupado).unwrap(), "# No me pierdas\n");
+
+        // Y una carpeta con nombre de documento no se abre ni se pisa. El
+        // aviso tiene que nombrarla: Windows contesta «acceso denegado» a
+        // abrirla, y ese mensaje no le dice nada a quien lo lee.
+        let carpeta = repository.join("notas.md");
+        std::fs::create_dir(&carpeta).unwrap();
+        let error = create_repository_document(&repository, &carpeta).unwrap_err();
+        assert_eq!(error, "La ruta elegida es una carpeta, no un documento");
+        assert!(carpeta.is_dir());
     }
 
     /// Un código de GitHub no le dice nada a quien lo lee por primera vez. Lo
