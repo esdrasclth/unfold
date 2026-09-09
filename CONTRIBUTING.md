@@ -54,8 +54,16 @@ src/
   main.ts                Ensambla la interfaz y el estado de la sesión
 src-tauri/               Capa nativa: ventana, permisos y empaquetado
 setup/                   Instalador con interfaz propia (otra app Tauri)
-scripts/                 Generador del icono y las pruebas
+web/                     La página de unfold.brandsofts.com
+scripts/                 Generador del icono, arnés de capturas y las pruebas
 ```
+
+Las capturas de la web y del README salen de `scripts/capturas.html`: es la
+aplicación real con las respuestas del backend sustituidas por datos de
+ejemplo, para poder fotografiar el panel de repositorios y la vista de cambios
+sin una cuenta de GitHub. Se abre con `npm run dev` en
+`http://localhost:1420/scripts/capturas.html`, y con `?tema=oscuro` para el
+tema oscuro.
 
 ## Pruebas
 

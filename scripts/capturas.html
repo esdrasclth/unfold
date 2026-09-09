@@ -1,0 +1,198 @@
+<!doctype html>
+<html lang="es">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Unfold</title>
+    <script>
+    /*
+     * Arnés de capturas. Suplanta el puente de Tauri con datos de ejemplo para
+     * poder fotografiar la interfaz real —el panel de repositorios, el diálogo
+     * de GitHub y la vista de cambios con su diff— sin una cuenta de GitHub de
+     * verdad y sin repositorios clonados.
+     *
+     * Uso: `npm run dev` y abrir http://localhost:1420/scripts/capturas.html
+     * (añadir `?tema=oscuro` para el tema oscuro). Lo que se ve es la
+     * aplicación de verdad: sólo están sustituidas las respuestas del backend.
+     *
+     * No entra en la compilación: Vite sólo toma `index.html` como entrada.
+     */
+    const RAIZ = String.raw`C:\Users\esdras\Unfold\repos`;
+
+    const REPOS = [
+      {
+        id: 41, fullName: "esdrasclth/unfold", defaultBranch: "main",
+        cloneUrl: "https://github.com/esdrasclth/unfold.git", private: false, canPush: true,
+        path: `${RAIZ}\\41`, lastUsed: 2,
+        branch: "main", head: "1812395", changed: 3, ahead: 1, behind: 0,
+        hasUpstream: true, missing: false,
+      },
+      {
+        id: 58, fullName: "brandsofts/manual-de-marca", defaultBranch: "main",
+        cloneUrl: "https://github.com/brandsofts/manual-de-marca.git", private: true, canPush: true,
+        path: `${RAIZ}\\58`, lastUsed: 1,
+        branch: "main", head: "9f2c0d1", changed: 0, ahead: 0, behind: 0,
+        hasUpstream: true, missing: false,
+      },
+    ];
+
+    const DOCS = {
+      41: [
+        ["README.md", "modified"],
+        ["CONTRIBUTING.md", "synced"],
+        ["docs/guia-de-estilo.md", "modified"],
+        ["docs/RELEASING.md", "synced"],
+        ["docs/decisiones/github.md", "new"],
+        ["docs/decisiones/ventana.md", "synced"],
+      ],
+      58: [
+        ["README.md", "synced"],
+        ["tono-de-voz.md", "synced"],
+        ["marca/logotipo.md", "synced"],
+      ],
+    };
+
+    const rutaDe = (id, relative) =>
+      `${REPOS.find((r) => r.id === id).path}\\${relative.split("/").join("\\")}`;
+
+    const documentos = (id) => DOCS[id].map(([relative, state]) => ({
+      path: rutaDe(id, relative), relative, tracked: state !== "new", state,
+    }));
+
+    const DOCUMENTO = `# Guía de estilo
+
+Todo lo que publicamos pasa por aquí. La regla es simple: **el archivo manda**,
+y lo que se lee en pantalla es lo que queda escrito en el \`.md\`.
+
+## Antes de publicar
+
+- [x] Revisar el diff de cada archivo
+- [x] Comprobar que el remoto no se ha movido
+- [ ] Escribir el mensaje del commit en presente
+
+## Los encabezados
+
+| Nivel | Se escribe | Se usa para |
+| --- | --- | --- |
+| Título | \`# Uno\` | Una vez por documento |
+| Sección | \`## Dos\` | Cada bloque temático |
+| Apartado | \`### Tres\` | Dentro de una sección |
+
+> Sin prisa, pero sin pausa.
+`;
+
+    const DIFF = `@@ -9,5 +9,6 @@
+ ## Antes de publicar
+
+-Revisa los cambios antes de subirlos.
++Revisa el diff de cada archivo y comprueba
++que nadie ha movido el remoto mientras tanto.
+`;
+
+    const AVATAR = "data:image/svg+xml;base64," + btoa(
+      '<svg xmlns="http://www.w3.org/2000/svg" width="96" height="96">'
+      + '<rect width="96" height="96" fill="#b4572a"/>'
+      + '<circle cx="48" cy="38" r="16" fill="#fdfcfa"/>'
+      + '<path d="M16 96c4-19 16-28 32-28s28 9 32 28z" fill="#fdfcfa"/></svg>',
+    );
+
+    const RESPUESTAS = {
+      startup_file: () => null,
+      github_auth_status: () => ({
+        connected: true,
+        user: {
+          login: "esdrasclth", name: "Esdras Clother",
+          avatarUrl: AVATAR, htmlUrl: "https://github.com/esdrasclth",
+        },
+        expiresAt: null,
+      }),
+      github_installation_state: () => ({
+        installed: true, installationId: 7, allRepositories: true,
+        configureUrl: "https://github.com/settings/installations/7",
+      }),
+      github_connected_repositories: () => REPOS,
+      github_repository_state: ({ id }) => REPOS.find((r) => r.id === id),
+      github_repository_documents: ({ id }) => documentos(id),
+      github_touch_repository: () => undefined,
+      github_list_repositories: () => [
+        [41, "unfold", false, true],
+        [58, "manual-de-marca", true, true],
+        [63, "notas-de-producto", true, true],
+        [70, "brandsofts-web", false, true],
+        [77, "recetas", false, false],
+      ].map(([id, name, priv, canPush]) => ({
+        id, installationId: 7, name,
+        fullName: `${id === 58 || id === 63 ? "brandsofts" : "esdrasclth"}/${name}`,
+        private: priv, htmlUrl: `https://github.com/x/${name}`,
+        cloneUrl: `https://github.com/x/${name}.git`,
+        defaultBranch: "main", canPush,
+      })),
+      github_commit_identity: () => ({
+        name: "Esdras Clother", email: "esdras@ejemplo.dev", source: "gitConfig",
+      }),
+      github_repository_changes: () => [
+        { relative: "README.md", state: "modified", deleted: false, staged: false, fingerprint: "a:blob:1" },
+        { relative: "docs/guia-de-estilo.md", state: "modified", deleted: false, staged: false, fingerprint: "a:blob:2" },
+        { relative: "docs/decisiones/github.md", state: "new", deleted: false, staged: false, fingerprint: "a:blob:3" },
+      ],
+      github_repository_diff: ({ relative }) => ({
+        relative, patch: DIFF, binary: false, truncated: false,
+        additions: 2, deletions: 1, shownLines: 6, totalLines: 6,
+        fingerprint: "a:blob:2",
+      }),
+      "plugin:fs|read_text_file": () => Array.from(new TextEncoder().encode(DOCUMENTO)),
+      "plugin:fs|watch": () => 1,
+      "plugin:fs|unwatch": () => undefined,
+    };
+
+    window.__TAURI_INTERNALS__ = {
+      // Sin esto `getCurrentWindow()` revienta, y con él toda la rama de
+      // arranque del escritorio: la que restaura la sesión.
+      metadata: {
+        currentWindow: { label: "main" },
+        currentWebview: { label: "main" },
+      },
+      transformCallback: (callback) => {
+        const id = Math.floor(Math.random() * 1e9);
+        window[`_${id}`] = callback;
+        return id;
+      },
+      invoke: async (comando, args) => {
+        const responder = RESPUESTAS[comando];
+        if (responder) return responder(args ?? {});
+        // Todo lo demás —ventana, actualizador, eventos— se calla en vez de
+        // reventar: aquí sólo interesa lo que sale en la fotografía.
+        return undefined;
+      },
+    };
+
+    localStorage.clear();
+    localStorage.setItem("unfold:repositories", "on");
+    localStorage.setItem("unfold:bienvenida-vista", "0.3.0");
+    localStorage.setItem("unfold:session", JSON.stringify({
+      version: 1, active: 0,
+      tabs: [{
+        name: "guia-de-estilo.md", path: rutaDe(41, "docs/guia-de-estilo.md"),
+        content: DOCUMENTO, dirty: false, anchor: 0, head: 0, scrollTop: 0, state: {},
+      }],
+    }));
+    localStorage.setItem(
+      "unfold:theme",
+      new URLSearchParams(location.search).get("tema") === "oscuro" ? "dark" : "light",
+    );
+
+    // La aplicación guarda la sesión a los 250 ms de arrancar, y eso llega
+    // antes de que restaure: sin congelar la clave, el documento sembrado se
+    // pisa con la pestaña vacía del arranque.
+    const guardarOriginal = localStorage.setItem.bind(localStorage);
+    localStorage.setItem = (clave, valor) => {
+      if (clave === "unfold:session") return;
+      guardarOriginal(clave, valor);
+    };
+    </script>
+  </head>
+  <body>
+    <div id="app"></div>
+    <script type="module" src="/src/main.ts"></script>
+  </body>
+</html>

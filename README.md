@@ -12,7 +12,7 @@ Sin panel dividido, sin previsualización aparte. Escribes en un sitio y lees en
 [Cómo funciona](#cómo-funciona) ·
 [Contribuir](CONTRIBUTING.md)
 
-![Unfold en tema claro](docs/captura-claro.png)
+![Unfold en tema claro, con el explorador de repositorios de GitHub](docs/captura-claro.jpg)
 
 </div>
 
@@ -39,7 +39,7 @@ editor.
 <details>
 <summary>Ver en tema oscuro</summary>
 
-![Unfold en tema oscuro](docs/captura-oscuro.png)
+![Unfold en tema oscuro, con el explorador de repositorios de GitHub](docs/captura-oscuro.jpg)
 
 </details>
 
