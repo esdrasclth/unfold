@@ -504,6 +504,9 @@ export class RepositoryPanel {
       row.className = "repos-folder";
       row.type = "button";
       row.style.setProperty("--depth", String(depth));
+      // La guía de sangría la dibuja el CSS, pero sólo tiene a qué referirse
+      // cuando hay un nivel por encima.
+      if (depth > 0) row.classList.add("is-nested");
       row.setAttribute("aria-expanded", String(open));
       row.innerHTML = `<span class="repos-caret" aria-hidden="true">▸</span><span></span>`;
       if (open) row.classList.add("is-open");
@@ -570,6 +573,7 @@ export class RepositoryPanel {
     row.className = "repos-document";
     row.type = "button";
     row.style.setProperty("--depth", String(depth));
+    if (depth > 0) row.classList.add("is-nested");
     if (document_.state !== "synced") row.classList.add(`is-${document_.state}`);
     if (this.activePath && this.activePath.replace(/\\/g, "/") === document_.path.replace(/\\/g, "/")) {
       row.classList.add("is-active");

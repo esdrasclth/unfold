@@ -295,8 +295,14 @@ body {
 .titlebar-actions {
   display: flex;
   align-items: center;
-  gap: 1px;
+  gap: 0.7rem;
   padding-right: 0.35rem;
+}
+
+.titlebar-group {
+  display: flex;
+  align-items: center;
+  gap: 1px;
 }
 
 .icon-button {
@@ -570,6 +576,24 @@ body.is-resizing {
 .outline-item.level-1 { padding-left: 1.3rem; }
 .outline-item.level-2 { padding-left: 2rem; font-size: 12px; }
 .outline-item.level-3 { padding-left: 2.7rem; font-size: 12px; }
+
+.outline-item.level-1::before,
+.outline-item.level-2::before,
+.outline-item.level-3::before {
+  content: "";
+  position: absolute;
+  top: 0;
+  bottom: 0;
+  width: 1px;
+  background: var(--chrome-rule);
+  pointer-events: none;
+}
+
+.outline-item.level-1::before { left: 0.86rem; }
+.outline-item.level-2::before { left: 1.56rem; }
+.outline-item.level-3::before { left: 2.26rem; }
+
+.outline-item.is-active::before { opacity: 0; }
 
 .outline-item.level-0.is-active {
   color: var(--accent-chrome);
@@ -2195,8 +2219,8 @@ body.typewriter-mode .cm-content {
 
 .repos-filter {
   margin: 0 0.55rem 0.4rem;
-  padding: 0.35rem 0.55rem;
-  border: 1px solid var(--chrome-rule);
+  padding: 0.36rem 0.56rem;
+  border: 0;
   border-radius: 7px;
   background: var(--chrome-hover);
   color: var(--chrome-text);
@@ -2210,7 +2234,7 @@ body.typewriter-mode .cm-content {
 
 .repos-filter:focus {
   outline: none;
-  border-color: var(--accent-chrome);
+  box-shadow: 0 0 0 2px var(--accent-chrome-wash);
 }
 
 .repos-list {
@@ -2250,7 +2274,7 @@ body.typewriter-mode .cm-content {
 /* Cabecera de cada repositorio: nombre arriba, resumen del estado debajo. */
 
 .repo + .repo {
-  margin-top: 0.2rem;
+  margin-top: 0.7rem;
 }
 
 .repo-head {
@@ -2293,9 +2317,13 @@ body.typewriter-mode .cm-content {
   grid-row: 1 / span 2;
   align-self: center;
   color: var(--chrome-faint);
-  font-size: 10px;
-  transition: transform var(--fast) var(--ease);
+  font-size: 11px;
+  transition: transform var(--fast) var(--ease), color var(--fast) var(--ease);
 }
+
+.repo-head .repos-caret { color: var(--chrome-soft); }
+.repo-head:hover .repos-caret,
+.repos-folder:hover .repos-caret { color: var(--chrome-text); }
 
 .repo.is-open > .repo-head .repos-caret,
 .repos-folder.is-open .repos-caret {
@@ -2306,6 +2334,7 @@ body.typewriter-mode .cm-content {
 
 .repos-folder,
 .repos-document {
+  position: relative;
   display: flex;
   align-items: center;
   gap: 0.35rem;
@@ -2319,6 +2348,26 @@ body.typewriter-mode .cm-content {
   text-align: left;
   cursor: pointer;
 }
+
+/*
+ * Guía de sangría: una raya finísima a la altura de la carpeta que contiene la
+ * fila. Con sólo el hueco a la izquierda, tres niveles de carpetas se leen
+ * como una lista desordenada; con la raya se ve de quién cuelga cada cosa.
+ */
+.repos-folder.is-nested::before,
+.repos-document.is-nested::before {
+  content: "";
+  position: absolute;
+  left: calc(0.75rem + (var(--depth, 1) - 1) * 0.72rem + 0.26rem);
+  top: 0;
+  bottom: 0;
+  width: 1px;
+  background: var(--chrome-rule);
+  pointer-events: none;
+}
+
+/* Sobre una fila resaltada la guía sobra: el propio fondo ya la delimita. */
+.repos-document.is-active::before { opacity: 0; }
 
 .repos-folder .repos-caret {
   grid-row: auto;
@@ -2424,17 +2473,16 @@ body.typewriter-mode .cm-content {
 }
 
 .repos-publish {
-  padding: 0.34rem 0.5rem;
-  border: 1px solid var(--accent-chrome);
+  padding: 0.36rem 0.5rem;
+  border: 0;
   background: var(--accent-chrome-wash);
-  color: var(--chrome-text);
+  color: var(--accent-chrome);
   font-size: 11.5px;
-  font-weight: 560;
+  font-weight: 580;
 }
 
 .repos-publish:hover {
-  border-color: var(--accent-chrome);
-  background: color-mix(in srgb, var(--accent) 32%, transparent);
+  background: color-mix(in srgb, var(--accent) 26%, transparent);
 }
 
 /* Discreta: un renglón con su cruz, no un bloque. */
@@ -2443,7 +2491,7 @@ body.typewriter-mode .cm-content {
   align-items: center;
   gap: 0.35rem;
   padding: 0.22rem 0.5rem;
-  border: 1px solid transparent;
+  border: 0;
   background: transparent;
   color: var(--chrome-faint);
   font-size: 11px;

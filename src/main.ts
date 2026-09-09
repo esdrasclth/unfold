@@ -113,19 +113,33 @@ app.innerHTML = `
       <span class="titlebar-name" id="doc-name">Sin título</span>
       <span class="titlebar-status" id="doc-status"></span>
     </div>
+    <!--
+      Cuatro grupos, y dentro de cada uno los botones pegados: el archivo, lo
+      que sale de él, cómo se escribe y cómo se ve. Doce iconos seguidos a la
+      misma distancia obligan a leerlos uno a uno para encontrar el que se
+      busca; separados por lo que hacen, se va directo al grupo.
+    -->
     <div class="titlebar-actions">
-      <button class="icon-button" id="btn-recent" title="Recientes">${icon("clock")}</button>
-      <button class="icon-button" id="btn-open" title="Abrir (Ctrl+O)">${icon("open")}</button>
-      <button class="icon-button" id="btn-save" title="Guardar (Ctrl+S)">${icon("save")}</button>
-      <button class="icon-button" id="btn-search" title="Buscar (Ctrl+F)">${icon("search")}</button>
-      <button class="icon-button" id="btn-export" title="Exportar a HTML (Ctrl+Shift+E)">${icon("export")}</button>
-      <button class="icon-button" id="btn-print" title="Imprimir o guardar en PDF (Ctrl+P)">${icon("print")}</button>
-      <button class="icon-button" id="btn-github" title="GitHub (Ctrl+Shift+H)">${icon("github")}</button>
-      <button class="icon-button" id="btn-typewriter" title="Modo máquina de escribir (Ctrl+Shift+T)">${icon("typewriter")}</button>
-      <button class="icon-button" id="btn-source" title="Código fuente">${icon("code")}</button>
-      <button class="icon-button" id="btn-focus" title="Modo enfoque (Ctrl+Shift+F)">${icon("focus")}</button>
-      <button class="icon-button" id="btn-theme" title="Cambiar tema">${icon("moon")}</button>
-      <button class="icon-button" id="btn-settings" title="Apariencia (Ctrl+,)">${icon("sliders")}</button>
+      <div class="titlebar-group">
+        <button class="icon-button" id="btn-recent" title="Recientes">${icon("clock")}</button>
+        <button class="icon-button" id="btn-open" title="Abrir (Ctrl+O)">${icon("open")}</button>
+        <button class="icon-button" id="btn-save" title="Guardar (Ctrl+S)">${icon("save")}</button>
+        <button class="icon-button" id="btn-search" title="Buscar (Ctrl+F)">${icon("search")}</button>
+      </div>
+      <div class="titlebar-group">
+        <button class="icon-button" id="btn-github" title="GitHub (Ctrl+Shift+H)">${icon("github")}</button>
+        <button class="icon-button" id="btn-export" title="Exportar a HTML (Ctrl+Shift+E)">${icon("export")}</button>
+        <button class="icon-button" id="btn-print" title="Imprimir o guardar en PDF (Ctrl+P)">${icon("print")}</button>
+      </div>
+      <div class="titlebar-group">
+        <button class="icon-button" id="btn-source" title="Código fuente (Ctrl+Shift+M)">${icon("code")}</button>
+        <button class="icon-button" id="btn-focus" title="Modo enfoque (Ctrl+Shift+F)">${icon("focus")}</button>
+        <button class="icon-button" id="btn-typewriter" title="Modo máquina de escribir (Ctrl+Shift+T)">${icon("typewriter")}</button>
+      </div>
+      <div class="titlebar-group">
+        <button class="icon-button" id="btn-theme" title="Cambiar tema">${icon("moon")}</button>
+        <button class="icon-button" id="btn-settings" title="Apariencia (Ctrl+,)">${icon("sliders")}</button>
+      </div>
     </div>
     <div class="window-controls" id="window-controls"></div>
   </header>
