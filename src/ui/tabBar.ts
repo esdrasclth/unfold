@@ -40,13 +40,16 @@ export class TabBar {
     });
   }
 
+  /**
+   * Dibuja la barra.
+   *
+   * Se ve siempre, también con un solo documento. Antes se escondía por no
+   * repetir el nombre que ya estaba en la barra de título, pero eso dejaba la
+   * única pestaña sin su aspa: no había forma de cerrarla con el ratón.
+   * Cerrar la última no vacía la aplicación; deja un documento en blanco.
+   */
   render(tabs: readonly Tab[], activeId: number): void {
-    this.root.hidden = tabs.length < 2;
-    if (tabs.length < 2) {
-      this.root.innerHTML = "";
-      return;
-    }
-
+    this.root.hidden = false;
     this.root.innerHTML = tabs
       .map((tab) => {
         const active = tab.id === activeId ? " is-active" : "";
