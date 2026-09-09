@@ -43,7 +43,8 @@ import {
 import { FileWatcher } from "./watcher.ts";
 import { closeMarkdownMenu, openMarkdownMenu } from "./ui/markdownMenu.ts";
 import { openCommandPalette } from "./ui/commandPalette.ts";
-import { historyKey, recordVersion } from "./history.ts";
+import { historyKey, loadHistory, recordVersion } from "./history.ts";
+import { migrarDesdeLocalStorage } from "./store.ts";
 import { openHistoryDialog } from "./ui/historyDialog.ts";
 import { openGithubDialog } from "./ui/githubDialog.ts";
 import { githubAuthStatus, type GithubAuthStatus } from "./github.ts";
@@ -244,15 +245,23 @@ function renderStats(doc: string): void {
 }
 
 /** Guarda pestañas, borradores y posición sin escribir los archivos del usuario. */
-function saveCurrentSession(): void {
+/**
+ * Guarda la sesión y devuelve la promesa de que llegó al disco.
+ *
+ * Casi todos los sitios la descartan: guardar ocurre al teclear y al cerrar
+ * pestañas, y el disco no puede meterse en medio de eso. Pero al cerrar la
+ * ventana hay que esperarla, porque después se destruye el proceso y una
+ * escritura a medio camino se pierde entera —y es justo la escritura que
+ * lleva los borradores sin guardar—.
+ */
+function saveCurrentSession(): Promise<void> {
   const snapshot = tabs.snapshot(view, welcomeTabId ?? undefined);
-  if (snapshot.tabs.length === 0) clearSession();
-  else saveSession(snapshot);
+  return snapshot.tabs.length === 0 ? clearSession() : saveSession(snapshot);
 }
 
 function scheduleSessionSave(): void {
   window.clearTimeout(sessionSaveTimer);
-  sessionSaveTimer = window.setTimeout(saveCurrentSession, 250);
+  sessionSaveTimer = window.setTimeout(() => void saveCurrentSession(), 250);
 }
 
 function scheduleBackup(): void {
@@ -813,8 +822,19 @@ applySourceMode();
 applyOutline();
 view.focus();
 
+/**
+ * Sube a disco lo que quedara en `localStorage` y carga el historial.
+ *
+ * Antes que restaurar la sesión, porque la sesión también se lee de ahí: si se
+ * hiciera al revés, la primera vez tras actualizar se abriría en blanco.
+ */
+async function prepararEstado(): Promise<void> {
+  await migrarDesdeLocalStorage();
+  await loadHistory();
+}
+
 async function restoreSession(): Promise<void> {
-  const saved = loadSession();
+  const saved = await loadSession();
   if (!saved) return;
 
   // Los archivos limpios se leen de nuevo desde disco; los sucios conservan
@@ -831,7 +851,7 @@ async function restoreSession(): Promise<void> {
     snapshots.push(snapshot);
   }
   if (snapshots.length === 0) {
-    clearSession();
+    void clearSession();
     return;
   }
   tabs.restore(view, snapshots, saved.active);
@@ -943,14 +963,15 @@ if (isTauri) {
         // Si se descartó, la pestaña sigue marcada como sucia: se limpia para
         // no volver a preguntar por ella en la siguiente vuelta.
         pending.dirty = false;
-        saveCurrentSession();
+        void saveCurrentSession();
       }
 
       closing = true;
-      saveCurrentSession();
+      await saveCurrentSession();
       await appWindow.destroy();
     });
 
+    await prepararEstado();
     const startup = await invoke<string | null>("startup_file");
     if (startup) await loadPath(startup);
     else await restoreSession();
@@ -962,7 +983,7 @@ if (isTauri) {
     });
   })();
 } else {
-  void restoreSession();
+  void prepararEstado().then(restoreSession);
 }
 
 // El puntero sólo se vuelve mano sobre los enlaces mientras se mantiene Ctrl:
@@ -1048,8 +1069,9 @@ el.updateNow.addEventListener("click", () => {
   estadoUpdate = "installing";
   el.updateNow.disabled = true;
   el.updateLater.hidden = true;
-  saveCurrentSession();
-  void instalarActualizacion(manejadoresUpdate);
+  // Instalar reinicia la aplicación: la sesión tiene que estar en disco antes
+  // de ceder el control, por el mismo motivo que al cerrar la ventana.
+  void saveCurrentSession().then(() => instalarActualizacion(manejadoresUpdate));
 });
 
 el.updateLater.addEventListener("click", () => {

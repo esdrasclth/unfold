@@ -1,16 +1,84 @@
-export interface LocalVersion { id: string; savedAt: number; content: string; }
-const KEY = "unfold:history";
-const MAX = 30;
-type Store = Record<string, LocalVersion[]>;
-function read(): Store { try { return JSON.parse(localStorage.getItem(KEY) ?? "{}"); } catch { return {}; } }
-function write(store: Store): void { try { localStorage.setItem(KEY, JSON.stringify(store)); } catch { /* cuota llena */ } }
-export function recordVersion(documentKey: string, content: string): void {
-  if (!documentKey || !content.trim()) return;
-  const store = read(); const list = store[documentKey] ?? [];
-  if (list[0]?.content === content) return;
-  list.unshift({ id: crypto.randomUUID?.() ?? `${Date.now()}`, savedAt: Date.now(), content });
-  store[documentKey] = list.slice(0, MAX); write(store);
+/**
+ * Historial local de versiones.
+ *
+ * Guarda hasta treinta copias de cada documento para poder volver atrás cuando
+ * el deshacer del editor ya no alcanza. Vive en disco y no en `localStorage`
+ * porque treinta copias de un documento grande no caben en la cuota, y lo que
+ * pasaba al no caber era peor que no tener historial: escribir fallaba en
+ * silencio y la aplicación seguía ofreciendo recuperar versiones que no había.
+ */
+
+import { store, type Store } from "./store.ts";
+
+export interface LocalVersion {
+  id: string;
+  savedAt: number;
+  content: string;
 }
-export function versionsFor(documentKey: string): LocalVersion[] { return read()[documentKey] ?? []; }
-export function clearHistory(documentKey: string): void { const store = read(); delete store[documentKey]; write(store); }
-export function historyKey(path: string | null, name: string): string { return path ?? `untitled:${name}`; }
+
+const MAX = 30;
+type Registro = Record<string, LocalVersion[]>;
+
+/**
+ * Copia en memoria de lo que hay en disco.
+ *
+ * Existe porque grabar una versión ocurre al guardar el documento, y ahí no se
+ * puede esperar a un viaje al disco antes de decidir si la versión es nueva.
+ * Se llena al arrancar y se mantiene al día desde aquí.
+ */
+let registro: Registro = {};
+let cargado = false;
+
+export async function loadHistory(desde: Store = store): Promise<void> {
+  try {
+    const crudo = await desde.read("history");
+    registro = crudo ? (JSON.parse(crudo) as Registro) : {};
+  } catch {
+    // Un historial ilegible no puede impedir abrir la aplicación. Se empieza
+    // de cero, que es exactamente lo que había antes de la primera versión.
+    registro = {};
+  }
+  cargado = true;
+}
+
+async function guardar(en: Store = store): Promise<void> {
+  try {
+    await en.write("history", JSON.stringify(registro));
+  } catch (error) {
+    // Ahora sí se dice. Antes se tragaba, y por eso el problema duró tanto.
+    console.error("No se pudo guardar el historial", error);
+  }
+}
+
+export function recordVersion(documentKey: string, content: string, en: Store = store): void {
+  if (!documentKey || !content.trim() || !cargado) return;
+  const lista = registro[documentKey] ?? [];
+  if (lista[0]?.content === content) return;
+
+  lista.unshift({
+    id: crypto.randomUUID?.() ?? `${Date.now()}`,
+    savedAt: Date.now(),
+    content,
+  });
+  registro[documentKey] = lista.slice(0, MAX);
+  void guardar(en);
+}
+
+export function versionsFor(documentKey: string): LocalVersion[] {
+  return registro[documentKey] ?? [];
+}
+
+export function clearHistory(documentKey: string, en: Store = store): void {
+  delete registro[documentKey];
+  void guardar(en);
+}
+
+export function historyKey(path: string | null, name: string): string {
+  return path ?? `untitled:${name}`;
+}
+
+/** Sólo para las pruebas: deja el módulo como recién arrancado. */
+export function resetHistory(): void {
+  registro = {};
+  cargado = false;
+}

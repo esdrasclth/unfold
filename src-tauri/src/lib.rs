@@ -11,6 +11,7 @@ pub mod git;
 mod github;
 mod folders;
 mod repositories;
+mod store;
 
 /// Ruta pasada por linea de comandos, para poder asociar Unfold a los .md
 /// y que abrir un archivo desde el explorador funcione.
@@ -95,6 +96,9 @@ pub fn run() {
             folders::open_folders,
             folders::folder_documents,
             folders::folder_create_document,
+            store::store_read,
+            store::store_write,
+            store::store_clear,
             repositories::github_touch_repository,
             repositories::github_repository_changes,
             repositories::github_repository_state,

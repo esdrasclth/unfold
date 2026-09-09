@@ -1,13 +1,17 @@
+/**
+ * Pestañas, borradores y posición, para volver donde se dejó.
+ *
+ * En disco y no en `localStorage`: guarda el contenido completo de las
+ * pestañas con cambios sin guardar, y compartía cuota con el historial, de
+ * modo que un documento grande podía impedir guardar los borradores. Es lo
+ * único de la aplicación que custodia texto que todavía no está en ningún
+ * archivo, así que era el peor sitio donde podía fallar.
+ */
+
 import type { TabSnapshot } from "./tabs.ts";
+import { store, type Store } from "./store.ts";
 
-const STORAGE_KEY = "unfold:session";
 const FORMAT_VERSION = 1;
-
-interface SessionStorage {
-  getItem(key: string): string | null;
-  setItem(key: string, value: string): void;
-  removeItem(key: string): void;
-}
 
 export interface SessionSnapshot {
   version: number;
@@ -15,20 +19,20 @@ export interface SessionSnapshot {
   tabs: TabSnapshot[];
 }
 
-export function saveSession(
+export async function saveSession(
   snapshot: Omit<SessionSnapshot, "version">,
-  storage: SessionStorage = localStorage,
-): void {
+  en: Store = store,
+): Promise<void> {
   try {
-    storage.setItem(STORAGE_KEY, JSON.stringify({ ...snapshot, version: FORMAT_VERSION }));
+    await en.write("session", JSON.stringify({ ...snapshot, version: FORMAT_VERSION }));
   } catch (error) {
-    console.warn("No se pudo guardar la sesión", error);
+    console.error("No se pudo guardar la sesión", error);
   }
 }
 
-export function loadSession(storage: SessionStorage = localStorage): SessionSnapshot | null {
+export async function loadSession(en: Store = store): Promise<SessionSnapshot | null> {
   try {
-    const raw = storage.getItem(STORAGE_KEY);
+    const raw = await en.read("session");
     if (!raw) return null;
     const value = JSON.parse(raw) as Partial<SessionSnapshot>;
     if (value.version !== FORMAT_VERSION || !Array.isArray(value.tabs)) return null;
@@ -46,6 +50,6 @@ export function loadSession(storage: SessionStorage = localStorage): SessionSnap
   }
 }
 
-export function clearSession(storage: SessionStorage = localStorage): void {
-  storage.removeItem(STORAGE_KEY);
+export async function clearSession(en: Store = store): Promise<void> {
+  await en.clear("session");
 }
