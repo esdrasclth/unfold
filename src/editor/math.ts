@@ -1,7 +1,47 @@
 import { StateField, type EditorState, type Extension, type Range } from "@codemirror/state";
 import { Decoration, type DecorationSet, EditorView, WidgetType } from "@codemirror/view";
-import katex from "katex";
-import "katex/dist/katex.min.css";
+
+/*
+ * KaTeX se carga la primera vez que hay una fórmula que pintar, no al abrir la
+ * aplicación. Son doscientos cincuenta kilobytes más su hoja de estilos y sus
+ * tipografías, y la mayoría de los documentos Markdown no llevan una sola
+ * fórmula: pagarlo en cada arranque para el caso raro va contra lo único que
+ * esta aplicación promete de verdad, que es abrirse rápido.
+ *
+ * Mermaid ya se cargaba así; esto lo iguala.
+ */
+type Katex = typeof import("katex").default;
+
+let katex: Katex | null = null;
+let cargando: Promise<Katex | null> | null = null;
+
+function cargarKatex(): Promise<Katex | null> {
+  cargando ??= Promise.all([import("katex"), import("katex/dist/katex.min.css")])
+    .then(([modulo]) => (katex = modulo.default))
+    .catch((error) => {
+      console.error("No se pudo cargar KaTeX", error);
+      return null;
+    });
+  return cargando;
+}
+
+/** Pinta la fórmula dentro del hueco, o deja el TeX si KaTeX no puede con ella. */
+function pintar(wrap: HTMLElement, motor: Katex, tex: string, block: boolean): void {
+  try {
+    // `throwOnError: false` deja el error dentro de la fórmula en vez de
+    // romper el render: escribiendo TeX se pasa por muchos estados inválidos.
+    wrap.innerHTML = motor.renderToString(tex, {
+      displayMode: block,
+      throwOnError: false,
+      output: "html",
+      strict: false,
+    });
+    wrap.classList.remove("is-broken");
+  } catch {
+    wrap.textContent = tex;
+    wrap.classList.add("is-broken");
+  }
+}
 
 /** Fórmula renderizada. Sustituye al TeX mientras el cursor está fuera. */
 export class MathWidget extends WidgetType {
@@ -22,18 +62,20 @@ export class MathWidget extends WidgetType {
     const wrap = document.createElement(this.block ? "div" : "span");
     wrap.className = this.block ? "cm-md-math is-block" : "cm-md-math";
 
-    try {
-      // `throwOnError: false` deja el error dentro de la fórmula en vez de
-      // romper el render: escribiendo TeX se pasa por muchos estados inválidos.
-      wrap.innerHTML = katex.renderToString(this.tex, {
-        displayMode: this.block,
-        throwOnError: false,
-        output: "html",
-        strict: false,
-      });
-    } catch {
+    if (katex) {
+      pintar(wrap, katex, this.tex, this.block);
+    } else {
+      // Mientras llega el motor se enseña el TeX tal cual, que es lo que hay
+      // escrito en el archivo: nada de huecos en blanco ni saltos de altura.
       wrap.textContent = this.tex;
-      wrap.classList.add("is-broken");
+      wrap.classList.add("is-loading");
+      void cargarKatex().then((motor) => {
+        // El hueco puede haberse quedado por el camino si CodeMirror rehízo la
+        // decoración; escribir en un nodo suelto no molesta a nadie.
+        if (!motor) return;
+        wrap.classList.remove("is-loading");
+        pintar(wrap, motor, this.tex, this.block);
+      });
     }
 
     wrap.addEventListener("mousedown", (event) => {

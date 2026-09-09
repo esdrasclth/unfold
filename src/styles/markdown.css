@@ -339,6 +339,16 @@ body.following-links .cm-md-link {
   color: var(--danger);
 }
 
+/*
+ * Mientras KaTeX viaja, la fórmula se lee como lo que hay en el archivo: el
+ * TeX en monoespaciada y atenuado. Dura un parpadeo y sólo la primera vez.
+ */
+.cm-md-math.is-loading {
+  font-family: var(--font-mono);
+  font-size: 0.9em;
+  color: var(--text-soft);
+}
+
 /* KaTeX trae su propio tamaño; se ata al del documento para que acompañe. */
 .cm-md-math .katex {
   font-size: 1.05em;
