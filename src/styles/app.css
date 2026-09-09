@@ -2453,7 +2453,12 @@ body.typewriter-mode .cm-content {
   line-height: 1.45;
 }
 
-.repos-manage {
+/* ── La cuenta, al pie del panel ──────────────────────────────────────────── */
+
+.repos-account {
+  display: flex;
+  align-items: center;
+  gap: 0.55rem;
   margin: 0;
   padding: 0.5rem 0.7rem;
   border: 0;
@@ -2461,16 +2466,110 @@ body.typewriter-mode .cm-content {
   background: transparent;
   color: var(--chrome-soft);
   font: inherit;
-  font-size: 11.5px;
   text-align: left;
   cursor: pointer;
-  transition: background var(--fast) var(--ease), color var(--fast) var(--ease);
+  transition: background var(--fast) var(--ease);
 }
 
-.repos-manage:hover {
-  background: var(--chrome-hover);
-  color: var(--chrome-text);
+.repos-account:hover { background: var(--chrome-hover); }
+
+/* Sin `overflow: hidden`: recortaría el punto de sesión, que asoma por fuera.
+   Redondea la foto ella misma. */
+.repos-account-avatar {
+  position: relative;
+  flex: none;
+  width: 26px;
+  height: 26px;
+  border-radius: 50%;
+  background: var(--accent-chrome-wash);
+  color: var(--accent-chrome);
+  display: grid;
+  place-items: center;
 }
+
+/*
+ * La inicial está siempre debajo, y la foto encima cuando termina de cargar.
+ * Sin red —que en esta aplicación es un estado corriente— no queda un hueco
+ * roto, sino la inicial, que ya identifica la cuenta.
+ */
+.repos-account-avatar img {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  border-radius: 50%;
+  object-fit: cover;
+  opacity: 0;
+  transition: opacity var(--medium) var(--ease);
+}
+
+.repos-account-avatar img.is-ready { opacity: 1; }
+
+.repos-account-initial {
+  font-size: 12px;
+  font-weight: 640;
+  line-height: 1;
+}
+
+.repos-account-anon {
+  display: grid;
+  place-items: center;
+  color: var(--chrome-faint);
+}
+
+.repos-account-anon svg { width: 15px; height: 15px; }
+
+.repos-account-text {
+  display: grid;
+  gap: 0.05rem;
+  flex: 1;
+  min-width: 0;
+}
+
+.repos-account-name,
+.repos-account-meta {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.repos-account-name {
+  color: var(--chrome-text);
+  font-size: 12px;
+  font-weight: 560;
+}
+
+.repos-account-meta {
+  color: var(--chrome-faint);
+  font-size: 10.5px;
+}
+
+/* El punto de sesión activa, sobre el borde del avatar. */
+.repos-account.is-connected .repos-account-avatar::after {
+  content: "";
+  position: absolute;
+  right: -1px;
+  bottom: -1px;
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  background: var(--positive);
+  box-shadow: 0 0 0 2px var(--chrome);
+}
+
+/* El acceso a administrar sólo se anuncia cuando se apunta al pie. */
+.repos-account-go {
+  flex: none;
+  display: grid;
+  place-items: center;
+  color: var(--chrome-faint);
+  opacity: 0;
+  transition: opacity var(--fast) var(--ease);
+}
+
+.repos-account-go svg { width: 15px; height: 15px; }
+.repos-account:hover .repos-account-go,
+.repos-account:focus-visible .repos-account-go { opacity: 1; }
 
 /* Cabecera de cada repositorio: nombre arriba, resumen del estado debajo. */
 

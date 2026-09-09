@@ -565,6 +565,7 @@ function paintGithub(status: GithubAuthStatus): void {
   const repositories =
     repositoryCount === 1 ? " · 1 repositorio" : repositoryCount > 1 ? ` · ${repositoryCount} repositorios` : "";
   el.githubButton.title = `GitHub${account}${repositories} (Ctrl+Shift+H)`;
+  repositoryPanel?.setAccount(status);
 }
 
 function showCommit(repository: ConnectedRepository): void {

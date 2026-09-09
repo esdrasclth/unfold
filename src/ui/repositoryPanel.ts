@@ -1,4 +1,5 @@
 import { icon } from "./icons.ts";
+import type { GithubAuthStatus } from "../github.ts";
 import {
   connectedRepositories,
   repositoryDocuments,
@@ -27,6 +28,14 @@ export interface RepositoryPanelOptions {
   /** Punto de inyección para pruebas DOM; en la aplicación siempre se vigila. */
   watchRepositories?: boolean;
   watch?: RepositoryWatch;
+}
+
+/** El octocat que ocupa el hueco del avatar mientras no hay sesión. */
+function sinConexion(): Node {
+  const wrapper = document.createElement("span");
+  wrapper.className = "repos-account-anon";
+  wrapper.innerHTML = icon("github");
+  return wrapper;
 }
 
 /** Un nivel del árbol: carpetas dentro de carpetas, y documentos al final. */
@@ -155,7 +164,14 @@ export class RepositoryPanel {
         <input class="repos-filter" id="repos-filter" type="search" placeholder="Buscar por nombre…"
                autocomplete="off" spellcheck="false" aria-label="Buscar documentos por nombre" />
         <div class="repos-list" id="repos-list"></div>
-        <button class="repos-manage" id="repos-manage" type="button">Administrar repositorios…</button>
+        <button class="repos-account" id="repos-manage" type="button">
+          <span class="repos-account-avatar" id="repos-avatar"></span>
+          <span class="repos-account-text">
+            <span class="repos-account-name" id="repos-account-name">GitHub</span>
+            <span class="repos-account-meta" id="repos-account-meta">Conectar una cuenta</span>
+          </span>
+          <span class="repos-account-go" aria-hidden="true">${icon("more")}</span>
+        </button>
       </div>
       <div class="repos-resizer" id="repos-resizer" title="Arrastra para ajustar el ancho"></div>
     `;
@@ -183,12 +199,64 @@ export class RepositoryPanel {
 
     this.root.querySelector("#repos-refresh")!.addEventListener("click", () => void this.refresh(true));
     this.root.querySelector("#repos-manage")!.addEventListener("click", () => this.options.onManage());
+    // El estado de sesión tarda en llegar —sale a la red—, así que el pie
+    // arranca pintado como «sin cuenta» en vez de con el hueco del avatar
+    // vacío durante los primeros segundos.
+    this.setAccount({ connected: false, user: null, expiresAt: null });
   }
 
   setCollapsed(collapsed: boolean): void {
     this.root.classList.toggle("is-collapsed", collapsed);
     if (collapsed) this.root.setAttribute("inert", "");
     else this.root.removeAttribute("inert");
+  }
+
+  /**
+   * Pinta la cuenta de GitHub en el pie.
+   *
+   * El avatar puede no llegar —sin red, o con la imagen caída— y ese es un
+   * estado corriente en una aplicación que funciona sin conexión, así que la
+   * inicial sobre el acento no es un adorno: es lo que se ve la mitad de las
+   * veces que se abre el portátil en un tren.
+   */
+  setAccount(status: GithubAuthStatus): void {
+    const avatar = this.root.querySelector<HTMLElement>("#repos-avatar")!;
+    const name = this.root.querySelector<HTMLElement>("#repos-account-name")!;
+    const meta = this.root.querySelector<HTMLElement>("#repos-account-meta")!;
+    const button = this.root.querySelector<HTMLElement>("#repos-manage")!;
+    const user = status.connected ? status.user : null;
+
+    button.classList.toggle("is-connected", Boolean(user));
+    avatar.replaceChildren();
+
+    if (!user) {
+      avatar.append(sinConexion());
+      name.textContent = "GitHub";
+      meta.textContent = "Conectar una cuenta";
+      button.title = "Conectar una cuenta de GitHub";
+      return;
+    }
+
+    const inicial = document.createElement("span");
+    inicial.className = "repos-account-initial";
+    inicial.textContent = (user.name || user.login).trim().charAt(0).toUpperCase();
+    avatar.append(inicial);
+
+    if (user.avatarUrl) {
+      const image = document.createElement("img");
+      image.alt = "";
+      // Sin `loading="lazy"`: son 26 px y el diferido no llegaba a dispararse
+      // nunca dentro del panel, así que la foto no aparecía jamás.
+      image.addEventListener("load", () => image.classList.add("is-ready"));
+      image.src = user.avatarUrl;
+      // Si venía de la caché, `load` ya pasó y el oyente llega tarde.
+      if (image.complete && image.naturalWidth > 0) image.classList.add("is-ready");
+      avatar.append(image);
+    }
+
+    name.textContent = user.name || user.login;
+    meta.textContent = `@${user.login}`;
+    button.title = `Sesión de GitHub iniciada como @${user.login} — administrar repositorios`;
   }
 
   /** Marca el documento que está en pantalla, si pertenece a un repositorio. */

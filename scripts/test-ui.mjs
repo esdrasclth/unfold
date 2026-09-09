@@ -191,6 +191,18 @@ await panel.refresh();
 assert.equal(calls.filter(([command]) => command === "github_repository_documents").length, readsAfterFirstLoad);
 root.querySelector(".repos-create").dispatchEvent(new window.Event("click", { bubbles: true }));
 assert.equal(created, repository);
+// El pie arranca sin cuenta y se rellena cuando llega la sesión; la foto puede
+// no cargar nunca, así que la inicial tiene que estar debajo pase lo que pase.
+assert.ok(root.querySelector(".repos-account-anon"), "sin sesión, el hueco lleva el octocat");
+panel.setAccount({
+  connected: true,
+  user: { login: "ada", name: "Ada Lovelace", avatarUrl: "avatar.png", htmlUrl: "" },
+  expiresAt: null,
+});
+assert.equal(root.querySelector("#repos-account-name").textContent, "Ada Lovelace");
+assert.equal(root.querySelector("#repos-account-meta").textContent, "@ada");
+assert.equal(root.querySelector(".repos-account-initial").textContent, "A");
+assert.ok(root.querySelector("#repos-manage").classList.contains("is-connected"));
 await panel.refreshPath(documents[0].path);
 assert.equal(calls.at(-2)[0], "github_repository_state");
 assert.equal(calls.at(-1)[0], "github_repository_documents");
@@ -234,4 +246,4 @@ assert.ok(tabsRoot.querySelector(".tab-close"));
 tabsRoot.querySelector(".tab-close").dispatchEvent(new window.Event("click", { bubbles: true }));
 assert.equal(closed, 3);
 
-console.log("28 de 28 pruebas DOM de interfaz correctas");
+console.log("34 de 34 pruebas DOM de interfaz correctas");
