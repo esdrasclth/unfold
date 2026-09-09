@@ -1,0 +1,7 @@
+# Unfold — https://unfold.brandsofts.com/
+# Un sitio de una sola página: todo es indexable.
+
+User-agent: *
+Allow: /
+
+Sitemap: https://unfold.brandsofts.com/sitemap.xml

@@ -697,6 +697,38 @@ h2.titulo { font-size: clamp(1.55rem, 3vw, 2.15rem); letter-spacing: -0.03em; }
   box-shadow: inset 2.5px 0 0 color-mix(in srgb, var(--accent) 35%, transparent);
 }
 
+/* ── GitHub ─────────────────────────────────────────────────────────────── */
+
+.github { padding: clamp(2.8rem, 6vw, 4.5rem) 0; }
+
+/* Los tres pasos comparten la rejilla de «Instalar»: es la misma idea contada
+   en el mismo formato, y repetirla ayuda a leerla. */
+.pasos-github { margin-top: 2rem; }
+
+.github-notas {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(255px, 1fr));
+  gap: clamp(1.2rem, 3vw, 2.2rem);
+  margin-top: clamp(2.2rem, 5vw, 3.2rem);
+  padding-top: clamp(1.8rem, 4vw, 2.4rem);
+  border-top: 1px solid var(--rule-suave);
+}
+
+.github-notas h3 {
+  font-size: 1rem;
+  margin-bottom: 0.45rem;
+}
+
+.github-notas p {
+  font-size: 0.93rem;
+  color: var(--text-soft);
+}
+
+.github-notas code {
+  font-family: var(--font-mono);
+  font-size: 0.86em;
+}
+
 /* ── Instalar ───────────────────────────────────────────────────────────── */
 
 .instalar { padding: clamp(2.8rem, 6vw, 4.5rem) 0; }

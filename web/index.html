@@ -3,21 +3,91 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<title>Unfold · Un editor Markdown que se lee como quedará</title>
-<meta name="description" content="Editor Markdown para Windows donde el documento se ve como quedará mientras lo escribes. Sin panel dividido. Arranca en 250 ms, ocupa 5 MB y no toca tus archivos.">
+<title>Unfold · Editor Markdown para Windows que se lee como quedará</title>
+<meta name="description" content="Editor Markdown gratuito y de código abierto para Windows, con vista previa en vivo y sin panel dividido. Arranca en 250 ms, ocupa 5 MB y edita y publica repositorios de GitHub sin salir de la aplicación.">
+<meta name="author" content="Esdras Clother">
+<meta name="robots" content="index, follow, max-image-preview:large, max-snippet:-1">
+<link rel="canonical" href="https://unfold.brandsofts.com/">
 
+<!-- Open Graph. La imagen es la captura real de la aplicación: 1080x760, así
+     que en tarjetas anchas se recorta un poco arriba y abajo. Se declaran sus
+     medidas para que quien la lea no tenga que descargarla para saberlas. -->
 <meta property="og:type" content="website">
+<meta property="og:site_name" content="Unfold">
+<meta property="og:locale" content="es_ES">
 <meta property="og:url" content="https://unfold.brandsofts.com/">
-<meta property="og:title" content="Unfold · Un editor Markdown que se lee como quedará">
-<meta property="og:description" content="Sin panel dividido, sin previsualización aparte. Escribes en un sitio y lees en ese mismo sitio.">
+<meta property="og:title" content="Unfold · Editor Markdown para Windows que se lee como quedará">
+<meta property="og:description" content="Sin panel dividido, sin previsualización aparte. Escribes en un sitio y lees en ese mismo sitio. Gratis, de código abierto y con GitHub integrado.">
 <meta property="og:image" content="https://unfold.brandsofts.com/captura-claro.png">
+<meta property="og:image:type" content="image/png">
+<meta property="og:image:width" content="1080">
+<meta property="og:image:height" content="760">
+<meta property="og:image:alt" content="Unfold con un documento Markdown abierto, el esquema lateral a la izquierda y una tabla ya renderizada.">
+
 <meta name="twitter:card" content="summary_large_image">
+<meta name="twitter:title" content="Unfold · Editor Markdown para Windows que se lee como quedará">
+<meta name="twitter:description" content="Sin panel dividido, sin previsualización aparte. Escribes en un sitio y lees en ese mismo sitio. Gratis, de código abierto y con GitHub integrado.">
+<meta name="twitter:image" content="https://unfold.brandsofts.com/captura-claro.png">
+<meta name="twitter:image:alt" content="Unfold con un documento Markdown abierto y una tabla renderizada.">
+
 <!-- Una sola, y clara: la página no cambia con el tema del sistema. -->
 <meta name="theme-color" content="#fdfcfa">
 
-<link rel="canonical" href="https://unfold.brandsofts.com/">
 <link rel="icon" href="favicon.svg" type="image/svg+xml">
 <link rel="stylesheet" href="styles.css">
+
+<!--
+  Datos estructurados. Describen lo que es —una aplicación de escritorio
+  gratuita para Windows— en el vocabulario que los buscadores entienden.
+  No se declara ninguna valoración: inventarse estrellas que nadie ha dado
+  es tan fácil como deshonesto, y además Google penaliza las que no se
+  corresponden con nada visible en la página.
+-->
+<script type="application/ld+json">
+{
+  "@context": "https://schema.org",
+  "@type": "SoftwareApplication",
+  "name": "Unfold",
+  "url": "https://unfold.brandsofts.com/",
+  "description": "Editor Markdown para Windows con vista previa en vivo dentro del propio texto, sin panel dividido, con integración de GitHub para editar y publicar repositorios.",
+  "applicationCategory": "DeveloperApplication",
+  "applicationSubCategory": "Editor de texto",
+  "operatingSystem": "Windows 10, Windows 11",
+  "softwareVersion": "0.3.0",
+  "inLanguage": "es",
+  "downloadUrl": "https://github.com/esdrasclth/unfold/releases/latest/download/Unfold-Setup.exe",
+  "installUrl": "https://github.com/esdrasclth/unfold/releases/latest",
+  "softwareHelp": "https://github.com/esdrasclth/unfold#readme",
+  "license": "https://github.com/esdrasclth/unfold/blob/main/LICENSE",
+  "isAccessibleForFree": true,
+  "screenshot": "https://unfold.brandsofts.com/captura-claro.png",
+  "featureList": [
+    "Vista previa en vivo dentro del texto, sin panel dividido",
+    "Tablas renderizadas y navegables con Tab",
+    "Fórmulas con KaTeX y frontmatter YAML",
+    "Explorador de repositorios de GitHub con árbol y búsqueda",
+    "Confirmar y publicar cambios en GitHub desde la aplicación",
+    "Exportar a HTML autocontenido y a PDF"
+  ],
+  "offers": {
+    "@type": "Offer",
+    "price": "0",
+    "priceCurrency": "EUR",
+    "availability": "https://schema.org/InStock"
+  },
+  "author": {
+    "@type": "Person",
+    "name": "Esdras Clother",
+    "url": "https://github.com/esdrasclth"
+  },
+  "maintainer": {
+    "@type": "Person",
+    "name": "Esdras Clother",
+    "url": "https://github.com/esdrasclth"
+  },
+  "codeRepository": "https://github.com/esdrasclth/unfold"
+}
+</script>
 </head>
 <body>
 
@@ -37,10 +107,11 @@
     <span>Unfold</span>
   </a>
   <nav class="nav-links">
+    <a href="#github">GitHub</a>
     <a href="#caracteristicas">Características</a>
     <a href="#como-funciona">Cómo funciona</a>
     <a href="#instalar">Instalar</a>
-    <a class="nav-cta" href="https://github.com/esdrasclth/unfold">GitHub</a>
+    <a class="nav-cta" href="https://github.com/esdrasclth/unfold">Código</a>
   </nav>
 </header>
 
@@ -56,7 +127,8 @@
 
     <p class="entradilla">
       Sin panel dividido. Sin previsualización aparte. Escribes en un sitio
-      y lees en ese mismo sitio.
+      y lees en ese mismo sitio. Y ahora, con tus repositorios de GitHub
+      dentro.
     </p>
 
     <div class="acciones">
@@ -157,9 +229,83 @@
     <li><span class="idx">07</span><h3>Exportar</h3><p>HTML autocontenido, en un solo archivo, y PDF a través de la impresión del sistema.</p></li>
     <li><span class="idx">08</span><h3>Vigila el archivo</h3><p>Si lo editas desde otro programa, Unfold avisa en vez de pisarlo al guardar.</p></li>
     <li><span class="idx">09</span><h3>A tu gusto</h3><p>Tipografía, tamaño, interlineado, ancho de columna, modo enfoque y máquina de escribir.</p></li>
-    <li><span class="idx">10</span><h3>Retoma tu sesiÃ³n</h3><p>Al volver a abrir, recupera pestaÃ±as, borradores, cursor y posiciÃ³n sin tocar tus archivos.</p></li>
-    <li><span class="idx">11</span><h3>Escribe a tu manera</h3><p>Usa el menÃº contextual para insertar Markdown o alterna al modo CÃ³digo fuente con <kbd>Ctrl+Shift+M</kbd>.</p></li>
+    <li><span class="idx">10</span><h3>Retoma tu sesión</h3><p>Al volver a abrir, recupera pestañas, borradores, cursor y posición sin tocar tus archivos.</p></li>
+    <li><span class="idx">11</span><h3>Escribe a tu manera</h3><p>Usa el menú contextual para insertar Markdown o alterna al modo Código fuente con <kbd>Ctrl+Shift+M</kbd>.</p></li>
+    <li><span class="idx">12</span><h3>Repositorios de GitHub</h3><p>Conecta los que elijas y ábrelos desde un explorador con árbol de carpetas y búsqueda por nombre.</p></li>
+    <li><span class="idx">13</span><h3>Confirmar y publicar</h3><p>Marcas los archivos, escribes el mensaje y Unfold confirma, sincroniza con el remoto y publica.</p></li>
+    <li><span class="idx">14</span><h3>La ventana te recuerda</h3><p>Vuelve con el tamaño, el sitio y el estado maximizado con los que la dejaste.</p></li>
   </ol>
+</section>
+
+<section id="github" class="github">
+  <h2 class="titulo"><span class="mk">## </span>Tu documentación, donde ya vive</h2>
+  <p class="bajada">
+    Conecta los repositorios que quieras y edita su Markdown como cualquier otro
+    archivo. Unfold sólo ve los que le concedas, y nunca guarda tu contraseña.
+  </p>
+
+  <ol class="pasos pasos-github">
+    <li>
+      <span class="paso-num">01</span>
+      <div>
+        <h3>Conecta tu cuenta</h3>
+        <p>
+          Un código de ocho caracteres que confirmas en github.com. La sesión se
+          guarda en el Administrador de credenciales de Windows, cifrada por el
+          sistema, y se renueva sola.
+        </p>
+      </div>
+    </li>
+    <li>
+      <span class="paso-num">02</span>
+      <div>
+        <h3>Elige los repositorios</h3>
+        <p>
+          Tú decides a cuáles damos acceso, y puedes cambiarlo cuando quieras.
+          Unfold clona los que conectes y los deja listos para leer sin
+          conexión.
+        </p>
+      </div>
+    </li>
+    <li>
+      <span class="paso-num">03</span>
+      <div>
+        <h3>Escribe y publica</h3>
+        <p>
+          Un explorador con árbol de carpetas y búsqueda por nombre. Marcas qué
+          archivos entran, escribes el mensaje y Unfold confirma, sincroniza y
+          publica.
+        </p>
+      </div>
+    </li>
+  </ol>
+
+  <div class="github-notas">
+    <article>
+      <h3>Sabes qué ha cambiado</h3>
+      <p>
+        Cada documento lleva su estado al lado: sin cambios, modificado, todavía
+        no está en Git, o en conflicto. El repositorio dice su rama, lo que
+        falta por confirmar y lo que falta por publicar.
+      </p>
+    </article>
+    <article>
+      <h3>No se publica a ciegas</h3>
+      <p>
+        Antes de subir nada se comprueba el remoto. Si alguien se te adelantó,
+        Unfold lo dice en vez de dejar un rechazo críptico, y tu commit queda a
+        salvo.
+      </p>
+    </article>
+    <article>
+      <h3>Tu correo no se filtra</h3>
+      <p>
+        Se firma con la identidad de tu configuración de Git, y si no tienes
+        ninguna, con la dirección <code>noreply</code> de GitHub. Siempre puedes
+        forzarla con una casilla.
+      </p>
+    </article>
+  </div>
 </section>
 
 <section id="como-funciona" class="explicacion">
