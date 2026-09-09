@@ -1,10 +1,11 @@
 {
-  "version": "0.3.0",
+  "version": "0.4.0",
   "highlights": [
-    "**GitHub dentro de Unfold**: conecta tus repositorios y abre su Markdown desde un explorador con árbol de carpetas y búsqueda por nombre (Ctrl+Shift+B).",
-    "**Confirmar y publicar sin salir**: marca los archivos, escribe el mensaje y Unfold confirma, sincroniza con el remoto y publica.",
-    "**Indicadores de estado**: cada documento dice si está sincronizado, modificado, sin añadir o en conflicto.",
-    "**La ventana te recuerda**: vuelve con el tamaño, el sitio y el estado maximizado con los que la dejaste.",
-    "**La barra de pestañas ya no desaparece** con un solo documento, así que siempre puedes cerrarlo."
+    "**Revisa el diff antes de publicar**: cada archivo de la vista de cambios se despliega con sus líneas añadidas y quitadas, y lo que entra en el commit es exactamente lo que revisaste.",
+    "**Documentos nuevos dentro del repositorio**, desde el propio explorador. Si el nombre ya está ocupado se abre ese documento en vez de vaciarlo.",
+    "**Tu cuenta de GitHub, a la vista** al pie del explorador: foto, usuario, cuántos repositorios llevas conectados y un aviso si la sesión va a caducar.",
+    "**El explorador se pone al día solo** cuando el repositorio cambia en el disco, y relee sólo el que cambió en vez de todos.",
+    "**La barra de arriba, agrupada** por lo que hace cada cosa; y el esquema y el árbol de repositorios, con guías que dejan ver de qué cuelga cada documento.",
+    "**Buscar ocupa la mitad** (`Ctrl+F`), con reemplazar desplegable, y la paleta de comandos (`Ctrl+Shift+P`) ya enseña los atajos de cada acción."
   ]
 }
