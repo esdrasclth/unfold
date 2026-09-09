@@ -62,11 +62,20 @@ const codeLine = Decoration.line({ class: "cm-md-codeblock" });
  * los marcadores de sintaxis se ocultan salvo cuando el cursor está dentro del
  * elemento, momento en el que reaparecen para poder editarlos.
  */
-function buildDecorations(view: EditorView): {
+/**
+ * Calcula las decoraciones de la parte visible.
+ *
+ * Toma el estado y los rangos, y no la vista, para poder ejercitarse sin
+ * montar un editor: es el corazón del editor y merece pruebas que corran en un
+ * par de segundos. La vista sólo aportaba estas dos cosas.
+ */
+export function buildDecorations(
+  state: EditorState,
+  visibleRanges: readonly { from: number; to: number }[],
+): {
   all: DecorationSet;
   atomic: DecorationSet;
 } {
-  const { state } = view;
   const resolve = state.facet(assetResolver);
   const decorations: Range<Decoration>[] = [];
   const replacements: Range<Decoration>[] = [];
@@ -114,7 +123,7 @@ function buildDecorations(view: EditorView): {
     decorateLines(frontmatter.from, frontmatter.to, frontmatterLine);
   }
 
-  for (const { from, to } of view.visibleRanges) {
+  for (const { from, to } of visibleRanges) {
     // Fórmulas en línea: se ocultan bajo el cursor como cualquier otra
     // sintaxis, para poder editarlas.
     for (const formula of inlineMath(state, from, to)) {
@@ -377,7 +386,7 @@ const livePreviewPlugin = ViewPlugin.fromClass(
     atomic: DecorationSet;
 
     constructor(view: EditorView) {
-      const built = buildDecorations(view);
+      const built = buildDecorations(view.state, view.visibleRanges);
       this.decorations = built.all;
       this.atomic = built.atomic;
     }
@@ -386,7 +395,7 @@ const livePreviewPlugin = ViewPlugin.fromClass(
       // Sólo hace falta recalcular si cambia el texto, lo que se ve, o dónde
       // está el cursor: las tres cosas que deciden qué sintaxis se revela.
       if (update.docChanged || update.viewportChanged || update.selectionSet) {
-        const built = buildDecorations(update.view);
+        const built = buildDecorations(update.view.state, update.view.visibleRanges);
         this.decorations = built.all;
         this.atomic = built.atomic;
       }

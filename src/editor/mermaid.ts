@@ -3,7 +3,8 @@ import { WidgetType } from "@codemirror/view";
 const cache = new Map<string, string>();
 
 export class MermaidWidget extends WidgetType {
-  constructor(private readonly source: string) { super(); }
+  private readonly source: string;
+  constructor(source: string) { super(); this.source = source; }
   eq(other: MermaidWidget): boolean { return other.source === this.source; }
   toDOM(): HTMLElement {
     const wrap = document.createElement("div");

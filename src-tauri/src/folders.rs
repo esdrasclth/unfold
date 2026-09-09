@@ -157,7 +157,7 @@ fn walk(root: &Path) -> Vec<FolderDocument> {
             }
 
             if info.is_dir() {
-                if depth + 1 <= MAX_DEPTH {
+                if depth < MAX_DEPTH {
                     pending.push((path, depth + 1));
                 }
             } else if is_markdown(&path) {

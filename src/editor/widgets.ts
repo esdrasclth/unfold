@@ -34,12 +34,17 @@ export class RuleWidget extends WidgetType {
  * documento, de forma que el archivo sigue siendo la única fuente de verdad.
  */
 export class TaskWidget extends WidgetType {
-  constructor(
-    private readonly checked: boolean,
-    private readonly from: number,
-    private readonly to: number,
-  ) {
+  // Campos explícitos y no propiedades de parámetro: Node no las admite al
+  // despojar tipos, y sin eso este módulo no se puede probar sin navegador.
+  private readonly checked: boolean;
+  private readonly from: number;
+  private readonly to: number;
+
+  constructor(checked: boolean, from: number, to: number) {
     super();
+    this.checked = checked;
+    this.from = from;
+    this.to = to;
   }
 
   eq(other: TaskWidget): boolean {
@@ -72,11 +77,13 @@ export class TaskWidget extends WidgetType {
 
 /** Imagen renderizada en línea, con hueco reservado para evitar saltos de scroll. */
 export class ImageWidget extends WidgetType {
-  constructor(
-    private readonly url: string,
-    private readonly alt: string,
-  ) {
+  private readonly url: string;
+  private readonly alt: string;
+
+  constructor(url: string, alt: string) {
     super();
+    this.url = url;
+    this.alt = alt;
   }
 
   eq(other: ImageWidget): boolean {
@@ -108,11 +115,13 @@ type Align = "left" | "center" | "right";
  * Markdown y la tabla vuelve a mostrarse como texto para editarla.
  */
 export class TableWidget extends WidgetType {
-  constructor(
-    private readonly source: string,
-    private readonly from: number,
-  ) {
+  private readonly source: string;
+  private readonly from: number;
+
+  constructor(source: string, from: number) {
     super();
+    this.source = source;
+    this.from = from;
   }
 
   eq(other: TableWidget): boolean {

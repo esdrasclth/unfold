@@ -45,13 +45,18 @@ function pintar(wrap: HTMLElement, motor: Katex, tex: string, block: boolean): v
 
 /** Fórmula renderizada. Sustituye al TeX mientras el cursor está fuera. */
 export class MathWidget extends WidgetType {
-  constructor(
-    private readonly tex: string,
-    private readonly block: boolean,
-    /** Posición a la que llevar el cursor al pulsarla. */
-    private readonly from: number,
-  ) {
+  // Campos explícitos y no propiedades de parámetro: Node no las admite al
+  // despojar tipos, y sin eso este módulo no se puede probar sin navegador.
+  private readonly tex: string;
+  private readonly block: boolean;
+  /** Posición a la que llevar el cursor al pulsarla. */
+  private readonly from: number;
+
+  constructor(tex: string, block: boolean, from: number) {
     super();
+    this.tex = tex;
+    this.block = block;
+    this.from = from;
   }
 
   eq(other: MathWidget): boolean {
