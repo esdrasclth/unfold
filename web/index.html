@@ -88,6 +88,35 @@
   "codeRepository": "https://github.com/esdrasclth/unfold"
 }
 </script>
+
+<!--
+  PostHog. El fragmento oficial: no carga la biblioteca, sino un sustituto que
+  encola las llamadas y trae `array.js` de forma asíncrona. Eso importa aquí por
+  dos motivos: la página presume de ser rápida y una métrica no puede costarle
+  el pintado, y un clic en «Descargar» ocurrido antes de que llegue la
+  biblioteca se envía igual en vez de perderse.
+
+  `api_host` apunta a /ingest, del mismo dominio, y Vercel lo reenvía a PostHog
+  (ver vercel.json). Así las peticiones no van a un dominio de terceros, que es
+  lo primero que corta cualquier bloqueador: sin esto se pierde buena parte de
+  las visitas, y justo las de quien más se parece a este público.
+-->
+<script>
+    !function(t,e){var o,n,p,r;e.__SV||(window.posthog=e,e._i=[],e.init=function(i,s,a){function g(t,e){var o=e.split(".");2==o.length&&(t=t[o[0]],e=o[1]),t[e]=function(){t.push([e].concat(Array.prototype.slice.call(arguments,0)))}}(p=t.createElement("script")).type="text/javascript",p.crossOrigin="anonymous",p.async=!0,p.src=s.api_host.replace(".i.posthog.com","-assets.i.posthog.com")+"/static/array.js",(r=t.getElementsByTagName("script")[0]).parentNode.insertBefore(p,r);var u=e;for(void 0!==a?u=e[a]=[]:a="posthog",u.people=u.people||[],Object.defineProperty(u,"toString",{configurable:!0,enumerable:!0,writable:!0,value:function(t){var e="posthog";return"posthog"!==a&&(e+="."+a),t||(e+=" (stub)"),e}}),Object.defineProperty(u.people,"toString",{configurable:!0,enumerable:!0,writable:!0,value:function(){return u.toString(1)+".people (stub)"}}),o="init capture register register_once register_for_session unregister unregister_for_session getFeatureFlag getFeatureFlagResult isFeatureEnabled reloadFeatureFlags updateEarlyAccessFeatureEnrollment getEarlyAccessFeatures on onFeatureFlags onSessionId getSurveys getActiveMatchingSurveys renderSurvey canRenderSurvey getNextSurveyStep identify setPersonProperties group resetGroups setPersonPropertiesForFlags resetPersonPropertiesForFlags setGroupPropertiesForFlags resetGroupPropertiesForFlags reset get_distinct_id getGroups get_session_id get_session_replay_url alias set_config startSessionRecording stopSessionRecording sessionRecordingStarted captureException loadToolbar get_property getSessionProperty createPersonProfile opt_in_capturing opt_out_capturing has_opted_in_capturing has_opted_out_capturing clear_opt_in_out_capturing debug".split(" "),n=0;n<o.length;n++)g(u,o[n]);e._i.push([i,s,a])},e.__SV=1)}(document,window.posthog||[]);
+    posthog.init('phc_mThT8m2QZ3ShUsmwdo6zWP2ghsVBhA7WhzBF26QTPGbj', {
+        api_host: '/ingest',
+        ui_host: 'https://us.posthog.com',
+        defaults: '2026-05-30',
+        // Las grabaciones se activan además en los ajustes del proyecto; esto
+        // sólo dice cómo se graban. Se enmascara todo lo que se teclee: hoy
+        // esta página no tiene ni un formulario, pero el día que lo tenga la
+        // grabación ya no recogerá lo que se escriba en él.
+        session_recording: {
+            maskAllInputs: true,
+        },
+    })
+</script>
+
 </head>
 <body>
 
@@ -390,6 +419,23 @@
     <a href="https://github.com/esdrasclth/unfold/blob/main/LICENSE">Licencia MIT</a>
   </nav>
 </footer>
+
+<script>
+  /*
+   * Descargas. La vista de página la recoge PostHog sola, pero lo que hay que
+   * saber de esta web es cuánta gente llega a pulsar «Descargar», y desde
+   * dónde: el botón de arriba lo pulsa quien ya venía decidido, el del final
+   * quien se ha leído la página entera. Distinguirlos es lo que hace útil el
+   * dato.
+   */
+  for (const enlace of document.querySelectorAll('a[href*="Unfold-Setup.exe"]')) {
+    enlace.addEventListener("click", () => {
+      window.posthog?.capture("descarga_iniciada", {
+        origen: enlace.closest("section")?.classList.contains("cierre") ? "cierre" : "portada",
+      });
+    });
+  }
+</script>
 
 <script src="demo.js"></script>
 </body>
