@@ -1,3 +1,5 @@
+import { aislarFondo } from "./modalFocus.ts";
+
 export interface DialogChoice {
   label: string;
   /** El primario se destaca y responde al Enter. */
@@ -20,6 +22,7 @@ export function confirmDialog(
   choices: DialogChoice[],
 ): Promise<string> {
   return new Promise((resolve) => {
+    let soltarFoco: (() => void) | null = null;
     const backdrop = document.createElement("div");
     backdrop.className = "dialog-backdrop";
     backdrop.innerHTML = `
@@ -38,6 +41,8 @@ export function confirmDialog(
 
     const close = (value: string): void => {
       document.removeEventListener("keydown", onKey, true);
+      soltarFoco?.();
+      soltarFoco = null;
       backdrop.remove();
       resolve(value);
     };
@@ -71,6 +76,7 @@ export function confirmDialog(
 
     document.addEventListener("keydown", onKey, true);
     document.body.appendChild(backdrop);
+    soltarFoco = aislarFondo(backdrop);
     actions.querySelector<HTMLButtonElement>(".is-primary")?.focus();
   });
 }

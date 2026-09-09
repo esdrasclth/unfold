@@ -1,3 +1,4 @@
+import { aislarFondo } from "./modalFocus.ts";
 import {
   commitIdentity,
   publish,
@@ -143,9 +144,12 @@ export function openCommitDialog(
   // pie de verdad, el contenido pasa por debajo y nunca queda tapado.
   const foot = backdrop.querySelector<HTMLElement>(".commit-foot")!;
 
+  let soltarFoco: (() => void) | null = null;
   const close = (): void => {
     closed = true;
     document.removeEventListener("keydown", onKey, true);
+    soltarFoco?.();
+    soltarFoco = null;
     backdrop.remove();
     if (closeCurrent === close) closeCurrent = null;
   };
@@ -645,6 +649,7 @@ export function openCommitDialog(
   });
   document.addEventListener("keydown", onKey, true);
   document.body.append(backdrop);
+  soltarFoco = aislarFondo(backdrop);
   closeCurrent = close;
 
   void load();

@@ -174,9 +174,21 @@ document.querySelector(".commit-diff-more").dispatchEvent(new window.Event("clic
 await flush();
 assert.equal(calls.findLast(([command]) => command === "github_repository_diff")[1].expanded, true);
 assert.equal(document.querySelector(".commit-diff-more"), null);
+// El diálogo declara `aria-modal`: el fondo tiene que quedar fuera del alcance
+// del teclado de verdad, y no sólo en el atributo.
+const fondo = document.createElement("div");
+fondo.id = "app";
+document.body.prepend(fondo);
+const commitBackdrop = document.querySelector(".github-backdrop");
+assert.equal(commitBackdrop.inert, undefined, "el propio diálogo nunca se aísla");
+
 const upper = confirmDialog("Confirmar", "¿Cerrar?", [{ label: "Cancelar", value: "cancel", cancel: true }]);
+// Con dos apilados, el de arriba aísla también al de abajo…
+assert.equal(commitBackdrop.inert, true, "el diálogo de debajo queda aislado");
 document.dispatchEvent(key("Escape"));
 assert.equal(await upper, "cancel");
+// …y al cerrarse lo devuelve a su sitio, no lo deja inerte para siempre.
+assert.equal(commitBackdrop.inert, false, "cerrar el de arriba libera el de abajo");
 assert.ok(document.querySelector(".commit-dialog"));
 changesFingerprint = "abc:blob:fresh";
 document.querySelector(".commit-refresh").dispatchEvent(new window.Event("click", { bubbles: true }));
@@ -313,4 +325,4 @@ assert.ok(tabsRoot.querySelector(".tab-close"));
 tabsRoot.querySelector(".tab-close").dispatchEvent(new window.Event("click", { bubbles: true }));
 assert.equal(closed, 3);
 
-console.log("46 de 46 pruebas DOM de interfaz correctas");
+console.log("49 de 49 pruebas DOM de interfaz correctas");

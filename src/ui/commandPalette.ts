@@ -1,4 +1,8 @@
 import { icon } from "./icons.ts";
+import { aislarFondo } from "./modalFocus.ts";
+
+/** Deshace el aislamiento del fondo; vive fuera porque cerrar es una función suelta. */
+let soltarFoco: (() => void) | null = null;
 
 export interface CommandAction {
   id: string;
@@ -150,10 +154,13 @@ export function openCommandPalette(actions: readonly CommandAction[]): void {
   });
 
   document.body.append(backdrop);
+  soltarFoco = aislarFondo(backdrop);
   render();
   input.focus();
 }
 
 export function closeCommandPalette(): void {
+  soltarFoco?.();
+  soltarFoco = null;
   document.querySelector(".command-palette-backdrop")?.remove();
 }

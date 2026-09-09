@@ -1,3 +1,4 @@
+import { aislarFondo } from "./modalFocus.ts";
 import {
   githubAuthStatus,
   githubInstallationState,
@@ -85,6 +86,7 @@ export function openGithubDialog(options: GithubDialogOptions = {}): void {
   const documents = new Map<number, RepositoryDocument[]>();
   const busy = new Map<number, string>();
 
+  let soltarFoco: (() => void) | null = null;
   const backdrop = document.createElement("div");
   backdrop.className = "github-backdrop";
   backdrop.innerHTML = `
@@ -110,6 +112,8 @@ export function openGithubDialog(options: GithubDialogOptions = {}): void {
     closeMenu?.();
     document.removeEventListener("keydown", onKey, true);
     window.removeEventListener("focus", onReturn);
+    soltarFoco?.();
+    soltarFoco = null;
     backdrop.remove();
     if (closeCurrent === close) closeCurrent = null;
   };
@@ -783,6 +787,7 @@ export function openGithubDialog(options: GithubDialogOptions = {}): void {
   });
   document.addEventListener("keydown", onKey, true);
   document.body.append(backdrop);
+  soltarFoco = aislarFondo(backdrop);
   closeCurrent = close;
   backdrop.querySelector<HTMLButtonElement>(".github-close")!.focus();
 

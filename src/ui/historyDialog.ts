@@ -1,5 +1,8 @@
+import { aislarFondo } from "./modalFocus.ts";
 import { versionsFor, type LocalVersion } from "../history.ts";
 export function openHistoryDialog(key: string, current: string, restore: (content: string) => void): void {
+  let soltarFoco: (() => void) | null = null;
+  const cerrar = () => { soltarFoco?.(); soltarFoco = null; backdrop.remove(); };
   const versions = versionsFor(key); const backdrop = document.createElement("div"); backdrop.className = "history-backdrop";
   const dialog = document.createElement("div"); dialog.className = "history-dialog"; dialog.setAttribute("role", "dialog"); dialog.setAttribute("aria-label", "Historial local");
   const title = document.createElement("h2"); title.textContent = "Historial local"; dialog.append(title);
@@ -13,7 +16,7 @@ export function openHistoryDialog(key: string, current: string, restore: (conten
     const a = current.split("\n"); const b = selected.content.split("\n");
     preview.textContent = b.map((line, i) => line === a[i] ? `  ${line}` : `- ${a[i] ?? ""}\n+ ${line}`).join("\n");
   });
-  const restoreButton = document.createElement("button"); restoreButton.textContent = "Restaurar versión seleccionada"; restoreButton.addEventListener("click", () => { if (selected) { restore(selected.content); backdrop.remove(); } });
-  const close = document.createElement("button"); close.textContent = "Cerrar"; close.addEventListener("click", () => backdrop.remove());
-  dialog.append(list, preview, compare, restoreButton, close); backdrop.append(dialog); backdrop.addEventListener("mousedown", (e) => { if (e.target === backdrop) backdrop.remove(); }); document.body.append(backdrop);
+  const restoreButton = document.createElement("button"); restoreButton.textContent = "Restaurar versión seleccionada"; restoreButton.addEventListener("click", () => { if (selected) { restore(selected.content); cerrar(); } });
+  const close = document.createElement("button"); close.textContent = "Cerrar"; close.addEventListener("click", cerrar);
+  dialog.append(list, preview, compare, restoreButton, close); backdrop.append(dialog); backdrop.addEventListener("mousedown", (e) => { if (e.target === backdrop) cerrar(); }); document.body.append(backdrop); soltarFoco = aislarFondo(backdrop);
 }
