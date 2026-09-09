@@ -2,6 +2,7 @@ import { icon } from "./icons.ts";
 import {
   connectedRepositories,
   repositoryDocuments,
+  repositoryState,
   touchRepository,
   type ConnectedRepository,
   type DocumentState,
@@ -12,6 +13,7 @@ const WIDTH_KEY = "unfold:repositories-width";
 const DEFAULT_WIDTH = 250;
 const MIN_WIDTH = 190;
 const MAX_WIDTH = 460;
+type RepositoryWatch = typeof import("@tauri-apps/plugin-fs")["watch"];
 
 export interface RepositoryPanelOptions {
   /** Abre un documento en una pestaña. */
@@ -20,6 +22,9 @@ export interface RepositoryPanelOptions {
   onManage: () => void;
   /** Abre la vista de cambios para confirmar y publicar. */
   onPublish: (repository: ConnectedRepository) => void;
+  /** Punto de inyección para pruebas DOM; en la aplicación siempre se vigila. */
+  watchRepositories?: boolean;
+  watch?: RepositoryWatch;
 }
 
 /** Un nivel del árbol: carpetas dentro de carpetas, y documentos al final. */
@@ -123,15 +128,22 @@ export class RepositoryPanel {
   private width = DEFAULT_WIDTH;
   /** Cada carga cancela el pintado de la anterior. */
   private generation = 0;
+  private readonly watchStops = new Map<number, () => void>();
+  private readonly watchStarting = new Set<number>();
+  private readonly watchedPaths = new Map<number, string>();
+  private readonly watchTimers = new Map<number, number>();
+  private readonly repositoryGenerations = new Map<number, number>();
+  private disposed = false;
 
   private readonly inner: HTMLElement;
   private readonly list: HTMLElement;
   private readonly filter: HTMLInputElement;
+  private readonly root: HTMLElement;
+  private readonly options: RepositoryPanelOptions;
 
-  constructor(
-    private readonly root: HTMLElement,
-    private readonly options: RepositoryPanelOptions,
-  ) {
+  constructor(root: HTMLElement, options: RepositoryPanelOptions) {
+    this.root = root;
+    this.options = options;
     this.root.innerHTML = `
       <div class="repos-inner">
         <div class="repos-head">
@@ -167,7 +179,7 @@ export class RepositoryPanel {
       this.render();
     });
 
-    this.root.querySelector("#repos-refresh")!.addEventListener("click", () => void this.refresh());
+    this.root.querySelector("#repos-refresh")!.addEventListener("click", () => void this.refresh(true));
     this.root.querySelector("#repos-manage")!.addEventListener("click", () => this.options.onManage());
   }
 
@@ -196,7 +208,8 @@ export class RepositoryPanel {
    * repositorios: filtrar sólo lo que está abierto escondería resultados sin
    * ninguna razón visible.
    */
-  async refresh(): Promise<void> {
+  async refresh(forceDocuments = false): Promise<void> {
+    if (this.disposed) return;
     const generation = ++this.generation;
     this.loading = true;
     this.problem = null;
@@ -207,10 +220,22 @@ export class RepositoryPanel {
       if (generation !== this.generation) return;
       repositories.sort((left, right) => left.fullName.localeCompare(right.fullName));
       this.repositories = repositories;
+      for (const repository of repositories) {
+        this.repositoryGenerations.set(
+          repository.id,
+          (this.repositoryGenerations.get(repository.id) ?? 0) + 1,
+        );
+      }
+
+      const known = new Set(repositories.map((repository) => repository.id));
+      for (const id of this.documents.keys()) if (!known.has(id)) this.documents.delete(id);
 
       const loaded = await Promise.all(
         repositories.map(async (repository) => {
           if (repository.missing) return [repository.id, [] as RepositoryDocument[]] as const;
+          if (!forceDocuments && this.documents.has(repository.id)) {
+            return [repository.id, this.documents.get(repository.id)!] as const;
+          }
           try {
             return [repository.id, await repositoryDocuments(repository.id)] as const;
           } catch {
@@ -222,10 +247,12 @@ export class RepositoryPanel {
       );
       if (generation !== this.generation) return;
       this.documents = new Map(loaded);
+      void this.syncWatchers();
     } catch (error) {
       if (generation !== this.generation) return;
       this.repositories = [];
       this.documents.clear();
+      for (const id of [...this.watchStops.keys()]) this.stopWatcher(id);
       this.problem = error instanceof Error ? error.message : String(error);
     } finally {
       if (generation === this.generation) {
@@ -233,6 +260,114 @@ export class RepositoryPanel {
         this.render();
       }
     }
+  }
+
+  /** Actualiza sólo el repositorio que contiene la ruta indicada. */
+  async refreshPath(path: string | null): Promise<void> {
+    const repository = this.repositoryOf(path);
+    if (repository) await this.refreshRepository(repository.id, true);
+  }
+
+  /** Relee estado y, si cambió el disco, el árbol de un único repositorio. */
+  async refreshRepository(id: number, documentsChanged = false): Promise<void> {
+    if (this.disposed || !this.repositories.some((repository) => repository.id === id)) return;
+    const generation = (this.repositoryGenerations.get(id) ?? 0) + 1;
+    this.repositoryGenerations.set(id, generation);
+    try {
+      const repository = await repositoryState(id);
+      if (this.disposed || this.repositoryGenerations.get(id) !== generation) return;
+      let documents: RepositoryDocument[] | null = null;
+      if (documentsChanged && !repository.missing) {
+        documents = await repositoryDocuments(id);
+      }
+      if (this.disposed || this.repositoryGenerations.get(id) !== generation) return;
+      const index = this.repositories.findIndex((candidate) => candidate.id === id);
+      if (index < 0) return;
+      this.repositories[index] = repository;
+      if (documents) this.documents.set(id, documents);
+      this.problem = null;
+      this.render();
+    } catch (error) {
+      if (this.disposed || this.repositoryGenerations.get(id) !== generation) return;
+      this.problem = error instanceof Error ? error.message : String(error);
+      this.render();
+    }
+  }
+
+  /** Mantiene una vigilancia recursiva por checkout y la ajusta al catálogo. */
+  private async syncWatchers(): Promise<void> {
+    if (this.disposed) return;
+    if (this.options.watchRepositories === false) return;
+    if (!("__TAURI_INTERNALS__" in window)) return;
+    const current = new Set(this.repositories.filter((repository) => !repository.missing).map((repository) => repository.id));
+    for (const id of this.watchStops.keys()) {
+      const repository = this.repositories.find((candidate) => candidate.id === id);
+      if (current.has(id) && repository?.path === this.watchedPaths.get(id)) continue;
+      this.stopWatcher(id);
+    }
+    let watch = this.options.watch;
+    if (!watch) {
+      try {
+        ({ watch } = await import("@tauri-apps/plugin-fs"));
+      } catch (error) {
+        console.error("No se pudo iniciar la vigilancia de repositorios", error);
+        return;
+      }
+    }
+    for (const repository of this.repositories) {
+      if (
+        repository.missing
+        || this.watchStops.has(repository.id)
+        || this.watchStarting.has(repository.id)
+      ) continue;
+      this.watchStarting.add(repository.id);
+      try {
+        const stop = await watch(repository.path, (event) => {
+          // Los objetos y logs cambian en grandes ráfagas durante fetch/push;
+          // refs e index sí importan, igual que cualquier archivo de trabajo.
+          const noisyGitOnly = event.paths.length > 0 && event.paths.every((path) =>
+            /[\\/]\.git[\\/](?:objects|logs)[\\/]/i.test(path),
+          );
+          if (noisyGitOnly || this.disposed) return;
+          window.clearTimeout(this.watchTimers.get(repository.id));
+          this.watchTimers.set(repository.id, window.setTimeout(() => {
+            this.watchTimers.delete(repository.id);
+            void this.refreshRepository(repository.id, true);
+          }, 450));
+        }, { recursive: true, delayMs: 250 });
+        const stillCurrent = this.repositories.some((candidate) =>
+          candidate.id === repository.id && !candidate.missing && candidate.path === repository.path,
+        );
+        if (this.disposed || !stillCurrent) stop();
+        else {
+          this.watchStops.set(repository.id, stop);
+          this.watchedPaths.set(repository.id, repository.path);
+        }
+      } catch (error) {
+        console.error("No se pudo vigilar el repositorio", error);
+      } finally {
+        this.watchStarting.delete(repository.id);
+      }
+    }
+  }
+
+  private stopWatcher(id: number): void {
+    this.watchStops.get(id)?.();
+    this.watchStops.delete(id);
+    this.watchedPaths.delete(id);
+    window.clearTimeout(this.watchTimers.get(id));
+    this.watchTimers.delete(id);
+    this.repositoryGenerations.set(id, (this.repositoryGenerations.get(id) ?? 0) + 1);
+  }
+
+  /** Libera observadores y respuestas pendientes al destruir la ventana. */
+  dispose(): void {
+    if (this.disposed) return;
+    this.disposed = true;
+    this.generation += 1;
+    for (const id of [...this.watchStops.keys()]) this.stopWatcher(id);
+    for (const timer of this.watchTimers.values()) window.clearTimeout(timer);
+    this.watchTimers.clear();
   }
 
   /** El repositorio que contiene esta ruta, si alguno la contiene. */

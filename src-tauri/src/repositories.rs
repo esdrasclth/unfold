@@ -351,6 +351,16 @@ pub async fn github_repository_changes(
     .await
 }
 
+#[tauri::command]
+pub async fn github_repository_state(
+    app: AppHandle,
+    catalog: State<'_, Catalog>,
+    id: u64,
+) -> Result<ConnectedRepository, String> {
+    let entry = entry_of(&app, &catalog, id)?;
+    blocking(move || Ok(describe(entry))).await
+}
+
 /// Confirma lo seleccionado, sincroniza y publica.
 ///
 /// El orden importa y es el único que funciona sin saber fusionar: confirmar

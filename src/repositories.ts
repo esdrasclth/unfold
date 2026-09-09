@@ -130,6 +130,12 @@ export async function repositoryChanges(id: number): Promise<Change[]> {
   return invoke<Change[]>("github_repository_changes", { id });
 }
 
+/** Estado de un solo repositorio, para no releer todos ante cada cambio. */
+export async function repositoryState(id: number): Promise<ConnectedRepository> {
+  requireDesktop();
+  return invoke<ConnectedRepository>("github_repository_state", { id });
+}
+
 export async function commitIdentity(forceNoreply: boolean): Promise<Identity> {
   requireDesktop();
   return invoke<Identity>("github_commit_identity", { forceNoreply });

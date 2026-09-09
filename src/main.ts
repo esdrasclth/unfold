@@ -326,7 +326,7 @@ async function persistActive(prompt: boolean): Promise<boolean> {
     // Guardar cambia el estado del archivo en Git —de sincronizado a
     // modificado, o de nuevo a modificado—, así que el explorador se queda
     // mintiendo si no se relee. Sólo si está abierto y el archivo es suyo.
-    if (repositoriesOn && repositoryPanel.owns(tab.path)) void repositoryPanel.refresh();
+    if (repositoriesOn && repositoryPanel.owns(tab.path)) void repositoryPanel.refreshPath(tab.path);
     return !tab.dirty;
   } catch (error) {
     console.error("No se pudo guardar", error);
@@ -550,9 +550,7 @@ function paintGithub(status: GithubAuthStatus): void {
 
 function showCommit(repository: ConnectedRepository): void {
   openCommitDialog(repository, {
-    // Publicar mueve el estado de todos los archivos del repositorio, así que
-    // el explorador se relee entero en vez de parchear una fila.
-    onChanged: () => void repositoryPanel.refresh(),
+    onChanged: () => void repositoryPanel.refreshRepository(repository.id, true),
     notify,
   });
 }
@@ -728,6 +726,7 @@ repositoryPanel = new RepositoryPanel(el.repositories, {
   onManage: showGithub,
   onPublish: showCommit,
 });
+window.addEventListener("beforeunload", () => repositoryPanel.dispose());
 mountWindowControls(document.querySelector<HTMLElement>("#window-controls")!);
 settingsPanel = new SettingsPanel(el.settings, () => toggleSettings(false), {
   check: () => checkForUpdates(true),
