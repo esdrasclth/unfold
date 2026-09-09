@@ -41,11 +41,9 @@ function labelOf(change: Change): string {
 }
 
 function diffNode(diff: RepositoryDiff, expand?: () => void): Node {
+  // El recuento no se repite aquí: vive en la propia fila, donde además sigue
+  // leyéndose con el diff plegado.
   const fragment = document.createDocumentFragment();
-  const summary = document.createElement("p");
-  summary.className = "commit-diff-summary";
-  summary.textContent = `+${diff.additions} −${diff.deletions}`;
-  fragment.append(summary);
 
   if (diff.binary) {
     const note = document.createElement("p");
@@ -133,10 +131,15 @@ export function openCommitDialog(
         <button class="github-close" type="button" aria-label="Cerrar">×</button>
       </header>
       <div class="github-content" aria-live="polite"></div>
+      <div class="commit-foot" hidden></div>
     </section>
   `;
   backdrop.querySelector<HTMLElement>(".commit-target")!.textContent = repository.fullName;
   const content = backdrop.querySelector<HTMLElement>(".github-content")!;
+  // Las acciones viven fuera del área que scrollea. Ancladas con `sticky`
+  // flotaban por encima de la identidad y la dejaban a medio leer; siendo un
+  // pie de verdad, el contenido pasa por debajo y nunca queda tapado.
+  const foot = backdrop.querySelector<HTMLElement>(".commit-foot")!;
 
   const close = (): void => {
     closed = true;
@@ -316,9 +319,19 @@ export function openCommitDialog(
         wrapper.className = "commit-change-wrap";
         const row = document.createElement("div");
         row.className = `commit-change is-${change.state}`;
+        // El galón está siempre, no sólo al pasar el ratón: es lo único que
+        // dice que la fila se abre, y una pista que hay que descubrir pasando
+        // por encima no la descubre quien no pasa por encima.
         row.innerHTML = `
           <input type="checkbox" />
-          <button class="commit-change-name" type="button" aria-expanded="false"></button>
+          <button class="commit-change-name" type="button" aria-expanded="false">
+            <svg class="commit-chevron" viewBox="0 0 24 24" aria-hidden="true">
+              <path d="M9 6l6 6-6 6" fill="none" stroke="currentColor" stroke-width="2"
+                    stroke-linecap="round" stroke-linejoin="round"/>
+            </svg>
+            <span class="commit-change-ruta"></span>
+          </button>
+          <span class="commit-change-count"></span>
           <span class="commit-change-state"></span>
         `;
         const box = row.querySelector<HTMLInputElement>("input")!;
@@ -331,10 +344,20 @@ export function openCommitDialog(
           else selected.delete(change.relative);
           syncControls();
         });
-        row.querySelector<HTMLElement>(".commit-change-name")!.textContent = change.relative;
+        row.querySelector<HTMLElement>(".commit-change-ruta")!.textContent = change.relative;
         row.querySelector<HTMLElement>(".commit-change-state")!.textContent = labelOf(change);
         const toggle = row.querySelector<HTMLButtonElement>(".commit-change-name")!;
         toggle.title = `Ver qué cambió en ${change.relative}`;
+
+        // El recuento se queda en la fila una vez conocido, así que al plegar
+        // el diff sigue sabiéndose cuánto mueve ese archivo sin reabrirlo.
+        const counter = row.querySelector<HTMLElement>(".commit-change-count")!;
+        const showCount = (diff: RepositoryDiff): void => {
+          counter.textContent = `+${diff.additions} −${diff.deletions}`;
+        };
+        const known = diffs.get(change.relative);
+        if (known) showCount(known);
+
         toggle.addEventListener("click", () => {
           const existing = wrapper.querySelector<HTMLElement>(".commit-diff-body");
           if (existing) {
@@ -352,6 +375,7 @@ export function openCommitDialog(
             try {
               const diff = await repositoryDiff(repository.id, change.relative, expanded);
               diffs.set(change.relative, diff);
+              showCount(diff);
               // La huella pertenece al contenido que acaba de mostrarse. Si el
               // archivo cambió desde que se abrió el diálogo, ésta sustituye a
               // la instantánea inicial y publicar validará exactamente el diff.
@@ -425,7 +449,8 @@ export function openCommitDialog(
     go.addEventListener("click", () => void run());
     publishButton = go;
     actions.append(cancel, go);
-    fragment.append(actions);
+    foot.replaceChildren(actions);
+    foot.hidden = false;
     syncControls();
 
     /*

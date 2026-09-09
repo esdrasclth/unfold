@@ -142,7 +142,12 @@ document.querySelector(".commit-change-name").dispatchEvent(new window.Event("cl
 await flush();
 assert.equal(document.querySelector(".commit-diff-line.is-deletion")?.textContent, "-viejo");
 assert.equal(document.querySelector(".commit-diff-line.is-addition")?.textContent, "+nuevo");
-assert.equal(document.querySelector(".commit-diff-summary")?.textContent, "+1 −1");
+// El recuento va en la fila y no dentro del desplegable, para que siga a la
+// vista con el diff plegado; y el galón dice si la fila está abierta.
+assert.equal(document.querySelector(".commit-change-count")?.textContent, "+1 −1");
+assert.equal(document.querySelector(".commit-diff-summary"), null);
+assert.equal(document.querySelector(".commit-change-name")?.getAttribute("aria-expanded"), "true");
+assert.ok(document.querySelector(".commit-chevron"), "la fila anuncia que se despliega");
 document.querySelector(".commit-diff-more").dispatchEvent(new window.Event("click", { bubbles: true }));
 await flush();
 assert.equal(calls.findLast(([command]) => command === "github_repository_diff")[1].expanded, true);
@@ -229,4 +234,4 @@ assert.ok(tabsRoot.querySelector(".tab-close"));
 tabsRoot.querySelector(".tab-close").dispatchEvent(new window.Event("click", { bubbles: true }));
 assert.equal(closed, 3);
 
-console.log("21 de 21 pruebas DOM de interfaz correctas");
+console.log("28 de 28 pruebas DOM de interfaz correctas");

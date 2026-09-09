@@ -460,7 +460,7 @@ export class RepositoryPanel {
     const button = document.createElement("button");
     button.className = "repos-create";
     button.type = "button";
-    button.textContent = "+ Nuevo documento";
+    button.textContent = "Nuevo documento";
     button.addEventListener("click", () => this.options.onCreate(repository));
     return button;
   }

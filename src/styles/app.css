@@ -1583,8 +1583,20 @@ body.typewriter-mode .cm-content {
 }
 
 .github-content {
+  flex: 1;
+  min-height: 0;
   overflow: auto;
   padding: 1.15rem 1.25rem 1.25rem;
+}
+
+/* Pie fijo de la vista de cambios: fuera del scroll, así que el contenido
+   pasa por debajo y las acciones no tapan nunca lo que se está leyendo. */
+.commit-foot {
+  flex: none;
+  padding: 0.85rem 1.25rem 1rem;
+  border-top: 1px solid var(--rule);
+  background: var(--canvas);
+  border-radius: 0 0 13px 13px;
 }
 
 /* Estados de una sola columna: desconectado, autorización, error y carga. */
@@ -2394,29 +2406,59 @@ body.typewriter-mode .cm-content {
  * con casillas, el mensaje y la identidad con la que se va a firmar.
  */
 
+/*
+ * Publicar es la acción del repositorio y sólo aparece cuando hay algo que
+ * publicar, así que lleva el acento. Crear un documento está siempre, en todos
+ * los repositorios: con el mismo peso eran dos bloques grises apilados que
+ * empujaban el árbol hacia abajo y no decían cuál importaba.
+ */
 .repos-publish,
 .repos-create {
   width: calc(100% - 0.8rem);
   margin: 0.1rem 0.4rem 0.3rem;
-  padding: 0.3rem 0.5rem;
-  border: 1px solid var(--chrome-rule);
   border-radius: 7px;
+  font: inherit;
+  cursor: pointer;
+  transition: background var(--fast) var(--ease), border-color var(--fast) var(--ease),
+              color var(--fast) var(--ease);
+}
+
+.repos-publish {
+  padding: 0.34rem 0.5rem;
+  border: 1px solid var(--accent-chrome);
+  background: var(--accent-chrome-wash);
+  color: var(--chrome-text);
+  font-size: 11.5px;
+  font-weight: 560;
+}
+
+.repos-publish:hover {
+  border-color: var(--accent-chrome);
+  background: color-mix(in srgb, var(--accent) 32%, transparent);
+}
+
+/* Discreta: un renglón con su cruz, no un bloque. */
+.repos-create {
+  display: flex;
+  align-items: center;
+  gap: 0.35rem;
+  padding: 0.22rem 0.5rem;
+  border: 1px solid transparent;
+  background: transparent;
+  color: var(--chrome-faint);
+  font-size: 11px;
+  text-align: left;
+}
+
+.repos-create::before {
+  content: "+";
+  font-size: 13px;
+  line-height: 1;
+}
+
+.repos-create:hover {
   background: var(--chrome-hover);
   color: var(--chrome-text);
-  font: inherit;
-  font-size: 11.5px;
-  cursor: pointer;
-  transition: background var(--fast) var(--ease), border-color var(--fast) var(--ease);
-}
-
-.repos-create {
-  color: var(--chrome-soft);
-}
-
-.repos-publish:hover,
-.repos-create:hover {
-  border-color: var(--accent-chrome);
-  background: var(--accent-chrome-wash);
 }
 
 .commit-dialog {
@@ -2444,8 +2486,6 @@ body.typewriter-mode .cm-content {
 .commit-list {
   display: grid;
   gap: 1px;
-  max-height: 15rem;
-  overflow-y: auto;
   padding: 0.15rem;
   border: 1px solid var(--rule);
   border-radius: 9px;
@@ -2474,6 +2514,10 @@ body.typewriter-mode .cm-content {
 }
 
 .commit-change-name {
+  display: flex;
+  align-items: center;
+  gap: 0.3rem;
+  flex: 1;
   min-width: 0;
   padding: 0;
   border: 0;
@@ -2481,28 +2525,46 @@ body.typewriter-mode .cm-content {
   font-family: var(--font-mono);
   font-size: 12px;
   color: var(--text-body);
-  overflow: hidden;
-  text-overflow: ellipsis;
-  white-space: nowrap;
   text-align: left;
   cursor: pointer;
 }
 
-.commit-change-name::after {
-  content: "  ver diff";
-  color: var(--text-faint);
-  font-family: var(--font-ui);
-  font-size: 10px;
-  opacity: 0;
+.commit-change-ruta {
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
 }
 
-.commit-change:hover .commit-change-name::after,
-.commit-change-name:focus-visible::after {
-  opacity: 1;
+/* El galón apunta a la derecha cerrado y hacia abajo abierto, que es como se
+   lee un desplegable en cualquier otro sitio. */
+.commit-chevron {
+  width: 13px;
+  height: 13px;
+  flex: none;
+  color: var(--text-faint);
+  transition: transform var(--fast) var(--ease), color var(--fast) var(--ease);
+}
+
+.commit-change-name[aria-expanded="true"] .commit-chevron {
+  transform: rotate(90deg);
+  color: var(--accent);
+}
+
+.commit-change:hover .commit-chevron { color: var(--text-soft); }
+
+/* Cuánto mueve el archivo. Se rellena al abrir el diff y se queda ahí: al
+   plegarlo, el dato sigue a la vista sin tener que volver a abrirlo. */
+.commit-change-count {
+  flex: none;
+  font-family: var(--font-mono);
+  font-size: 11px;
+  color: var(--text-faint);
+  white-space: nowrap;
 }
 
 .commit-diff-body {
-  max-height: 18rem;
+  max-height: 24rem;
   overflow: auto;
   border-top: 1px solid var(--rule);
   background: color-mix(in srgb, var(--wash) 72%, var(--chrome));
@@ -2510,23 +2572,12 @@ body.typewriter-mode .cm-content {
   font-size: 11px;
 }
 
-.commit-diff-summary,
 .commit-diff-truncated {
   margin: 0;
   padding: 0.4rem 0.65rem;
-  border-bottom: 1px solid var(--rule);
+  border-top: 1px solid var(--rule);
   color: var(--text-faint);
   font-family: var(--font-ui);
-}
-
-.commit-diff-summary {
-  color: var(--text-soft);
-  font-family: var(--font-mono);
-}
-
-.commit-diff-truncated {
-  border-top: 1px solid var(--rule);
-  border-bottom: 0;
 }
 
 .commit-diff-more {
@@ -2657,9 +2708,6 @@ body.typewriter-mode .cm-content {
   display: flex;
   align-items: center;
   gap: 0.5rem;
-  margin-top: 1rem;
-  padding-top: 0.85rem;
-  border-top: 1px solid var(--rule);
 }
 
 .commit-actions .github-secondary {
