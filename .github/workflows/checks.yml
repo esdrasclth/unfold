@@ -38,9 +38,31 @@ jobs:
       # Tauri, que son varios minutos por cada empujón.
       - uses: Swatinem/rust-cache@v2
         with:
-          workspaces: src-tauri
+          workspaces: |
+            src-tauri
+            setup/src-tauri
+      # `generate_context!` empotra el frontend del instalador, así que hay que
+      # construirlo antes de que cargo pueda compilar esa caja.
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+          cache-dependency-path: setup/package-lock.json
+      - run: npm ci --prefix setup
+      - run: npm --prefix setup run build
       # Sin `cargo fmt`: el árbol no está formateado con rustfmt y meterlo aquí
       # obligaría a reescribir tres mil líneas de una tacada, que es un cambio
       # de estilo y no una comprobación.
       - run: cargo clippy --manifest-path src-tauri/Cargo.toml --all-targets -- -D warnings
       - run: cargo test --manifest-path src-tauri/Cargo.toml
+      # El instalador es lo primero que ejecuta quien llega, y era lo único que
+      # aquí no se miraba: su NSIS empotrado sólo existe tras compilar la
+      # aplicación en release, y sin él la caja ni compilaba. Con
+      # `UNFOLD_SIN_INSTALADOR` se compila con el hueco vacío, que es cuanto
+      # hace falta para revisar el código y correr sus pruebas.
+      - run: cargo clippy --manifest-path setup/src-tauri/Cargo.toml --all-targets -- -D warnings
+        env:
+          UNFOLD_SIN_INSTALADOR: "1"
+      - run: cargo test --manifest-path setup/src-tauri/Cargo.toml
+        env:
+          UNFOLD_SIN_INSTALADOR: "1"
