@@ -29,6 +29,8 @@ import { RecentMenu } from "./ui/recentMenu.ts";
 import { TabBar } from "./ui/tabBar.ts";
 import { icon } from "./ui/icons.ts";
 import { Outline } from "./ui/outline.ts";
+import { RepositoryPanel } from "./ui/repositoryPanel.ts";
+import { openCommitDialog } from "./ui/commitDialog.ts";
 import { SettingsPanel } from "./ui/settings.ts";
 import { mountWindowControls } from "./ui/windowControls.ts";
 import {
@@ -42,6 +44,9 @@ import { closeMarkdownMenu, openMarkdownMenu } from "./ui/markdownMenu.ts";
 import { openCommandPalette } from "./ui/commandPalette.ts";
 import { historyKey, recordVersion } from "./history.ts";
 import { openHistoryDialog } from "./ui/historyDialog.ts";
+import { openGithubDialog } from "./ui/githubDialog.ts";
+import { githubAuthStatus, type GithubAuthStatus } from "./github.ts";
+import { connectedRepositories, type ConnectedRepository } from "./repositories.ts";
 import { backupFolder, createBackup, restoreLatest, setBackupFolder } from "./backups.ts";
 import { takeWelcome } from "./welcome.ts";
 import "./styles/app.css";
@@ -80,6 +85,7 @@ let tabs: Tabs;
 let tabBar: TabBar;
 let recentMenu: RecentMenu;
 let outline: Outline;
+let repositoryPanel: RepositoryPanel;
 let autosaveTimer: number | undefined;
 let sessionSaveTimer: number | undefined;
 let backupTimer: number | undefined;
@@ -96,7 +102,8 @@ const app = document.querySelector<HTMLDivElement>("#app")!;
 app.innerHTML = `
   <header class="titlebar" data-tauri-drag-region>
     <button class="icon-button titlebar-panel" id="btn-outline" title="Esquema (Ctrl+Shift+O)">${icon("panel")}</button>
-    <div class="titlebar-file">
+    <button class="icon-button titlebar-panel" id="btn-repositories" title="Repositorios (Ctrl+Shift+B)">${icon("repositories")}</button>
+    <div class="titlebar-file is-compact">
       <span class="titlebar-icon">${icon("file")}</span>
       <span class="titlebar-name" id="doc-name">Sin título</span>
       <span class="titlebar-status" id="doc-status"></span>
@@ -108,6 +115,7 @@ app.innerHTML = `
       <button class="icon-button" id="btn-search" title="Buscar (Ctrl+F)">${icon("search")}</button>
       <button class="icon-button" id="btn-export" title="Exportar a HTML (Ctrl+Shift+E)">${icon("export")}</button>
       <button class="icon-button" id="btn-print" title="Imprimir o guardar en PDF (Ctrl+P)">${icon("print")}</button>
+      <button class="icon-button" id="btn-github" title="GitHub (Ctrl+Shift+H)">${icon("github")}</button>
       <button class="icon-button" id="btn-typewriter" title="Modo máquina de escribir (Ctrl+Shift+T)">${icon("typewriter")}</button>
       <button class="icon-button" id="btn-source" title="Código fuente">${icon("code")}</button>
       <button class="icon-button" id="btn-focus" title="Modo enfoque (Ctrl+Shift+F)">${icon("focus")}</button>
@@ -127,6 +135,7 @@ app.innerHTML = `
     <button class="conflict-action is-quiet" id="conflict-keep">Mantener la mía</button>
   </div>
   <div class="workspace">
+    <aside class="repositories is-collapsed" id="repositories" inert></aside>
     <aside class="outline is-collapsed" id="outline" inert></aside>
     <div class="editor-column">
       <div class="tab-bar" id="tab-bar" hidden></div>
@@ -156,11 +165,13 @@ const el = {
   typewriter: document.querySelector<HTMLButtonElement>("#btn-typewriter")!,
   source: document.querySelector<HTMLButtonElement>("#btn-source")!,
   outlineButton: document.querySelector<HTMLButtonElement>("#btn-outline")!,
+  repositories: document.querySelector<HTMLElement>("#repositories")!,
+  repositoriesButton: document.querySelector<HTMLButtonElement>("#btn-repositories")!,
   settings: document.querySelector<HTMLElement>("#settings")!,
   settingsButton: document.querySelector<HTMLButtonElement>("#btn-settings")!,
   recentButton: document.querySelector<HTMLButtonElement>("#btn-recent")!,
+  githubButton: document.querySelector<HTMLButtonElement>("#btn-github")!,
   tabBar: document.querySelector<HTMLElement>("#tab-bar")!,
-  titlebarFile: document.querySelector<HTMLElement>(".titlebar-file")!,
   update: document.querySelector<HTMLElement>("#update")!,
   updateText: document.querySelector<HTMLElement>("#update-text")!,
   updateNow: document.querySelector<HTMLButtonElement>("#update-now")!,
@@ -197,9 +208,6 @@ function notify(message: string): void {
 // --- Estado visible -----------------------------------------------------------
 
 function renderHeader(): void {
-  // Con pestañas visibles, el nombre ya está en la pestaña activa: repetirlo
-  // en la barra de título sería ruido.
-  el.titlebarFile.classList.toggle("is-hidden", tabs.count() > 1);
   el.name.textContent = session.name;
   el.status.textContent = session.dirty ? "sin guardar" : session.path ? "guardado" : "";
   el.status.classList.toggle("is-dirty", session.dirty);
@@ -315,6 +323,10 @@ async function persistActive(prompt: boolean): Promise<boolean> {
     }
     tabs.touch();
     scheduleSessionSave();
+    // Guardar cambia el estado del archivo en Git —de sincronizado a
+    // modificado, o de nuevo a modificado—, así que el explorador se queda
+    // mintiendo si no se relee. Sólo si está abierto y el archivo es suyo.
+    if (repositoriesOn && repositoryPanel.owns(tab.path)) void repositoryPanel.refresh();
     return !tab.dirty;
   } catch (error) {
     console.error("No se pudo guardar", error);
@@ -348,6 +360,7 @@ function afterTabChange(): void {
   renderHeader();
   renderStats(doc);
   outline.refresh();
+  repositoryPanel.setActive(session.path);
   // El modo máquina de escribir vive en un compartimento del estado, y el
   // estado nuevo trae el suyo vacío: hay que reponerlo en cada cambio.
   applyTypewriter();
@@ -518,19 +531,110 @@ function toggleSettings(force?: boolean): void {
   if (!settingsOpen) view.focus();
 }
 
-let outlineOn = localStorage.getItem("unfold:outline") === "on";
+/*
+ * GitHub. El botón sólo refleja si hay sesión: los repositorios se piden
+ * cuando se abre el diálogo, no en cada arranque, porque el editor tiene que
+ * poder trabajar sin red.
+ */
+let repositoryCount = 0;
+let lastGithubStatus: GithubAuthStatus = { connected: false, user: null, expiresAt: null };
 
-function applyOutline(): void {
+function paintGithub(status: GithubAuthStatus): void {
+  lastGithubStatus = status;
+  el.githubButton.classList.toggle("is-on", status.connected || repositoryCount > 0);
+  const account = status.connected ? ` · @${status.user?.login ?? ""}` : "";
+  const repositories =
+    repositoryCount === 1 ? " · 1 repositorio" : repositoryCount > 1 ? ` · ${repositoryCount} repositorios` : "";
+  el.githubButton.title = `GitHub${account}${repositories} (Ctrl+Shift+H)`;
+}
+
+function showCommit(repository: ConnectedRepository): void {
+  openCommitDialog(repository, {
+    // Publicar mueve el estado de todos los archivos del repositorio, así que
+    // el explorador se relee entero en vez de parchear una fila.
+    onChanged: () => void repositoryPanel.refresh(),
+    notify,
+  });
+}
+
+/**
+ * Publica el repositorio del documento que está en pantalla.
+ *
+ * El catálogo puede estar sin leer si nunca se abrió el panel, así que se
+ * refresca antes de darse por vencido.
+ */
+function publishCurrent(): void {
+  void (async () => {
+    let repository = repositoryPanel.repositoryOf(session.path);
+    if (!repository) {
+      await repositoryPanel.refresh();
+      repository = repositoryPanel.repositoryOf(session.path);
+    }
+    if (!repository) {
+      notify("Este documento no está dentro de un repositorio conectado");
+      return;
+    }
+    showCommit(repository);
+  })();
+}
+
+function showGithub(): void {
+  openGithubDialog({
+    onStatusChange: paintGithub,
+    // Un documento del repositorio es un archivo normal del disco: se abre
+    // como cualquier otro y hereda pestañas, sesión y recientes sin nada más.
+    onOpenDocument: (path) => void loadPath(path),
+    onRepositoriesChange: (count) => {
+      repositoryCount = count;
+      paintGithub(lastGithubStatus);
+      if (repositoriesOn) void repositoryPanel.refresh();
+    },
+  });
+}
+
+/*
+ * El hueco de la izquierda lo comparten el esquema y el explorador de
+ * repositorios, y sólo uno está desplegado a la vez. La ventana puede bajar a
+ * 480 px de ancho: con los dos abiertos no quedaría sitio para escribir.
+ */
+let outlineOn = localStorage.getItem("unfold:outline") === "on";
+let repositoriesOn = localStorage.getItem("unfold:repositories") === "on";
+
+function applySidePanels(): void {
   outline.setCollapsed(!outlineOn);
+  repositoryPanel.setCollapsed(!repositoriesOn);
   el.outlineButton.classList.toggle("is-on", outlineOn);
+  el.repositoriesButton.classList.toggle("is-on", repositoriesOn);
   if (outlineOn) outline.refresh();
+  // También al arrancar: si el panel se quedó abierto de la sesión anterior,
+  // se restauraría vacío hasta que alguien pulsara actualizar.
+  if (repositoriesOn) {
+    repositoryPanel.setActive(session.path);
+    void repositoryPanel.refresh();
+  }
+}
+
+/** Se conserva el nombre porque lo usan la paleta y el atajo de siempre. */
+function applyOutline(): void {
+  applySidePanels();
 }
 
 function toggleOutline(): void {
   outlineOn = !outlineOn;
+  if (outlineOn) repositoriesOn = false;
   localStorage.setItem("unfold:outline", outlineOn ? "on" : "off");
-  applyOutline();
+  localStorage.setItem("unfold:repositories", repositoriesOn ? "on" : "off");
+  applySidePanels();
   view.focus();
+}
+
+function toggleRepositories(force?: boolean): void {
+  repositoriesOn = force ?? !repositoriesOn;
+  if (repositoriesOn) outlineOn = false;
+  localStorage.setItem("unfold:outline", outlineOn ? "on" : "off");
+  localStorage.setItem("unfold:repositories", repositoriesOn ? "on" : "off");
+  applySidePanels();
+  if (!repositoriesOn) view.focus();
 }
 
 // --- Arranque -----------------------------------------------------------------
@@ -619,6 +723,11 @@ recentMenu = new RecentMenu(el.recentButton, {
 });
 
 outline = new Outline(el.outline, () => view);
+repositoryPanel = new RepositoryPanel(el.repositories, {
+  onOpen: (path) => void loadPath(path),
+  onManage: showGithub,
+  onPublish: showCommit,
+});
 mountWindowControls(document.querySelector<HTMLElement>("#window-controls")!);
 settingsPanel = new SettingsPanel(el.settings, () => toggleSettings(false), {
   check: () => checkForUpdates(true),
@@ -666,6 +775,7 @@ document.querySelector("#btn-save")!.addEventListener("click", () => void persis
 document.querySelector("#btn-search")!.addEventListener("click", () => openSearchPanel(view));
 document.querySelector("#btn-export")!.addEventListener("click", () => void exportHtml(exportContext()));
 document.querySelector("#btn-print")!.addEventListener("click", () => printDocument(exportContext()));
+el.githubButton.addEventListener("click", showGithub);
 window.addEventListener("keydown", (event) => {
   if (event.ctrlKey && event.shiftKey && event.key.toLowerCase() === "p") {
     event.preventDefault();
@@ -679,6 +789,10 @@ window.addEventListener("keydown", (event) => {
       { id: "focus", label: "Alternar modo enfoque", run: toggleFocusMode },
       { id: "theme", label: "Cambiar tema", run: toggleTheme },
       { id: "settings", label: "Abrir Apariencia y ajustes", run: () => toggleSettings(true) },
+      { id: "repositories", label: "Explorador de repositorios", shortcut: "Ctrl+Shift+B", run: () => toggleRepositories(true) },
+      { id: "repositories-search", label: "Buscar un documento por nombre", run: () => { toggleRepositories(true); repositoryPanel.focusFilter(); } },
+      { id: "publish", label: "Publicar cambios en GitHub", run: publishCurrent },
+      { id: "github", label: "Conectar o revisar GitHub", shortcut: "Ctrl+Shift+H", run: showGithub },
       { id: "history", label: "Ver historial y recuperar versión", run: () => openHistoryDialog(historyKey(session.path, session.name), view.state.doc.toString(), (content) => replaceDocument(view, content)) },
       { id: "backup-folder", label: `Configurar carpeta de copias${backupFolder() ? ` (${backupFolder()})` : ""}`, run: () => void (async () => {
         if (!isTauri) { notify("Las copias automáticas requieren la aplicación de escritorio"); return; }
@@ -695,6 +809,7 @@ window.addEventListener("keydown", (event) => {
 });
 document.querySelector("#btn-focus")!.addEventListener("click", toggleFocusMode);
 el.outlineButton.addEventListener("click", toggleOutline);
+el.repositoriesButton.addEventListener("click", () => toggleRepositories());
 el.typewriter.addEventListener("click", toggleTypewriter);
 el.source.addEventListener("click", toggleSourceMode);
 el.theme.addEventListener("click", toggleTheme);
@@ -876,6 +991,22 @@ el.updateLater.addEventListener("click", () => {
 
 // Se consulta con retraso: la red no debe frenar el arranque del editor.
 window.setTimeout(() => void buscarActualizacion(manejadoresUpdate), 4000);
+
+// GitHub, en silencio y en dos tiempos. El catálogo de repositorios es local:
+// se lee enseguida y es lo que hace que al reiniciar sigan estando ahí aunque
+// no haya red. El estado de la sesión sí sale a la red, así que espera y se
+// traga cualquier error; sin conexión el diálogo ya explicará el motivo.
+if (isTauri) {
+  void connectedRepositories()
+    .then((repositories) => {
+      repositoryCount = repositories.length;
+      paintGithub(lastGithubStatus);
+    })
+    .catch(() => {});
+  window.setTimeout(() => {
+    void githubAuthStatus().then(paintGithub).catch(() => {});
+  }, 4500);
+}
 const changelogRaw = localStorage.getItem("unfold:changelog-pending");
 if (changelogRaw) {
   try {
@@ -918,7 +1049,12 @@ window.addEventListener("keydown", (event) => {
     return;
   }
 
-  if (key === "o" && event.shiftKey) {
+  if (key === "b" && event.shiftKey) {
+    // No Ctrl+Shift+R: WebView2 conserva sus aceleradores de navegador y ese
+    // recargaría la ventana entera.
+    event.preventDefault();
+    toggleRepositories();
+  } else if (key === "o" && event.shiftKey) {
     event.preventDefault();
     toggleOutline();
   } else if (key === "o") {
@@ -947,6 +1083,10 @@ window.addEventListener("keydown", (event) => {
     // El diálogo del navegador imprimiría el editor, no el documento.
     event.preventDefault();
     printDocument(exportContext());
+  } else if (key === "h" && event.shiftKey) {
+    // «Hub»: Ctrl+Shift+G ya es «buscar anterior» dentro del editor.
+    event.preventDefault();
+    showGithub();
   } else if (key === "f" && event.shiftKey) {
     event.preventDefault();
     toggleFocusMode();

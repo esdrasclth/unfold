@@ -242,8 +242,15 @@ body {
   margin-right: 0.15rem;
 }
 
-.titlebar-file.is-hidden {
-  visibility: hidden;
+/*
+ * Con la barra de pestañas siempre visible, el nombre del documento ya está
+ * ahí y repetirlo arriba sería ruido. Lo que se queda es el estado, que es
+ * donde salen «sin guardar» y los avisos: escondiendo el bloque entero, como
+ * se hacía con varias pestañas abiertas, esos avisos no se veían nunca.
+ */
+.titlebar-file.is-compact .titlebar-icon,
+.titlebar-file.is-compact .titlebar-name {
+  display: none;
 }
 
 .titlebar-file {
@@ -406,11 +413,11 @@ body {
   border-radius: 0;
 }
 
-.outline.is-collapsed + .editor-column .editor-host {
+.repositories.is-collapsed + .outline.is-collapsed + .editor-column .editor-host {
   border-radius: 10px 10px 0 0;
 }
 
-.outline.is-collapsed + .editor-column:has(.tab-bar:not([hidden])) .editor-host {
+.repositories.is-collapsed + .outline.is-collapsed + .editor-column:has(.tab-bar:not([hidden])) .editor-host {
   border-radius: 0;
 }
 
@@ -1064,7 +1071,14 @@ body.typewriter-mode .cm-content {
 .dialog-backdrop {
   position: fixed;
   inset: 0;
-  z-index: 50;
+  /*
+   * Por encima de todos los demás. Este diálogo no se abre solo: lo abren los
+   * otros para preguntar antes de algo que no tiene vuelta atrás —desconectar
+   * un repositorio, descartar cambios—, así que siempre es el de más arriba.
+   * Con el 50 de antes quedaba tapado por el de GitHub, que está en 100, y la
+   * pregunta era invisible.
+   */
+  z-index: 200;
   display: grid;
   place-items: center;
   /* Oscurece sin teñir: el fondo puede ser cualquier color de barra. */
@@ -1493,4 +1507,1121 @@ body.typewriter-mode .cm-content {
   background: var(--chrome-hover);
   color: var(--chrome-text);
   filter: none;
+}
+
+/* --- GitHub ------------------------------------------------------------------
+ *
+ * El diálogo reutiliza el lenguaje de los demás: fondo `--canvas`, filete
+ * `--rule` y la misma entrada animada. Lo propio de aquí es la lista de
+ * repositorios, que necesita tres datos por fila sin volverse una tabla.
+ */
+
+.github-backdrop {
+  position: fixed;
+  inset: 0;
+  z-index: 100;
+  display: grid;
+  place-items: start center;
+  padding-top: 10vh;
+  background: rgba(0, 0, 0, 0.34);
+  animation: fade-in var(--fast) var(--ease);
+}
+
+.github-dialog {
+  display: flex;
+  flex-direction: column;
+  width: min(30rem, calc(100vw - 2rem));
+  max-height: 78vh;
+  border: 1px solid var(--rule);
+  border-radius: 14px;
+  background: var(--canvas);
+  color: var(--text-body);
+  box-shadow: 0 20px 60px rgba(0, 0, 0, 0.28);
+  animation: dialog-in var(--medium) var(--ease);
+}
+
+.github-head {
+  display: flex;
+  align-items: flex-start;
+  gap: 1rem;
+  padding: 1.15rem 1.25rem 0.9rem;
+  border-bottom: 1px solid var(--rule);
+}
+
+.github-head h2 {
+  margin: 0;
+  font-size: 15px;
+  font-weight: 640;
+  color: var(--text);
+}
+
+.github-head p {
+  margin: 0.15rem 0 0;
+  font-size: 12px;
+  color: var(--text-soft);
+}
+
+.github-close {
+  margin-left: auto;
+  width: 26px;
+  height: 26px;
+  border: 0;
+  border-radius: 7px;
+  background: transparent;
+  color: var(--text-soft);
+  font-size: 17px;
+  line-height: 1;
+  cursor: pointer;
+  transition: background var(--fast) var(--ease), color var(--fast) var(--ease);
+}
+
+.github-close:hover {
+  background: var(--wash);
+  color: var(--text);
+}
+
+.github-content {
+  overflow: auto;
+  padding: 1.15rem 1.25rem 1.25rem;
+}
+
+/* Estados de una sola columna: desconectado, autorización, error y carga. */
+
+.github-state {
+  display: grid;
+  justify-items: center;
+  gap: 0.55rem;
+  padding: 1.1rem 0 0.6rem;
+  text-align: center;
+}
+
+.github-state strong {
+  font-size: 14px;
+  color: var(--text);
+}
+
+.github-state p {
+  margin: 0;
+  max-width: 24rem;
+  font-size: 12.5px;
+  color: var(--text-soft);
+}
+
+.github-state small {
+  font-size: 11.5px;
+  color: var(--text-faint);
+}
+
+.github-branch-mark {
+  display: grid;
+  place-items: center;
+  width: 42px;
+  height: 42px;
+  border-radius: 50%;
+  background: var(--accent-wash);
+  color: var(--accent);
+  font-size: 20px;
+  line-height: 1;
+}
+
+.github-state-icon.is-error {
+  display: grid;
+  place-items: center;
+  width: 42px;
+  height: 42px;
+  border-radius: 50%;
+  background: color-mix(in srgb, var(--danger) 14%, transparent);
+  color: var(--danger);
+  font-size: 20px;
+  font-weight: 700;
+}
+
+.github-error {
+  color: var(--danger);
+}
+
+.github-loading {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.6rem;
+  padding: 2.4rem 0;
+  font-size: 12.5px;
+  color: var(--text-soft);
+}
+
+.github-loading span {
+  width: 14px;
+  height: 14px;
+  border: 2px solid var(--accent-edge);
+  border-top-color: var(--accent);
+  border-radius: 50%;
+  animation: github-spin 0.8s linear infinite;
+}
+
+@keyframes github-spin {
+  to {
+    transform: rotate(1turn);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .github-backdrop,
+  .github-dialog,
+  .github-loading span {
+    animation: none;
+  }
+}
+
+.github-primary,
+.github-secondary {
+  min-height: 30px;
+  padding: 0.4rem 0.9rem;
+  border: 1px solid transparent;
+  border-radius: 8px;
+  background: var(--accent);
+  color: #fff;
+  font: inherit;
+  font-size: 12.5px;
+  cursor: pointer;
+  transition: filter var(--fast) var(--ease), transform var(--fast) var(--ease);
+}
+
+.github-primary:hover,
+.github-secondary:hover {
+  filter: brightness(1.08);
+}
+
+.github-primary:active,
+.github-secondary:active {
+  transform: scale(0.97);
+}
+
+.github-secondary {
+  border-color: var(--rule);
+  background: transparent;
+  color: var(--text-body);
+}
+
+.github-actions {
+  display: flex;
+  gap: 0.5rem;
+}
+
+/*
+ * El código del dispositivo es lo único que la persona tiene que teclear en
+ * GitHub, así que se muestra grande, monoespaciado y separado en dos mitades
+ * tal como GitHub lo pide. Es un botón porque tocarlo lo copia.
+ */
+.github-code {
+  padding: 0.5rem 1rem;
+  border: 1px dashed var(--accent-edge);
+  border-radius: 10px;
+  background: var(--accent-wash);
+  color: var(--text);
+  font-family: var(--font-mono);
+  font-size: 22px;
+  font-weight: 600;
+  letter-spacing: 0.16em;
+  cursor: copy;
+}
+
+.github-waiting {
+  color: var(--text-soft);
+}
+
+/* Estado conectado: identidad, repositorios y pie de acciones. */
+
+.github-account {
+  display: flex;
+  align-items: center;
+  gap: 0.7rem;
+  padding-bottom: 0.9rem;
+  border-bottom: 1px solid var(--rule);
+}
+
+.github-avatar {
+  width: 38px;
+  height: 38px;
+  border-radius: 50%;
+  background: var(--wash);
+}
+
+.github-identity {
+  display: grid;
+  min-width: 0;
+}
+
+.github-identity strong {
+  font-size: 13.5px;
+  color: var(--text);
+}
+
+.github-identity span {
+  font-size: 12px;
+  color: var(--text-soft);
+}
+
+/*
+ * Acciones de la cuenta, arriba y detrás de un botón.
+ *
+ * Van con la cuenta y no en un pie porque el contenido de abajo crece con cada
+ * repositorio, y cerrar sesión no puede quedar a varias vueltas de rueda. Y
+ * detrás de un menú porque son dos cosas que se hacen de higos a brevas: en la
+ * fila sólo asoma un botón discreto, y el texto completo espera dentro.
+ */
+.github-menu-anchor {
+  position: relative;
+  flex: none;
+}
+
+.github-more {
+  display: grid;
+  place-items: center;
+  width: 26px;
+  height: 24px;
+  padding: 0;
+  border: 0;
+  border-radius: 7px;
+  background: transparent;
+  color: var(--text-soft);
+  cursor: pointer;
+  transition: background var(--fast) var(--ease), color var(--fast) var(--ease);
+}
+
+.github-more:hover,
+.github-more[aria-expanded="true"] {
+  background: var(--wash-strong);
+  color: var(--text);
+}
+
+.github-more svg {
+  width: 16px;
+  height: 16px;
+  display: block;
+}
+
+/* Por encima del diálogo, que está en 100: si no, el menú saldría por debajo
+ * del propio contenido que lo abre. */
+.github-menu {
+  position: absolute;
+  top: calc(100% + 4px);
+  right: 0;
+  z-index: 120;
+  min-width: 15rem;
+  /* Los demás menús cuelgan de la barra y por eso son del color del cromo.
+   * Éste vive dentro de un diálogo, así que toma la superficie del diálogo o
+   * se vería como un parche de otro sitio. */
+  border: 1px solid var(--rule);
+  background: var(--canvas);
+}
+
+.github-menu .menu-item {
+  color: var(--text-body);
+}
+
+.github-menu .menu-item:hover,
+.github-menu .menu-item:focus-visible {
+  background: var(--accent-wash);
+  outline: none;
+}
+
+.github-menu .menu-item.is-danger {
+  color: var(--danger);
+}
+
+.github-connected {
+  margin-left: auto;
+  padding: 0.15rem 0.55rem;
+  border-radius: 999px;
+  background: var(--accent-wash);
+  color: var(--accent);
+  font-size: 11px;
+  white-space: nowrap;
+}
+
+.github-section-head {
+  display: flex;
+  align-items: baseline;
+  gap: 0.5rem;
+  margin: 1rem 0 0.5rem;
+  font-size: 12px;
+  color: var(--text-soft);
+}
+
+.github-section-head strong {
+  font-size: 12.5px;
+  color: var(--text);
+}
+
+.github-section-head span {
+  margin-left: auto;
+  color: var(--text-faint);
+}
+
+.github-repository-list {
+  display: grid;
+  gap: 4px;
+}
+
+.github-repository-name {
+  font-size: 13px;
+  color: var(--text);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.github-repository-meta {
+  font-size: 11.5px;
+  color: var(--text-soft);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.github-empty {
+  margin: 0;
+  padding: 0.9rem 0.2rem;
+  font-size: 12.5px;
+  color: var(--text-soft);
+}
+
+.github-link {
+  padding: 0;
+  border: 0;
+  background: transparent;
+  color: var(--text-soft);
+  font: inherit;
+  font-size: 12px;
+  text-decoration: underline;
+  text-underline-offset: 3px;
+  cursor: pointer;
+}
+
+.github-link:hover {
+  color: var(--text);
+}
+
+.github-link.is-danger {
+  margin-left: auto;
+  color: var(--danger);
+}
+
+/* --- GitHub · repositorios ----------------------------------------------------
+ *
+ * Tres bloques dentro del mismo diálogo: la cuenta, los repositorios que ya
+ * están en disco y los que se pueden conectar. Las tarjetas se despliegan para
+ * enseñar los documentos, que es lo que de verdad se viene a buscar.
+ */
+
+.github-signin {
+  display: flex;
+  align-items: center;
+  gap: 1rem;
+  padding: 0.85rem 0.9rem;
+  border: 1px solid var(--accent-edge);
+  border-radius: 10px;
+  background: var(--accent-wash);
+}
+
+.github-signin-text {
+  display: grid;
+  gap: 0.15rem;
+}
+
+.github-signin-text strong {
+  font-size: 13px;
+  color: var(--text);
+}
+
+.github-signin-text span {
+  font-size: 12px;
+  color: var(--text-soft);
+}
+
+.github-signin button {
+  margin-left: auto;
+  white-space: nowrap;
+}
+
+.github-section + .github-section {
+  margin-top: 0.4rem;
+}
+
+.github-notice {
+  margin: 0 0 0.8rem;
+  padding: 0.5rem 0.7rem;
+  border-radius: 8px;
+  background: var(--accent-wash);
+  color: var(--text-body);
+  font-size: 12.5px;
+}
+
+.github-repository-card {
+  border: 1px solid transparent;
+  border-radius: 10px;
+  transition: border-color var(--fast) var(--ease), background var(--fast) var(--ease);
+}
+
+.github-repository-card.is-open {
+  border-color: var(--rule);
+  background: var(--wash);
+}
+
+.github-repository-card.is-missing .github-repository-name {
+  color: var(--text-soft);
+  text-decoration: line-through;
+}
+
+.github-repository-head {
+  display: grid;
+  grid-template-columns: 1rem 1fr;
+  gap: 0.1rem 0.4rem;
+  width: 100%;
+  padding: 0.55rem 0.7rem;
+  border: 0;
+  border-radius: 9px;
+  background: transparent;
+  font: inherit;
+  text-align: left;
+  cursor: pointer;
+}
+
+.github-repository-head:hover:not(:disabled),
+.github-repository-head:focus-visible {
+  background: var(--accent-wash);
+  outline: none;
+}
+
+.github-repository-head:disabled {
+  cursor: default;
+}
+
+.github-caret {
+  grid-row: 1 / span 2;
+  align-self: center;
+  color: var(--text-faint);
+  font-size: 11px;
+  transition: transform var(--fast) var(--ease);
+}
+
+.github-repository-card.is-open .github-caret {
+  transform: rotate(90deg);
+}
+
+.github-card-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.9rem;
+  padding: 0 0.7rem 0.55rem 2.1rem;
+}
+
+.github-card-actions .github-link:disabled {
+  color: var(--text-faint);
+  cursor: default;
+  text-decoration: none;
+}
+
+/* Lista de documentos desplegada dentro de la tarjeta. */
+
+.github-document-list {
+  display: grid;
+  gap: 2px;
+  padding: 0.2rem 0.6rem 0.6rem 2rem;
+}
+
+.github-document {
+  display: flex;
+  align-items: baseline;
+  gap: 0.5rem;
+  padding: 0.35rem 0.5rem;
+  border: 0;
+  border-radius: 7px;
+  background: transparent;
+  font: inherit;
+  text-align: left;
+  cursor: pointer;
+}
+
+.github-document:hover,
+.github-document:focus-visible {
+  background: var(--accent-wash);
+  outline: none;
+}
+
+.github-document-name {
+  font-size: 12.5px;
+  color: var(--text-body);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.github-document-tag {
+  margin-left: auto;
+  color: var(--text-faint);
+  font-size: 11px;
+  white-space: nowrap;
+}
+
+.github-document-list .github-loading {
+  padding: 0.9rem 0;
+}
+
+/* Repositorios concedidos que todavía no están en disco. */
+
+.github-available {
+  display: flex;
+  align-items: center;
+  gap: 0.7rem;
+  padding: 0.5rem 0.7rem;
+}
+
+.github-available-text {
+  display: grid;
+  min-width: 0;
+}
+
+.github-available button {
+  margin-left: auto;
+  white-space: nowrap;
+}
+
+.github-available button:disabled {
+  opacity: 0.7;
+  cursor: default;
+}
+
+/* --- Explorador de repositorios ----------------------------------------------
+ *
+ * Comparte el hueco de la izquierda con el esquema y usa su misma mecánica:
+ * el ancho se anima para plegarlo y el contenido conserva el suyo, de modo que
+ * el texto se desliza fuera de vista en vez de reajustarse línea a línea.
+ */
+
+.repositories {
+  --repos-width: 250px;
+  position: relative;
+  width: var(--repos-width);
+  flex: none;
+  overflow: hidden;
+  background: var(--chrome);
+  user-select: none;
+  transition: width var(--medium) var(--ease);
+}
+
+.repositories.is-collapsed {
+  width: 0;
+}
+
+.repositories.is-resizing {
+  transition: none;
+}
+
+.repos-inner {
+  display: flex;
+  flex-direction: column;
+  width: var(--repos-width);
+  height: 100%;
+  opacity: 1;
+  transition: opacity var(--fast) var(--ease);
+}
+
+.repositories.is-collapsed .repos-inner {
+  opacity: 0;
+}
+
+.repos-resizer {
+  position: absolute;
+  top: 0;
+  right: 0;
+  width: 6px;
+  height: 100%;
+  cursor: col-resize;
+}
+
+.repos-head {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  padding: 0.6rem 0.5rem 0.35rem 0.7rem;
+  color: var(--chrome-faint);
+  font-size: 11px;
+  font-weight: 620;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+}
+
+.repos-icon {
+  display: grid;
+  place-items: center;
+  width: 24px;
+  height: 22px;
+  margin-left: auto;
+  padding: 0;
+  border: 0;
+  border-radius: 6px;
+  background: transparent;
+  color: var(--chrome-soft);
+  cursor: pointer;
+  transition: background var(--fast) var(--ease), color var(--fast) var(--ease);
+}
+
+.repos-icon:hover {
+  background: var(--chrome-hover);
+  color: var(--chrome-text);
+}
+
+.repos-icon svg {
+  width: 14px;
+  height: 14px;
+  display: block;
+}
+
+.repos-filter {
+  margin: 0 0.55rem 0.4rem;
+  padding: 0.35rem 0.55rem;
+  border: 1px solid var(--chrome-rule);
+  border-radius: 7px;
+  background: var(--chrome-hover);
+  color: var(--chrome-text);
+  font: inherit;
+  font-size: 12px;
+}
+
+.repos-filter::placeholder {
+  color: var(--chrome-faint);
+}
+
+.repos-filter:focus {
+  outline: none;
+  border-color: var(--accent-chrome);
+}
+
+.repos-list {
+  flex: 1;
+  min-height: 0;
+  overflow-y: auto;
+  padding: 0 0.35rem 0.6rem;
+}
+
+.repos-empty {
+  margin: 0;
+  padding: 0.5rem 0.7rem 0.7rem;
+  color: var(--chrome-faint);
+  font-size: 11.5px;
+  line-height: 1.45;
+}
+
+.repos-manage {
+  margin: 0;
+  padding: 0.5rem 0.7rem;
+  border: 0;
+  border-top: 1px solid var(--chrome-rule);
+  background: transparent;
+  color: var(--chrome-soft);
+  font: inherit;
+  font-size: 11.5px;
+  text-align: left;
+  cursor: pointer;
+  transition: background var(--fast) var(--ease), color var(--fast) var(--ease);
+}
+
+.repos-manage:hover {
+  background: var(--chrome-hover);
+  color: var(--chrome-text);
+}
+
+/* Cabecera de cada repositorio: nombre arriba, resumen del estado debajo. */
+
+.repo + .repo {
+  margin-top: 0.2rem;
+}
+
+.repo-head {
+  display: grid;
+  grid-template-columns: 0.9rem 1fr;
+  gap: 0 0.3rem;
+  width: 100%;
+  padding: 0.35rem 0.4rem;
+  border: 0;
+  border-radius: 7px;
+  background: transparent;
+  font: inherit;
+  text-align: left;
+  cursor: pointer;
+}
+
+.repo-head:hover,
+.repo-head:focus-visible {
+  background: var(--chrome-hover);
+  outline: none;
+}
+
+.repo-name {
+  color: var(--chrome-text);
+  font-size: 12.5px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.repo-summary {
+  color: var(--chrome-faint);
+  font-size: 11px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.repos-caret {
+  grid-row: 1 / span 2;
+  align-self: center;
+  color: var(--chrome-faint);
+  font-size: 10px;
+  transition: transform var(--fast) var(--ease);
+}
+
+.repo.is-open > .repo-head .repos-caret,
+.repos-folder.is-open .repos-caret {
+  transform: rotate(90deg);
+}
+
+/* Carpetas y documentos. La sangría la lleva `--depth`, que fija el nivel. */
+
+.repos-folder,
+.repos-document {
+  display: flex;
+  align-items: center;
+  gap: 0.35rem;
+  width: 100%;
+  padding: 0.24rem 0.4rem;
+  padding-left: calc(0.75rem + var(--depth, 0) * 0.72rem);
+  border: 0;
+  border-radius: 6px;
+  background: transparent;
+  font: inherit;
+  text-align: left;
+  cursor: pointer;
+}
+
+.repos-folder .repos-caret {
+  grid-row: auto;
+  flex: none;
+}
+
+.repos-folder span:last-child {
+  color: var(--chrome-soft);
+  font-size: 12px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.repos-folder:hover,
+.repos-folder:focus-visible,
+.repos-document:hover,
+.repos-document:focus-visible {
+  background: var(--chrome-hover);
+  outline: none;
+}
+
+.repos-document.is-active {
+  background: var(--accent-chrome-wash);
+}
+
+.repos-document.is-active .repos-document-name {
+  color: var(--accent-chrome);
+}
+
+.repos-document-name {
+  color: var(--chrome-soft);
+  font-size: 12px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.repos-document-folder {
+  margin-left: auto;
+  color: var(--chrome-faint);
+  font-size: 10.5px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+/*
+ * Indicadores. Un punto y nada más: la lista se lee de un vistazo y el color
+ * ya distingue los tres casos. Lo sincronizado no lleva marca, que es lo que
+ * deja destacar a lo que sí necesita atención.
+ */
+.repos-dot {
+  flex: none;
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+}
+
+.repos-document.is-new .repos-dot {
+  border: 1.5px solid var(--chrome-faint);
+}
+
+.repos-document.is-modified .repos-dot {
+  background: var(--accent-chrome);
+}
+
+.repos-document.is-conflicted .repos-dot {
+  background: var(--danger);
+  box-shadow: 0 0 0 2px color-mix(in srgb, var(--danger) 28%, transparent);
+}
+
+.repos-result-head {
+  padding: 0.5rem 0.7rem 0.2rem;
+  color: var(--chrome-faint);
+  font-size: 10.5px;
+  font-weight: 620;
+  letter-spacing: 0.05em;
+  text-transform: uppercase;
+}
+
+/* --- Publicar ----------------------------------------------------------------
+ *
+ * La vista de cambios reutiliza el diálogo de GitHub y añade lo suyo: la lista
+ * con casillas, el mensaje y la identidad con la que se va a firmar.
+ */
+
+.repos-publish {
+  width: calc(100% - 0.8rem);
+  margin: 0.1rem 0.4rem 0.3rem;
+  padding: 0.3rem 0.5rem;
+  border: 1px solid var(--chrome-rule);
+  border-radius: 7px;
+  background: var(--chrome-hover);
+  color: var(--chrome-text);
+  font: inherit;
+  font-size: 11.5px;
+  cursor: pointer;
+  transition: background var(--fast) var(--ease), border-color var(--fast) var(--ease);
+}
+
+.repos-publish:hover {
+  border-color: var(--accent-chrome);
+  background: var(--accent-chrome-wash);
+}
+
+.commit-dialog {
+  width: min(34rem, calc(100vw - 2rem));
+}
+
+.commit-target {
+  font-family: var(--font-mono);
+}
+
+.commit-problem {
+  margin: 0 0 0.9rem;
+  padding: 0.55rem 0.7rem;
+  border-radius: 8px;
+  background: color-mix(in srgb, var(--danger) 12%, transparent);
+  color: var(--text-body);
+  font-size: 12.5px;
+  line-height: 1.45;
+}
+
+.commit-select-all {
+  margin-bottom: 0.3rem;
+}
+
+.commit-list {
+  display: grid;
+  gap: 1px;
+  max-height: 15rem;
+  overflow-y: auto;
+  padding: 0.15rem;
+  border: 1px solid var(--rule);
+  border-radius: 9px;
+}
+
+.commit-change {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  padding: 0.34rem 0.5rem;
+  border-radius: 6px;
+  cursor: pointer;
+}
+
+.commit-change:hover {
+  background: var(--wash);
+}
+
+.commit-change input {
+  flex: none;
+  accent-color: var(--accent);
+}
+
+.commit-change-name {
+  font-family: var(--font-mono);
+  font-size: 12px;
+  color: var(--text-body);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.commit-change-state {
+  margin-left: auto;
+  font-size: 11px;
+  color: var(--text-faint);
+  white-space: nowrap;
+}
+
+.commit-change.is-conflicted .commit-change-state {
+  color: var(--danger);
+}
+
+.commit-message {
+  width: 100%;
+  padding: 0.55rem 0.7rem;
+  border: 1px solid var(--rule);
+  border-radius: 9px;
+  background: var(--chrome);
+  color: var(--text);
+  font: inherit;
+  font-size: 13px;
+  line-height: 1.5;
+  resize: vertical;
+}
+
+.commit-message:focus {
+  outline: none;
+  border-color: var(--accent-edge);
+}
+
+/* Identidad: se enseña siempre, porque queda escrita en el commit para
+ * siempre y enterarse después es tarde. */
+
+.commit-identity {
+  margin-top: 0.9rem;
+  padding: 0.7rem 0.8rem;
+  border: 1px solid var(--rule);
+  border-radius: 9px;
+  background: var(--wash);
+}
+
+.commit-identity-line {
+  margin: 0 0 0.4rem;
+  font-size: 12.5px;
+  color: var(--text-body);
+}
+
+.commit-identity-line span {
+  font-family: var(--font-mono);
+  font-size: 11.5px;
+  color: var(--text-soft);
+}
+
+.commit-noreply {
+  display: flex;
+  align-items: center;
+  gap: 0.45rem;
+  font-size: 12.5px;
+  color: var(--text-body);
+  cursor: pointer;
+}
+
+.commit-noreply input {
+  accent-color: var(--accent);
+}
+
+.commit-noreply code {
+  font-family: var(--font-mono);
+  font-size: 11.5px;
+}
+
+.commit-identity small {
+  display: block;
+  margin-top: 0.35rem;
+  font-size: 11.5px;
+  color: var(--text-faint);
+  line-height: 1.45;
+}
+
+.commit-actions {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  margin-top: 1rem;
+  padding-top: 0.85rem;
+  border-top: 1px solid var(--rule);
+}
+
+.commit-actions .github-secondary {
+  margin-left: auto;
+}
+
+.commit-actions button:disabled {
+  opacity: 0.5;
+  cursor: default;
+  filter: none;
+  transform: none;
+}
+
+.commit-working {
+  font-size: 12px;
+  color: var(--text-soft);
+}
+
+.commit-pending {
+  margin-top: 0.4rem;
+}
+
+.github-state-icon.is-done {
+  display: grid;
+  place-items: center;
+  width: 42px;
+  height: 42px;
+  border-radius: 50%;
+  background: var(--accent-wash);
+  color: var(--accent);
+  font-size: 20px;
+  font-weight: 700;
+}
+
+/* Banda de acceso: cuánto ve Unfold y dónde se cambia. La pantalla donde se
+ * eligen los repositorios es de GitHub y no se puede traer aquí, así que lo
+ * único que cabe hacer es explicarlo y señalarla. */
+
+.github-access {
+  display: flex;
+  align-items: center;
+  gap: 1rem;
+  margin-top: 0.9rem;
+  padding: 0.75rem 0.85rem;
+  border: 1px solid var(--accent-edge);
+  border-radius: 10px;
+  background: var(--accent-wash);
+}
+
+.github-access-text {
+  display: grid;
+  gap: 0.15rem;
+  min-width: 0;
+}
+
+.github-access-text strong {
+  font-size: 12.5px;
+  color: var(--text);
+}
+
+.github-access-text span {
+  font-size: 11.5px;
+  color: var(--text-soft);
+  line-height: 1.45;
+}
+
+.github-access button {
+  margin-left: auto;
+  white-space: nowrap;
 }
