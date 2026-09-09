@@ -369,6 +369,9 @@ export class RepositoryPanel {
       if (generation !== this.generation) return;
       this.repositories = [];
       this.documents.clear();
+      // La copia no sobra: `stopWatcher` borra del mapa, y recorrer el
+      // iterador vivo mientras se borra se salta entradas.
+      // oxlint-disable-next-line no-useless-spread
       for (const id of [...this.watchStops.keys()]) this.stopWatcher(id);
       this.problem = error instanceof Error ? error.message : String(error);
     } finally {
@@ -482,6 +485,8 @@ export class RepositoryPanel {
     if (this.disposed) return;
     this.disposed = true;
     this.generation += 1;
+    // Igual que arriba: se copia porque `stopWatcher` borra del mapa.
+    // oxlint-disable-next-line no-useless-spread
     for (const id of [...this.watchStops.keys()]) this.stopWatcher(id);
     for (const timer of this.watchTimers.values()) window.clearTimeout(timer);
     this.watchTimers.clear();

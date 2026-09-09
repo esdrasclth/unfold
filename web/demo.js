@@ -582,13 +582,25 @@ async function mostrarVersion() {
 
     const datos = await respuesta.json();
     const exe = (datos.assets ?? []).find((a) => a.name === "Unfold-Setup.exe");
+    const peso = exe ? `${(exe.size / 1048576).toFixed(1).replace(".", ",")} MB` : null;
+
     const partes = [datos.tag_name, "Windows 10 y 11"];
-    if (exe) partes.push(`${(exe.size / 1048576).toFixed(1).replace(".", ",")} MB`);
+    if (peso) partes.push(peso);
     partes.push("sin instalador de administrador");
     meta.textContent = partes.join(" · ");
 
     const cierre = document.getElementById("meta-cierre");
     if (cierre) cierre.textContent = `${datos.tag_name} · Windows 10 y 11`;
+
+    /*
+     * El resto de sitios donde aparecía el tamaño estaban escritos a mano, y
+     * se quedaron atrás en cuanto la aplicación creció: la página anunciaba
+     * 7,7 MB cuando ya iban por once. Salen todos de aquí, del tamaño real del
+     * archivo publicado, para que no vuelva a haber una cifra falsa.
+     */
+    if (peso) {
+      for (const hueco of document.querySelectorAll("[data-peso]")) hueco.textContent = peso;
+    }
   } catch {
     // Sin conexión con la API el texto por defecto sigue siendo correcto.
   }

@@ -182,6 +182,9 @@ function enhanceInline(html: string): string {
   return html.split(/(<[^>]+>)/g).map((part) => {
     if (part.startsWith("<")) return part;
     return part
+      // El escape de dentro de la clase no hace falta, pero sin él se lee
+      // peor, y este archivo va justo de que el texto se lea.
+      // oxlint-disable-next-line no-useless-escape
       .replace(/\^(\S[^\^\n]*?)\^/g, "<sup>$1</sup>")
       .replace(/~(\S[^~\n]*?)~/g, "<sub>$1</sub>")
       .replace(/(?<![\w"'=])(https?:\/\/[^\s<]+)/g, '<a href="$1">$1</a>');

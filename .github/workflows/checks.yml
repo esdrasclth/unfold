@@ -18,7 +18,29 @@ jobs:
             package-lock.json
             setup/package-lock.json
       - run: npm ci
+      - run: npm run lint
       - run: npm test
       - run: npm run build
       - run: npm ci --prefix setup
       - run: npm --prefix setup run build
+
+  # La capa nativa lleva el motor Git: es la que decide qué entra en un commit
+  # y la que escribe en los archivos de quien usa la aplicación. Sus pruebas no
+  # corrían aquí, así que una regresión ahí sólo se veía compilando a mano.
+  nativo:
+    runs-on: windows-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: dtolnay/rust-toolchain@stable
+        with:
+          components: clippy
+      # Sin el caché, cada tanda recompila el árbol entero de dependencias de
+      # Tauri, que son varios minutos por cada empujón.
+      - uses: Swatinem/rust-cache@v2
+        with:
+          workspaces: src-tauri
+      # Sin `cargo fmt`: el árbol no está formateado con rustfmt y meterlo aquí
+      # obligaría a reescribir tres mil líneas de una tacada, que es un cambio
+      # de estilo y no una comprobación.
+      - run: cargo clippy --manifest-path src-tauri/Cargo.toml --all-targets -- -D warnings
+      - run: cargo test --manifest-path src-tauri/Cargo.toml

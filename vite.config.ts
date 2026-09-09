@@ -23,6 +23,13 @@ export default defineConfig({
   // WebView2 en Windows es Chromium reciente: no hace falta transpilar hacia atrás.
   build: {
     target: "chrome110",
-    sourcemap: true,
+    /*
+     * Sin mapas en lo que se publica. Tauri empotra la carpeta `dist` entera
+     * dentro del ejecutable, así que los mapas no eran una ayuda que estuviera
+     * ahí por si acaso: eran diecisiete megas de código fuente viajando dentro
+     * del instalador de todo el mundo. Con `npm run dev` se depura con los
+     * fuentes de verdad, que es donde se depura.
+     */
+    sourcemap: false,
   },
 });

@@ -25,8 +25,10 @@ del texto: el buffer contiene siempre Markdown literal. Guardar escribe lo que
 ya había, así que abrir un `.md` con Unfold nunca reordena tus listas ni
 normaliza tus comillas.
 
-**Arranca en 250 ms y ocupa 5 MB.** Está hecho con Tauri, que usa el WebView2
-que Windows ya trae, en vez de empaquetar un navegador entero.
+**Arranca en 250 ms y pesa poco.** Está hecho con Tauri, que usa el WebView2
+que Windows ya trae, en vez de empaquetar un navegador entero. El tamaño exacto
+del instalador está en cada
+[versión publicada](https://github.com/esdrasclth/unfold/releases/latest).
 
 **Se edita donde se lee.** Al poner el cursor en una línea, sus marcadores
 reaparecen —atenuados, para no dar un tirón visual— y puedes editarlos. Al

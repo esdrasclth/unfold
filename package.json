@@ -9,6 +9,7 @@
     "start": "tauri dev",
     "release": "tauri build",
     "tauri": "tauri",
+    "lint": "oxlint",
     "test": "node --experimental-strip-types scripts/test-markdown.mjs && node --experimental-strip-types scripts/test-export.mjs && node --experimental-strip-types scripts/test-math.mjs && node --experimental-strip-types scripts/test-welcome.mjs && node --experimental-strip-types scripts/test-session.mjs && node --experimental-strip-types scripts/test-files.mjs && node --experimental-strip-types scripts/test-save.mjs && node --experimental-strip-types scripts/test-watcher.mjs && node --experimental-strip-types scripts/test-ui.mjs",
     "benchmark:large": "node --experimental-strip-types scripts/benchmark-large.mjs",
     "release:setup": "npm run release && npm --prefix setup run release"
@@ -37,6 +38,7 @@
     "@tauri-apps/cli": "^2.11.4",
     "@types/katex": "^0.16.8",
     "linkedom": "^0.18.13",
+    "oxlint": "^1.82.0",
     "typescript": "^7.0.2",
     "vite": "^8.2.2"
   }
