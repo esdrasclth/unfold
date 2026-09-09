@@ -20,6 +20,13 @@ const paths: Record<string, string> = {
   export: '<path d="M12 3.5v11M8.5 7 12 3.5 15.5 7"/><path d="M4.5 14v4.5a2 2 0 0 0 2 2h11a2 2 0 0 0 2-2V14"/>',
   print: '<path d="M7 9V4.5h10V9"/><path d="M5.5 9h13a2 2 0 0 1 2 2v5h-3.5M6 16H2.5v-5a2 2 0 0 1 2-2z" /><path d="M7 14h10v6H7z"/>',
   code: '<path d="m8 7-5 5 5 5M16 7l5 5-5 5M14 4l-4 16"/>',
+  github: '<circle cx="7" cy="5" r="2.3"/><circle cx="7" cy="19" r="2.3"/><circle cx="18" cy="12" r="2.3"/><path d="M9.3 5h2.2a3 3 0 0 1 3 3v1a3 3 0 0 0 3 3M9.3 19h2.2a3 3 0 0 0 3-3V8"/>',
+  // Dos flechas en círculo: volver a preguntar por el estado, no deshacer.
+  refresh: '<path d="M20 12a8 8 0 1 1-2.5-5.8"/><path d="M20 4v4h-4"/>',
+  // Tres puntos: más acciones, las que no caben o no se usan a diario.
+  more: '<circle cx="5" cy="12" r="1.4"/><circle cx="12" cy="12" r="1.4"/><circle cx="19" cy="12" r="1.4"/>',
+  // Pila de carpetas: el explorador de repositorios, no una carpeta suelta.
+  repositories: '<path d="M3.5 8.5h5.2l1.5 1.8h10.3v7.2a2 2 0 0 1-2 2h-13a2 2 0 0 1-2-2z"/><path d="M6 8.5V6.3a1.8 1.8 0 0 1 1.8-1.8h3l1.5 1.8h4.4"/>',
 };
 
 /** Devuelve un SVG de 24×24 trazado con currentColor. */
