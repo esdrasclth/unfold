@@ -111,6 +111,16 @@ y lo que se lee en pantalla es lo que queda escrito en el \`.md\`.
         configureUrl: "https://github.com/settings/installations/7",
       }),
       github_connected_repositories: () => REPOS,
+      // Una carpeta del disco, para ver que convive con los repositorios.
+      open_folders: () => [{
+        id: -4242, path: String.raw`C:\Users\esdras\Documentos\apuntes`,
+        name: "apuntes", missing: false,
+      }],
+      folder_documents: () => [
+        { path: String.raw`C:\Users\esdras\Documentos\apuntes\ideas.md`, relative: "ideas.md" },
+        { path: String.raw`C:\Users\esdras\Documentos\apuntes\diario\2026-09.md`, relative: "diario/2026-09.md" },
+        { path: String.raw`C:\Users\esdras\Documentos\apuntes\diario\2026-08.md`, relative: "diario/2026-08.md" },
+      ],
       github_repository_state: ({ id }) => REPOS.find((r) => r.id === id),
       github_repository_documents: ({ id }) => documentos(id),
       github_touch_repository: () => undefined,
