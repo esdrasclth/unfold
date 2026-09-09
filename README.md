@@ -80,7 +80,7 @@ Markdown disponibles y `Ctrl+Shift+M` alterna el modo Código fuente.
 - **Repositorios de GitHub**: explorador con árbol de carpetas, búsqueda por
   nombre e indicadores de estado por documento
 - **Confirmar y publicar** desde la aplicación, sincronizando antes con el
-  remoto
+  remoto, con vista previa del diff de cada archivo
 - **La ventana te recuerda**: vuelve con el tamaño, el sitio y el estado
   maximizado con los que la dejaste
 - Corrector ortográfico, modo enfoque y modo máquina de escribir
@@ -129,8 +129,12 @@ correcta.
   sincronizado, modificado, nuevo y en conflicto.
 - **Traer cambios** del remoto, con avance rápido cuando se puede hacer sin
   inventar nada.
+- **Revisar el diff** de cualquier archivo desde la propia vista de cambios,
+  con sus líneas añadidas y quitadas, antes de confirmar nada.
 - **Confirmar y publicar**: marcas qué archivos entran, escribes el mensaje, y
-  Unfold confirma, sincroniza con el remoto y publica.
+  Unfold confirma, sincroniza con el remoto y publica. Lo que entra en el
+  commit es exactamente lo que revisaste: si un archivo cambia por el camino,
+  se detiene y lo dice.
 - **Crear documentos** dentro de la copia local, sin salir del explorador.
 
 ### Lo que todavía no hace
@@ -186,7 +190,6 @@ Lo que está pendiente y sería bienvenido:
 
 - Fusionar historias divergentes al publicar, y resolver conflictos
 - Ramas y pull requests desde la aplicación
-- Ver el diff de cada archivo antes de confirmar
 - Notas al pie y enlaces automáticos
 - Tablas dentro de citas o listas
 - Compilaciones para macOS y Linux

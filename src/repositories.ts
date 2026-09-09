@@ -67,6 +67,26 @@ export interface Change {
   deleted: boolean;
   /** Ya estaba preparado en el índice antes de abrir la vista. */
   staged: boolean;
+  /** HEAD y contenido exacto que se presentaron para revisión. */
+  fingerprint: string;
+}
+
+/** Diff unificado de un archivo respecto al último commit. */
+export interface RepositoryDiff {
+  relative: string;
+  patch: string;
+  binary: boolean;
+  truncated: boolean;
+  additions: number;
+  deletions: number;
+  shownLines: number;
+  totalLines: number;
+  fingerprint: string;
+}
+
+export interface ReviewedPath {
+  relative: string;
+  fingerprint: string;
 }
 
 export type IdentitySource = "gitConfig" | "noreply";
@@ -142,6 +162,16 @@ export async function repositoryState(id: number): Promise<ConnectedRepository> 
   return invoke<ConnectedRepository>("github_repository_state", { id });
 }
 
+/** Diff de un archivo, cargado sólo cuando se despliega en la interfaz. */
+export async function repositoryDiff(
+  id: number,
+  relative: string,
+  expanded = false,
+): Promise<RepositoryDiff> {
+  requireDesktop();
+  return invoke<RepositoryDiff>("github_repository_diff", { id, relative, expanded });
+}
+
 export async function commitIdentity(forceNoreply: boolean): Promise<Identity> {
   requireDesktop();
   return invoke<Identity>("github_commit_identity", { forceNoreply });
@@ -149,7 +179,7 @@ export async function commitIdentity(forceNoreply: boolean): Promise<Identity> {
 
 export async function publish(
   id: number,
-  paths: string[],
+  paths: ReviewedPath[],
   message: string,
   forceNoreply: boolean,
 ): Promise<PublishReport> {

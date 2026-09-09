@@ -92,6 +92,7 @@ pub fn run() {
             repositories::github_touch_repository,
             repositories::github_repository_changes,
             repositories::github_repository_state,
+            repositories::github_repository_diff,
             repositories::github_commit_identity,
             repositories::github_publish,
             repositories::github_push_pending,

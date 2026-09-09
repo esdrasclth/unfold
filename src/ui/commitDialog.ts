@@ -3,11 +3,13 @@ import {
   publish,
   pushPending,
   repositoryChanges,
+  repositoryDiff,
   type Change,
   type ConnectedRepository,
   type DocumentState,
   type Identity,
   type PublishReport,
+  type RepositoryDiff,
 } from "../repositories.ts";
 
 const NOREPLY_KEY = "unfold:github-noreply";
@@ -38,6 +40,59 @@ function labelOf(change: Change): string {
   return STATE_LABEL[change.state];
 }
 
+function diffNode(diff: RepositoryDiff, expand?: () => void): Node {
+  const fragment = document.createDocumentFragment();
+  const summary = document.createElement("p");
+  summary.className = "commit-diff-summary";
+  summary.textContent = `+${diff.additions} −${diff.deletions}`;
+  fragment.append(summary);
+
+  if (diff.binary) {
+    const note = document.createElement("p");
+    note.className = "commit-diff-empty";
+    note.textContent = "El archivo es binario y no tiene una vista de texto.";
+    fragment.append(note);
+    return fragment;
+  }
+  if (!diff.patch.trim()) {
+    const note = document.createElement("p");
+    note.className = "commit-diff-empty";
+    note.textContent = "Git no devolvió líneas para este cambio.";
+    fragment.append(note);
+    return fragment;
+  }
+  const pre = document.createElement("div");
+  pre.className = "commit-diff";
+  for (const text of diff.patch.replace(/\n$/, "").split("\n")) {
+    const line = document.createElement("div");
+    line.className = "commit-diff-line";
+    if (text.startsWith("+") && !text.startsWith("+++")) line.classList.add("is-addition");
+    else if (text.startsWith("-") && !text.startsWith("---")) line.classList.add("is-deletion");
+    else if (text.startsWith("@@")) line.classList.add("is-hunk");
+    else if (/^(diff --git|index |--- |\+\+\+ )/.test(text)) line.classList.add("is-meta");
+    line.textContent = text || " ";
+    pre.append(line);
+  }
+  fragment.append(pre);
+  if (diff.truncated) {
+    const footer = document.createElement("div");
+    footer.className = "commit-diff-truncated";
+    footer.append(`Mostrando ${diff.shownLines} de ${diff.totalLines} líneas. `);
+    if (expand) {
+      const more = document.createElement("button");
+      more.className = "github-link commit-diff-more";
+      more.type = "button";
+      more.textContent = "Mostrar más";
+      more.addEventListener("click", expand);
+      footer.append(more);
+    } else {
+      footer.append("El límite protege la interfaz en archivos muy grandes.");
+    }
+    fragment.append(footer);
+  }
+  return fragment;
+}
+
 /**
  * Vista de cambios y publicación.
  *
@@ -62,6 +117,7 @@ export function openCommitDialog(
   let working: string | null = null;
   let problem: string | null = null;
   let report: PublishReport | null = null;
+  const diffs = new Map<string, RepositoryDiff>();
   /** El cuadro de mensaje sólo se enfoca solo la primera vez. */
   let greeted = false;
 
@@ -172,6 +228,7 @@ export function openCommitDialog(
   let counter: HTMLElement | null = null;
   let selectAll: HTMLButtonElement | null = null;
   const boxes = new Map<string, HTMLInputElement>();
+  let refreshChanges: (preserveSelection: boolean) => Promise<void>;
 
   const syncControls = (): void => {
     if (counter) counter.textContent = `${selected.size} de ${changes.length}`;
@@ -206,6 +263,13 @@ export function openCommitDialog(
     head.className = "github-section-head";
     head.innerHTML = `<strong>Cambios</strong><span></span>`;
     counter = head.querySelector<HTMLElement>("span")!;
+    const refresh = document.createElement("button");
+    refresh.className = "github-link commit-refresh";
+    refresh.type = "button";
+    refresh.textContent = "Actualizar";
+    refresh.disabled = working !== null;
+    refresh.addEventListener("click", () => void refreshChanges(true));
+    head.append(refresh);
     fragment.append(head);
 
     if (changes.length === 0) {
@@ -248,14 +312,17 @@ export function openCommitDialog(
       const list = document.createElement("div");
       list.className = "commit-list";
       for (const change of changes) {
-        const row = document.createElement("label");
+        const wrapper = document.createElement("div");
+        wrapper.className = "commit-change-wrap";
+        const row = document.createElement("div");
         row.className = `commit-change is-${change.state}`;
         row.innerHTML = `
           <input type="checkbox" />
-          <span class="commit-change-name"></span>
+          <button class="commit-change-name" type="button" aria-expanded="false"></button>
           <span class="commit-change-state"></span>
         `;
         const box = row.querySelector<HTMLInputElement>("input")!;
+        box.setAttribute("aria-label", `Incluir ${change.relative}`);
         box.checked = selected.has(change.relative);
         box.disabled = working !== null;
         boxes.set(change.relative, box);
@@ -266,7 +333,45 @@ export function openCommitDialog(
         });
         row.querySelector<HTMLElement>(".commit-change-name")!.textContent = change.relative;
         row.querySelector<HTMLElement>(".commit-change-state")!.textContent = labelOf(change);
-        list.append(row);
+        const toggle = row.querySelector<HTMLButtonElement>(".commit-change-name")!;
+        toggle.title = `Ver qué cambió en ${change.relative}`;
+        toggle.addEventListener("click", () => {
+          const existing = wrapper.querySelector<HTMLElement>(".commit-diff-body");
+          if (existing) {
+            existing.hidden = !existing.hidden;
+            toggle.setAttribute("aria-expanded", String(!existing.hidden));
+            return;
+          }
+          const body = document.createElement("div");
+          body.className = "commit-diff-body";
+          body.textContent = "Preparando vista previa…";
+          wrapper.append(body);
+          toggle.setAttribute("aria-expanded", "true");
+          const loadDiff = async (expanded = false): Promise<void> => {
+            body.textContent = expanded ? "Ampliando vista previa…" : "Preparando vista previa…";
+            try {
+              const diff = await repositoryDiff(repository.id, change.relative, expanded);
+              diffs.set(change.relative, diff);
+              // La huella pertenece al contenido que acaba de mostrarse. Si el
+              // archivo cambió desde que se abrió el diálogo, ésta sustituye a
+              // la instantánea inicial y publicar validará exactamente el diff.
+              change.fingerprint = diff.fingerprint;
+              if (!closed && body.isConnected) {
+                body.replaceChildren(diffNode(diff, diff.truncated && !expanded ? () => void loadDiff(true) : undefined));
+              }
+            } catch (error) {
+              if (body.isConnected) body.textContent = messageOf(error);
+            }
+          };
+          const cached = diffs.get(change.relative);
+          if (cached) {
+            body.replaceChildren(diffNode(cached, cached.truncated ? () => void loadDiff(true) : undefined));
+          } else {
+            void loadDiff();
+          }
+        });
+        wrapper.append(row);
+        list.append(wrapper);
       }
       fragment.append(list);
     }
@@ -405,20 +510,34 @@ export function openCommitDialog(
     if (!closed) render();
   };
 
-  const load = async (): Promise<void> => {
-    loading("Buscando cambios…");
+  refreshChanges = async (preserveSelection: boolean): Promise<void> => {
+    const previous = new Set(selected);
+    working = preserveSelection ? "Actualizando cambios…" : "Buscando cambios…";
+    problem = null;
+    if (!preserveSelection) loading("Buscando cambios…");
+    else render();
     try {
-      changes = await repositoryChanges(repository.id);
+      const next = await repositoryChanges(repository.id);
       if (closed) return;
-      // Todo marcado de partida: lo normal es querer publicarlo todo, y
-      // desmarcar lo que sobra es menos trabajo que marcar lo que falta.
+      changes = next;
       selected.clear();
-      for (const change of changes) selected.add(change.relative);
+      for (const change of changes) {
+        // La primera carga marca todo. Una recuperación conserva la decisión
+        // anterior y nunca añade silenciosamente archivos aparecidos después.
+        if (!preserveSelection || previous.has(change.relative)) selected.add(change.relative);
+      }
+      diffs.clear();
     } catch (error) {
       if (closed) return;
       problem = messageOf(error);
+    } finally {
+      working = null;
     }
     if (!closed) render();
+  };
+
+  const load = async (): Promise<void> => {
+    await refreshChanges(false);
     await loadIdentity();
   };
 
@@ -434,7 +553,10 @@ export function openCommitDialog(
     problem = null;
     render();
     try {
-      finish(await publish(repository.id, [...selected], message, forceNoreply));
+      const reviewed = changes
+        .filter((change) => selected.has(change.relative))
+        .map(({ relative, fingerprint }) => ({ relative, fingerprint }));
+      finish(await publish(repository.id, reviewed, message, forceNoreply));
     } catch (error) {
       if (closed) return;
       problem = messageOf(error);

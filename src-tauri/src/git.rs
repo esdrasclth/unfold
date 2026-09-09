@@ -7,9 +7,10 @@
 
 use git2::{
     build::{CheckoutBuilder, RepoBuilder},
-    Cred, FetchOptions, PushOptions, RemoteCallbacks, Repository, Signature, StatusOptions,
+    Cred, DiffFormat, DiffLineType, DiffOptions, FetchOptions, IndexEntry, ObjectType,
+    PushOptions, RemoteCallbacks, Repository, Signature, StatusOptions,
 };
-use serde::Serialize;
+use serde::{Deserialize, Serialize};
 use std::path::{Path, PathBuf};
 
 /// Extensiones que Unfold considera documentos del repositorio.
@@ -18,6 +19,10 @@ use std::path::{Path, PathBuf};
 /// diálogo de abrir: en un repositorio cualquiera `.txt` son licencias,
 /// requisitos y datos de prueba, y llenarían la lista de ruido.
 const MARKDOWN_EXTENSIONS: [&str; 2] = ["md", "markdown"];
+const DIFF_PREVIEW_MAX_BYTES: usize = 256 * 1024;
+const DIFF_PREVIEW_MAX_LINES: usize = 2_000;
+const DIFF_EXPANDED_MAX_BYTES: usize = 2 * 1024 * 1024;
+const DIFF_EXPANDED_MAX_LINES: usize = 20_000;
 
 /// Qué pasó al traer los cambios del remoto.
 #[derive(Debug, PartialEq, Eq, Serialize)]
@@ -299,74 +304,309 @@ pub struct Change {
     pub deleted: bool,
     /// Ya estaba en el índice antes de abrir la vista.
     pub staged: bool,
+    /// Identifica el HEAD y el contenido exacto que se enseñó al abrir el diálogo.
+    pub fingerprint: String,
+}
+
+#[derive(Debug, Serialize)]
+#[serde(rename_all = "camelCase")]
+pub struct FileDiff {
+    pub relative: String,
+    pub patch: String,
+    pub binary: bool,
+    pub truncated: bool,
+    pub additions: usize,
+    pub deletions: usize,
+    pub shown_lines: usize,
+    pub total_lines: usize,
+    /// Se actualiza al cargar el diff para que publicar valide esta revisión.
+    pub fingerprint: String,
+}
+
+#[derive(Debug, Deserialize)]
+#[serde(rename_all = "camelCase")]
+pub struct ReviewedPath {
+    pub relative: String,
+    pub fingerprint: String,
+}
+
+fn safe_relative(relative: &str) -> Result<&Path, git2::Error> {
+    let path = Path::new(relative);
+    if relative.is_empty()
+        || path.is_absolute()
+        || path.components().any(|part| {
+            matches!(
+                part,
+                std::path::Component::ParentDir
+                    | std::path::Component::RootDir
+                    | std::path::Component::Prefix(_)
+            )
+        })
+    {
+        return Err(git2::Error::from_str(
+            "La ruta del cambio no pertenece al repositorio",
+        ));
+    }
+    Ok(path)
+}
+
+fn fingerprint(repository: &Repository, relative: &str) -> Result<String, git2::Error> {
+    let relative = safe_relative(relative)?;
+    let head = repository
+        .head()
+        .ok()
+        .and_then(|head| head.target())
+        .map_or_else(|| "unborn".to_owned(), |oid| oid.to_string());
+    let workdir = repository
+        .workdir()
+        .ok_or_else(|| git2::Error::from_str("El repositorio no tiene árbol de trabajo"))?;
+    let path = workdir.join(relative);
+    match std::fs::read(&path) {
+        Ok(content) => Ok(format!(
+            "{head}:blob:{}",
+            git2::Oid::hash_object(ObjectType::Blob, &content)?
+        )),
+        Err(error) if error.kind() == std::io::ErrorKind::NotFound => {
+            Ok(format!("{head}:deleted"))
+        }
+        Err(error) => Err(git2::Error::from_str(&format!(
+            "No se pudo leer {}: {error}",
+            relative.display()
+        ))),
+    }
 }
 
 /// Todo lo que separa el árbol de trabajo del último commit.
 pub fn changes(repository: &Repository) -> Result<Vec<Change>, git2::Error> {
-    let mut changes = repository
-        .statuses(Some(&mut status_options(true)))?
-        .iter()
-        .filter_map(|entry| {
-            let status = entry.status();
-            Some(Change {
-                relative: entry.path().ok()?.to_owned(),
-                state: DocumentState::of(status),
-                deleted: status.is_wt_deleted() || status.is_index_deleted(),
-                staged: status.intersects(
-                    git2::Status::INDEX_NEW
-                        | git2::Status::INDEX_MODIFIED
-                        | git2::Status::INDEX_DELETED
-                        | git2::Status::INDEX_RENAMED
-                        | git2::Status::INDEX_TYPECHANGE,
-                ),
-            })
-        })
-        .collect::<Vec<_>>();
+    let statuses = repository.statuses(Some(&mut status_options(true)))?;
+    let mut changes = Vec::new();
+    for entry in statuses.iter() {
+        let Some(relative) = entry.path().ok() else {
+            continue;
+        };
+        let status = entry.status();
+        changes.push(Change {
+            relative: relative.to_owned(),
+            state: DocumentState::of(status),
+            deleted: status.is_wt_deleted() || status.is_index_deleted(),
+            staged: status.intersects(
+                git2::Status::INDEX_NEW
+                    | git2::Status::INDEX_MODIFIED
+                    | git2::Status::INDEX_DELETED
+                    | git2::Status::INDEX_RENAMED
+                    | git2::Status::INDEX_TYPECHANGE,
+            ),
+            fingerprint: fingerprint(repository, relative)?,
+        });
+    }
     changes.sort_by(|left, right| left.relative.cmp(&right.relative));
     Ok(changes)
 }
 
+/// Diff combinado (índice + árbol de trabajo) de un único archivo.
+///
+/// Se calcula bajo demanda: abrir la vista de cambios sigue siendo barato y
+/// sólo se paga por el archivo que alguien decide inspeccionar.
+pub fn file_diff(
+    repository: &Repository,
+    relative: &str,
+    expanded: bool,
+) -> Result<FileDiff, git2::Error> {
+    safe_relative(relative)?;
+    let reviewed = fingerprint(repository, relative)?;
+    let (max_bytes, max_lines) = if expanded {
+        (DIFF_EXPANDED_MAX_BYTES, DIFF_EXPANDED_MAX_LINES)
+    } else {
+        (DIFF_PREVIEW_MAX_BYTES, DIFF_PREVIEW_MAX_LINES)
+    };
+
+    let head_tree = repository
+        .head()
+        .ok()
+        .and_then(|head| head.peel_to_tree().ok());
+    let mut options = DiffOptions::new();
+    options
+        .pathspec(relative)
+        .include_untracked(true)
+        .recurse_untracked_dirs(true)
+        .show_untracked_content(true);
+    let diff = repository.diff_tree_to_workdir_with_index(head_tree.as_ref(), Some(&mut options))?;
+
+    let mut bytes = Vec::new();
+    let mut truncated = false;
+    let mut additions = 0;
+    let mut deletions = 0;
+    let mut shown_lines = 0;
+    let mut total_lines = 0;
+    diff.print(DiffFormat::Patch, |_delta, _hunk, line| {
+        total_lines += 1;
+        if line.origin_value() == DiffLineType::Addition {
+            additions += 1;
+        } else if line.origin_value() == DiffLineType::Deletion {
+            deletions += 1;
+        }
+        let prefixed = matches!(
+            line.origin_value(),
+            DiffLineType::Context | DiffLineType::Addition | DiffLineType::Deletion
+        );
+        let next_bytes = line.content().len() + usize::from(prefixed);
+        if shown_lines >= max_lines || bytes.len().saturating_add(next_bytes) > max_bytes {
+            truncated = true;
+            return true;
+        }
+        if matches!(
+            line.origin_value(),
+            DiffLineType::Context | DiffLineType::Addition | DiffLineType::Deletion
+        ) {
+            bytes.push(line.origin() as u8);
+        }
+        bytes.extend_from_slice(line.content());
+        shown_lines += 1;
+        true
+    })?;
+    let patch = String::from_utf8_lossy(&bytes).into_owned();
+    let binary = diff.deltas().any(|delta| {
+        delta.flags().is_binary()
+            || delta.old_file().is_binary()
+            || delta.new_file().is_binary()
+    });
+    if fingerprint(repository, relative)? != reviewed {
+        return Err(git2::Error::from_str(
+            "El archivo cambió mientras se preparaba el diff; vuelve a abrirlo",
+        ));
+    }
+    Ok(FileDiff {
+        relative: relative.to_owned(),
+        patch,
+        binary,
+        truncated,
+        additions,
+        deletions,
+        shown_lines,
+        total_lines,
+        fingerprint: reviewed,
+    })
+}
+
 /// Confirma exactamente los archivos indicados.
 ///
-/// El índice se devuelve primero a `HEAD` y después se añade sólo lo
-/// seleccionado. Sin ese paso, cualquier cosa que ya estuviera preparada desde
-/// la línea de órdenes entraría en el commit sin aparecer marcada en pantalla,
-/// y la vista de cambios estaría prometiendo algo que no cumple.
-///
-/// El precio es que se pierden las marcas de preparado previas. No se pierde
-/// contenido: lo que no entra en el commit sigue en el árbol de trabajo.
+/// El árbol del commit parte de `HEAD`, mientras que el índice final parte del
+/// índice original. Así nada preparado desde otra herramienta se cuela en el
+/// commit ni pierde su estado `staged`.
 pub fn commit(
     repository: &Repository,
-    paths: &[String],
+    paths: &[ReviewedPath],
     message: &str,
     author: &Signature<'_>,
 ) -> Result<git2::Oid, git2::Error> {
     let head = repository.head().ok().and_then(|head| head.peel_to_commit().ok());
 
-    let mut index = repository.index()?;
-    if let Some(parent) = head.as_ref() {
-        repository.reset_default(Some(parent.as_object()), ["*"].iter())?;
-        index.read(true)?;
+    for path in paths {
+        let actual = fingerprint(repository, &path.relative)?;
+        if actual != path.fingerprint {
+            return Err(git2::Error::from_str(&format!(
+                "{} cambió después de abrir la revisión; vuelve a revisar el diff antes de publicar",
+                path.relative
+            )));
+        }
     }
 
-    for path in paths {
-        let relative = Path::new(path);
-        // Un archivo borrado no se puede añadir desde el disco: lo que hay que
-        // registrar es su ausencia.
-        if repository.workdir().is_some_and(|dir| dir.join(relative).exists()) {
-            index.add_path(relative)?;
+    let mut index = repository.index()?;
+    let original_tree_id = index.write_tree()?;
+    let original_tree = repository.find_tree(original_tree_id)?;
+
+    type PreparedIndex = (git2::Oid, Vec<(PathBuf, Option<IndexEntry>)>);
+    let prepared = (|| -> Result<PreparedIndex, git2::Error> {
+        if let Some(parent) = &head {
+            index.read_tree(&parent.tree()?)?;
+        } else {
+            index.clear()?;
+        }
+
+        for path in paths {
+            let relative = safe_relative(&path.relative)?;
+            // Un archivo borrado no se puede añadir desde el disco: lo que hay que
+            // registrar es su ausencia.
+            if repository.workdir().is_some_and(|dir| dir.join(relative).exists()) {
+                index.add_path(relative)?;
+            } else {
+                index.remove_path(relative)?;
+            }
+
+            // `add_path` es el punto que leyó realmente el archivo. Comparar otra
+            // vez cierra la ventana entre validar y preparar el contenido.
+            let staged = index.get_path(relative, 0).map(|entry| entry.id);
+            let expected = path
+                .fingerprint
+                .rsplit_once(":blob:")
+                .and_then(|(_, oid)| git2::Oid::from_str(oid).ok());
+            if staged != expected {
+                return Err(git2::Error::from_str(&format!(
+                    "{} cambió mientras se preparaba el commit; vuelve a revisarlo",
+                    path.relative
+                )));
+            }
+        }
+
+        let commit_tree_id = index.write_tree()?;
+        let selected_entries = paths
+            .iter()
+            .map(|path| {
+                let relative = Path::new(&path.relative);
+                (relative.to_path_buf(), index.get_path(relative, 0))
+            })
+            .collect::<Vec<_>>();
+        Ok((commit_tree_id, selected_entries))
+    })();
+
+    // También se restaura si preparar falla a mitad: un error de disco no debe
+    // desmarcar trabajo que otra herramienta dejó en el índice.
+    let (commit_tree_id, selected_entries) = match prepared {
+        Ok(prepared) => prepared,
+        Err(error) => {
+            index.read_tree(&original_tree)?;
+            index.write()?;
+            return Err(error);
+        }
+    };
+
+    // Vuelve al índice previo y actualiza únicamente lo confirmado. Los demás
+    // entries conservan exactamente su blob y su estado de preparación.
+    index.read_tree(&original_tree)?;
+    for (relative, entry) in &selected_entries {
+        if let Some(entry) = entry {
+            index.add(entry)?;
         } else {
             index.remove_path(relative)?;
         }
     }
     index.write()?;
 
-    let tree = repository.find_tree(index.write_tree()?)?;
+    let current_head = repository
+        .head()
+        .ok()
+        .and_then(|head| head.target());
+    if current_head != head.as_ref().map(|commit| commit.id()) {
+        index.read_tree(&original_tree)?;
+        index.write()?;
+        return Err(git2::Error::from_str(
+            "La rama cambió mientras se preparaba el commit; vuelve a revisar los cambios",
+        ));
+    }
+
+    let tree = repository.find_tree(commit_tree_id)?;
     let parents = head.iter().collect::<Vec<_>>();
-    repository.commit(Some("HEAD"), author, author, message, &tree, &parents)
+    match repository.commit(Some("HEAD"), author, author, message, &tree, &parents) {
+        Ok(oid) => Ok(oid),
+        Err(error) => {
+            index.read_tree(&original_tree)?;
+            index.write()?;
+            Err(error)
+        }
+    }
 }
 
-/// Clona informando del avance. `progress` recibe objetos recibidos y totales./// Clona informando del avance. `progress` recibe objetos recibidos y totales.
+/// Clona informando del avance. `progress` recibe objetos recibidos y totales.
 pub fn clone(
     remote_url: &str,
     destination: &Path,
@@ -578,6 +818,44 @@ mod tests {
     }
 
     #[test]
+    fn file_diff_contains_only_the_requested_change() {
+        let temp = tempfile::tempdir().unwrap();
+        let remote = remote_with_initial_commit(temp.path());
+        let clone_path = temp.path().join("clone");
+        let repository = clone_to(&remote, &clone_path);
+
+        fs::write(clone_path.join("README.md"), "# Dos\n").unwrap();
+        fs::write(clone_path.join("nuevo.md"), "# Nuevo\n").unwrap();
+
+        let changed = file_diff(&repository, "README.md", false).unwrap();
+        assert!(changed.patch.contains("-# Uno"));
+        assert!(changed.patch.contains("+# Dos"));
+        assert!(!changed.patch.contains("nuevo.md"));
+
+        let new = file_diff(&repository, "nuevo.md", false).unwrap();
+        assert!(new.patch.contains("+# Nuevo"));
+        assert!(!new.binary);
+        assert!(file_diff(&repository, "../fuera.md", false).is_err());
+
+        fs::write(clone_path.join("imagen.bin"), [0, 159, 146, 150, 255]).unwrap();
+        let binary = file_diff(&repository, "imagen.bin", false).unwrap();
+        assert!(binary.binary);
+
+        let large = (0..2_500)
+            .map(|line| format!("línea {line}\n"))
+            .collect::<String>();
+        fs::write(clone_path.join("grande.md"), large).unwrap();
+        let limited = file_diff(&repository, "grande.md", false).unwrap();
+        assert!(limited.truncated);
+        assert!(limited.shown_lines <= DIFF_PREVIEW_MAX_LINES);
+        assert!(limited.patch.len() <= DIFF_PREVIEW_MAX_BYTES);
+        assert_eq!(limited.additions, 2_500);
+        let expanded = file_diff(&repository, "grande.md", true).unwrap();
+        assert!(!expanded.truncated);
+        assert_eq!(expanded.shown_lines, expanded.total_lines);
+    }
+
+    #[test]
     fn fetch_fast_forwards_a_clean_checkout_and_stops_at_a_dirty_one() {
         let temp = tempfile::tempdir().unwrap();
         let remote = remote_with_initial_commit(temp.path());
@@ -750,6 +1028,16 @@ mod tests {
         Signature::now("Autora", "autora@ejemplo.test").unwrap()
     }
 
+    fn reviewed(repository: &Repository, paths: &[&str]) -> Vec<ReviewedPath> {
+        paths
+            .iter()
+            .map(|relative| ReviewedPath {
+                relative: (*relative).to_owned(),
+                fingerprint: fingerprint(repository, relative).unwrap(),
+            })
+            .collect()
+    }
+
     /// La promesa de la vista de cambios es que se confirma exactamente lo
     /// marcado. Aquí se comprueba de las dos maneras: lo elegido entra y lo
     /// demás se queda tal cual estaba.
@@ -763,10 +1051,11 @@ mod tests {
         fs::write(clone_path.join("elegido.md"), "# Va\n").unwrap();
         fs::write(clone_path.join("descartado.md"), "# No va\n").unwrap();
         fs::write(clone_path.join("README.md"), "# Tocado\n").unwrap();
+        let selected = reviewed(&repository, &["elegido.md"]);
 
         commit(
             &repository,
-            &["elegido.md".to_owned()],
+            &selected,
             "sólo el elegido",
             &signature(),
         )
@@ -793,8 +1082,8 @@ mod tests {
     }
 
     /// Lo que estuviera preparado desde la línea de órdenes no puede colarse en
-    /// un commit sin aparecer marcado en pantalla. El índice se devuelve a HEAD
-    /// antes de añadir la selección, y esto lo fija.
+    /// el commit ni quedar desmarcado. El árbol se construye desde HEAD y luego
+    /// sólo se sustituyen en el índice los paths realmente confirmados.
     #[test]
     fn commit_ignores_what_was_staged_outside_unfold() {
         let temp = tempfile::tempdir().unwrap();
@@ -807,10 +1096,11 @@ mod tests {
         let mut index = repository.index().unwrap();
         index.add_path(Path::new("colado.md")).unwrap();
         index.write().unwrap();
+        let selected = reviewed(&repository, &["elegido.md"]);
 
         commit(
             &repository,
-            &["elegido.md".to_owned()],
+            &selected,
             "sólo el elegido",
             &signature(),
         )
@@ -822,8 +1112,12 @@ mod tests {
             head.get_name("colado.md").is_none(),
             "lo preparado fuera no debe entrar sin marcarse"
         );
-        // No se pierde: sigue en el árbol de trabajo, pendiente.
+        // No se pierde ni se desmarca: sigue preparado exactamente como estaba.
         assert!(clone_path.join("colado.md").exists());
+        assert!(repository
+            .status_file(Path::new("colado.md"))
+            .unwrap()
+            .is_index_new());
     }
 
     #[test]
@@ -840,10 +1134,11 @@ mod tests {
             .find(|change| change.relative == "README.md")
             .unwrap();
         assert!(borrado.deleted);
+        let selected = reviewed(&repository, &["README.md"]);
 
         commit(
             &repository,
-            &["README.md".to_owned()],
+            &selected,
             "quita el README",
             &signature(),
         )
@@ -865,7 +1160,8 @@ mod tests {
 
         fs::write(clone_path.join("nuevo.md"), "# Nuevo\n").unwrap();
         let author = Signature::now("Quien Firma", "1234+quien@users.noreply.github.com").unwrap();
-        let oid = commit(&repository, &["nuevo.md".to_owned()], "firma", &author).unwrap();
+        let selected = reviewed(&repository, &["nuevo.md"]);
+        let oid = commit(&repository, &selected, "firma", &author).unwrap();
 
         let created = repository.find_commit(oid).unwrap();
         assert_eq!(created.author().name().ok(), Some("Quien Firma"));
@@ -874,6 +1170,25 @@ mod tests {
             Some("1234+quien@users.noreply.github.com")
         );
         assert_eq!(created.message().ok(), Some("firma"));
+    }
+
+    #[test]
+    fn commit_rejects_a_file_changed_after_review() {
+        let temp = tempfile::tempdir().unwrap();
+        let remote = remote_with_initial_commit(temp.path());
+        let clone_path = temp.path().join("clone");
+        let repository = clone_to(&remote, &clone_path);
+
+        fs::write(clone_path.join("README.md"), "# Revisado\n").unwrap();
+        let selected = reviewed(&repository, &["README.md"]);
+        fs::write(clone_path.join("README.md"), "# Cambió después\n").unwrap();
+
+        let error = commit(&repository, &selected, "no debe entrar", &signature()).unwrap_err();
+        assert!(error.message().contains("cambió después de abrir la revisión"));
+        assert_eq!(
+            repository.head().unwrap().peel_to_commit().unwrap().message(),
+            Ok("initial")
+        );
     }
 
     /// Un push rechazado por el servidor puede terminar sin error de

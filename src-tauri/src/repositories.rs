@@ -361,6 +361,24 @@ pub async fn github_repository_state(
     blocking(move || Ok(describe(entry))).await
 }
 
+#[tauri::command]
+pub async fn github_repository_diff(
+    app: AppHandle,
+    catalog: State<'_, Catalog>,
+    id: u64,
+    relative: String,
+    expanded: bool,
+) -> Result<git::FileDiff, String> {
+    let entry = entry_of(&app, &catalog, id)?;
+    blocking(move || {
+        let repository = git::open(Path::new(&entry.path))
+            .map_err(|_| format!("Ya no hay una copia local de «{}»", entry.full_name))?;
+        git::file_diff(&repository, &relative, expanded)
+            .map_err(|error| error.message().to_owned())
+    })
+    .await
+}
+
 /// Confirma lo seleccionado, sincroniza y publica.
 ///
 /// El orden importa y es el único que funciona sin saber fusionar: confirmar
@@ -373,7 +391,7 @@ pub async fn github_publish(
     client: State<'_, GithubClient>,
     catalog: State<'_, Catalog>,
     id: u64,
-    paths: Vec<String>,
+    paths: Vec<git::ReviewedPath>,
     message: String,
     force_noreply: bool,
 ) -> Result<PublishReport, String> {
@@ -398,7 +416,7 @@ pub async fn github_publish(
 
 fn publish(
     entry: RepositoryEntry,
-    paths: Vec<String>,
+    paths: Vec<git::ReviewedPath>,
     message: String,
     identity: Identity,
 ) -> Result<PublishReport, String> {

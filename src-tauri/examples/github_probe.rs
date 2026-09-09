@@ -87,10 +87,18 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
     let (name, email) = git_config_identity().ok_or("Sin user.name y user.email en Git")?;
     println!("firmando como {name} <{email}>");
     let author = Signature::now(&name, &email)?;
+    let reviewed = git::changes(&repository)?
+        .into_iter()
+        .filter(|change| change.relative == nombre)
+        .map(|change| git::ReviewedPath {
+            relative: change.relative,
+            fingerprint: change.fingerprint,
+        })
+        .collect::<Vec<_>>();
 
     let oid = git::commit(
         &repository,
-        &[nombre.clone()],
+        &reviewed,
         "test: valida commit y push de la fase 4 desde Unfold",
         &author,
     )?;

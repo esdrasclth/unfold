@@ -55,6 +55,7 @@
   --accent-wash: color-mix(in srgb, var(--accent) 11%, transparent);
   --accent-edge: color-mix(in srgb, var(--accent) 30%, transparent);
   --danger: #c0392b;
+  --positive: #2f9e66;
 
   --caret: #24211d;
   --selection: rgba(90, 140, 198, 0.22);
@@ -95,6 +96,7 @@
   --accent-wash: color-mix(in srgb, var(--accent) 15%, transparent);
   --accent-edge: color-mix(in srgb, var(--accent) 34%, transparent);
   --danger: #e06c60;
+  --positive: #6cc48f;
 
   --caret: #f2eee6;
   --selection: rgba(96, 140, 190, 0.3);
@@ -2458,6 +2460,10 @@ body.typewriter-mode .cm-content {
   cursor: pointer;
 }
 
+.commit-change-wrap + .commit-change-wrap {
+  border-top: 1px solid color-mix(in srgb, var(--rule) 55%, transparent);
+}
+
 .commit-change:hover {
   background: var(--wash);
 }
@@ -2468,12 +2474,105 @@ body.typewriter-mode .cm-content {
 }
 
 .commit-change-name {
+  min-width: 0;
+  padding: 0;
+  border: 0;
+  background: transparent;
   font-family: var(--font-mono);
   font-size: 12px;
   color: var(--text-body);
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;
+  text-align: left;
+  cursor: pointer;
+}
+
+.commit-change-name::after {
+  content: "  ver diff";
+  color: var(--text-faint);
+  font-family: var(--font-ui);
+  font-size: 10px;
+  opacity: 0;
+}
+
+.commit-change:hover .commit-change-name::after,
+.commit-change-name:focus-visible::after {
+  opacity: 1;
+}
+
+.commit-diff-body {
+  max-height: 18rem;
+  overflow: auto;
+  border-top: 1px solid var(--rule);
+  background: color-mix(in srgb, var(--wash) 72%, var(--chrome));
+  color: var(--text-soft);
+  font-size: 11px;
+}
+
+.commit-diff-summary,
+.commit-diff-truncated {
+  margin: 0;
+  padding: 0.4rem 0.65rem;
+  border-bottom: 1px solid var(--rule);
+  color: var(--text-faint);
+  font-family: var(--font-ui);
+}
+
+.commit-diff-summary {
+  color: var(--text-soft);
+  font-family: var(--font-mono);
+}
+
+.commit-diff-truncated {
+  border-top: 1px solid var(--rule);
+  border-bottom: 0;
+}
+
+.commit-diff-more {
+  padding: 0;
+  font-size: inherit;
+}
+
+.commit-refresh {
+  margin-left: auto;
+}
+
+.commit-diff {
+  min-width: max-content;
+  padding: 0.35rem 0;
+  font-family: var(--font-mono);
+  line-height: 1.55;
+  white-space: pre;
+}
+
+.commit-diff-line {
+  padding: 0 0.65rem;
+}
+
+.commit-diff-line.is-addition {
+  background: color-mix(in srgb, var(--positive) 14%, transparent);
+  color: color-mix(in srgb, var(--positive) 72%, var(--text));
+}
+
+.commit-diff-line.is-deletion {
+  background: color-mix(in srgb, var(--danger) 12%, transparent);
+  color: color-mix(in srgb, var(--danger) 75%, var(--text));
+}
+
+.commit-diff-line.is-hunk {
+  background: var(--accent-wash);
+  color: var(--accent);
+}
+
+.commit-diff-line.is-meta {
+  color: var(--text-faint);
+}
+
+.commit-diff-empty {
+  margin: 0;
+  padding: 0.65rem;
+  color: var(--text-faint);
 }
 
 .commit-change-state {
