@@ -1,5 +1,9 @@
 use tauri::Manager;
 
+pub mod git;
+mod github;
+mod repositories;
+
 /// Ruta pasada por linea de comandos, para poder asociar Unfold a los .md
 /// y que abrir un archivo desde el explorador funcione.
 #[tauri::command]
@@ -43,12 +47,32 @@ fn apply_rounded_corners(_window: &tauri::WebviewWindow) {}
 #[cfg_attr(mobile, tauri::mobile_entry_point)]
 pub fn run() {
     tauri::Builder::default()
+        .manage(github::GithubClient::new())
+        .manage(repositories::Catalog::default())
         .plugin(tauri_plugin_fs::init())
         .plugin(tauri_plugin_dialog::init())
         .plugin(tauri_plugin_opener::init())
         .plugin(tauri_plugin_updater::Builder::new().build())
         .plugin(tauri_plugin_process::init())
-        .invoke_handler(tauri::generate_handler![startup_file])
+        .invoke_handler(tauri::generate_handler![
+            startup_file,
+            github::github_start_device_flow,
+            github::github_poll_device_flow,
+            github::github_auth_status,
+            github::github_list_repositories,
+            github::github_installation_state,
+            github::github_logout,
+            repositories::github_connected_repositories,
+            repositories::github_connect_repository,
+            repositories::github_disconnect_repository,
+            repositories::github_fetch_repository,
+            repositories::github_repository_documents,
+            repositories::github_touch_repository,
+            repositories::github_repository_changes,
+            repositories::github_commit_identity,
+            repositories::github_publish,
+            repositories::github_push_pending,
+        ])
         .setup(|app| {
             // La ventana se crea oculta y se muestra ya pintada: asi no se ve
             // el destello blanco del WebView al arrancar.
