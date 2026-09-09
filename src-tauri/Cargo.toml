@@ -36,6 +36,7 @@ reqwest = { version = "0.13", default-features = false, features = ["form", "jso
 rustls = { version = "0.23", default-features = false, features = ["ring", "std"] }
 tokio = { version = "1", features = ["sync"] }
 tauri-plugin-window-state = "2"
+tauri-plugin-single-instance = "2.4.4"
 
 [dev-dependencies]
 tempfile = "3"

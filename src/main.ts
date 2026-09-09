@@ -976,6 +976,17 @@ if (isTauri) {
     if (startup) await loadPath(startup);
     else await restoreSession();
 
+    /*
+     * Abrir un `.md` con Unfold ya abierto no arranca otro proceso: el guardia
+     * de instancia única se lo pasa a ésta. Sin escuchar aquí, el segundo
+     * doble clic traería la ventana al frente sin abrir nada, que se parece
+     * demasiado a que la aplicación se haya quedado colgada.
+     */
+    const { listen } = await import("@tauri-apps/api/event");
+    await listen<string>("unfold://open-file", (event) => {
+      if (event.payload) void loadPath(event.payload);
+    });
+
     await getCurrentWebview().onDragDropEvent((event) => {
       if (event.payload.type !== "drop") return;
       const dropped = event.payload.paths.find((path) => /\.(md|markdown|mdx|txt)$/i.test(path));

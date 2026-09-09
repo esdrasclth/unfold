@@ -1,4 +1,4 @@
-use tauri::Manager;
+use tauri::{Emitter, Manager};
 use tauri_plugin_window_state::{StateFlags, WindowExt};
 
 /// Qué se recuerda de la ventana entre sesiones.
@@ -12,6 +12,9 @@ mod github;
 mod folders;
 mod repositories;
 mod store;
+
+/// Aviso de que una segunda instancia quiso abrir un archivo en ésta.
+const OPEN_FILE_EVENT: &str = "unfold://open-file";
 
 /// Ruta pasada por linea de comandos, para poder asociar Unfold a los .md
 /// y que abrir un archivo desde el explorador funcione.
@@ -56,6 +59,31 @@ fn apply_rounded_corners(_window: &tauri::WebviewWindow) {}
 #[cfg_attr(mobile, tauri::mobile_entry_point)]
 pub fn run() {
     tauri::Builder::default()
+        /*
+         * Una sola ventana de Unfold, siempre.
+         *
+         * Dos procesos comparten el `localStorage` del WebView y los catálogos
+         * de repositorios y carpetas, y escriben sobre ellos sin coordinarse:
+         * el último en guardar se lleva por delante lo del otro. Y ahora que
+         * la sesión vive en disco, dos instancias se pisarían los borradores
+         * sin guardar.
+         *
+         * Va antes que ningún otro plugin porque tiene que decidir si este
+         * proceso sigue vivo antes de que nadie toque nada.
+         */
+        .plugin(tauri_plugin_single_instance::init(|app, argv, _cwd| {
+            let Some(window) = app.get_webview_window("main") else {
+                return;
+            };
+            // Traer la ventana al frente es la mitad del trabajo: quien abre
+            // un `.md` por segunda vez espera verlo, no que no pase nada.
+            let _ = window.unminimize();
+            let _ = window.set_focus();
+
+            if let Some(file) = argv.into_iter().nth(1).filter(|arg| !arg.starts_with('-')) {
+                let _ = window.emit(OPEN_FILE_EVENT, file);
+            }
+        }))
         .manage(github::GithubClient::new())
         .manage(repositories::Catalog::default())
         .plugin(tauri_plugin_fs::init())
