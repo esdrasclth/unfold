@@ -8,6 +8,7 @@ Sin panel dividido, sin previsualización aparte. Escribes en un sitio y lees en
 
 [Descargar para Windows](https://github.com/esdrasclth/unfold/releases/latest) ·
 [unfold.brandsofts.com](https://unfold.brandsofts.com/) ·
+[GitHub integrado](#github-integrado) ·
 [Cómo funciona](#cómo-funciona) ·
 [Contribuir](CONTRIBUTING.md)
 
@@ -30,6 +31,10 @@ que Windows ya trae, en vez de empaquetar un navegador entero.
 **Se edita donde se lee.** Al poner el cursor en una línea, sus marcadores
 reaparecen —atenuados, para no dar un tirón visual— y puedes editarlos. Al
 salir, vuelven a ocultarse.
+
+**Tu documentación, donde ya vive.** Conecta repositorios de GitHub, ábrelos
+desde un explorador con árbol y búsqueda, y publica tus cambios sin salir del
+editor.
 
 <details>
 <summary>Ver en tema oscuro</summary>
@@ -72,6 +77,12 @@ Markdown disponibles y `Ctrl+Shift+M` alterna el modo Código fuente.
   pisarlo
 - **Apariencia configurable**: tipografía, tamaño, interlineado, ancho de
   columna y doce colores de barra
+- **Repositorios de GitHub**: explorador con árbol de carpetas, búsqueda por
+  nombre e indicadores de estado por documento
+- **Confirmar y publicar** desde la aplicación, sincronizando antes con el
+  remoto
+- **La ventana te recuerda**: vuelve con el tamaño, el sitio y el estado
+  maximizado con los que la dejaste
 - Corrector ortográfico, modo enfoque y modo máquina de escribir
 
 ## Atajos
@@ -86,11 +97,48 @@ Markdown disponibles y `Ctrl+Shift+M` alterna el modo Código fuente.
 | Buscar y reemplazar | `Ctrl+F` |
 | Acercar · Alejar el contenido | `Ctrl++` · `Ctrl+-` |
 | Esquema · Apariencia | `Ctrl+Shift+O` · `Ctrl+,` |
+| Repositorios · Cuenta de GitHub | `Ctrl+Shift+B` · `Ctrl+Shift+H` |
 | Exportar HTML · Imprimir o PDF | `Ctrl+Shift+E` · `Ctrl+P` |
 | Modo enfoque · Máquina de escribir | `Ctrl+Shift+F` · `Ctrl+Shift+T` |
 | Código fuente · Menú Markdown | `Ctrl+Shift+M` · clic derecho |
 | Pegar sin formato | `Ctrl+Shift+V` |
 | En tablas: celda · fila | `Tab` / `Shift+Tab` · `Enter` |
+
+## GitHub integrado
+
+Unfold conecta con GitHub mediante una **GitHub App** y el flujo de dispositivo:
+autorizas un código de ocho caracteres en `github.com` y la sesión se guarda en
+el Administrador de credenciales de Windows, cifrada por el sistema. El token
+nunca llega al frontend, ni al `localStorage`, ni a la URL del remoto, y se
+renueva solo antes de caducar.
+
+Los permisos son los mínimos que hacen falta: `Contents` de lectura y escritura,
+y `Metadata` de lectura. Nada más.
+
+**Sólo ve lo que le concedas.** Una GitHub App no puede ampliarse el acceso a sí
+misma: eliges en GitHub a qué repositorios entra, y puedes cambiarlo cuando
+quieras. Unfold detecta si el acceso está limitado y te lleva a la pantalla
+correcta.
+
+### Qué puedes hacer
+
+- **Conectar repositorios**, que se clonan en `%LOCALAPPDATA%\com.esdras.unfold`
+  y quedan disponibles sin conexión.
+- **Explorarlos** con `Ctrl+Shift+B`: árbol de carpetas, búsqueda por nombre
+  —insensible a mayúsculas y tildes— y un indicador por documento que distingue
+  sincronizado, modificado, nuevo y en conflicto.
+- **Traer cambios** del remoto, con avance rápido cuando se puede hacer sin
+  inventar nada.
+- **Confirmar y publicar**: marcas qué archivos entran, escribes el mensaje, y
+  Unfold confirma, sincroniza con el remoto y publica.
+
+### Lo que todavía no hace
+
+**No fusiona.** Si alguien publica en la misma rama entre tu última
+sincronización y la tuya, el commit se crea y ahí se detiene, avisando de que
+hay que integrar los cambios con Git. Tampoco hay ramas ni pull requests.
+
+Los detalles de cada decisión están en `docs/GITHUB_PHASE_0.md` … `_4.md`.
 
 ## Cómo funciona
 
@@ -135,6 +183,9 @@ un issue para comentarlo.
 
 Lo que está pendiente y sería bienvenido:
 
+- Fusionar historias divergentes al publicar, y resolver conflictos
+- Ramas y pull requests desde la aplicación
+- Ver el diff de cada archivo antes de confirmar
 - Notas al pie y enlaces automáticos
 - Tablas dentro de citas o listas
 - Compilaciones para macOS y Linux
