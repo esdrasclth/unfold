@@ -130,13 +130,18 @@ const key = (value) => {
   return event;
 };
 
-const { confirmDialog } = await import("../src/ui/confirmDialog.ts");
-const { openGithubDialog } = await import("../src/ui/githubDialog.ts");
-const { openCommitDialog } = await import("../src/ui/commitDialog.ts");
-// El explorador es ahora un componente Preact, así que se compila igual que
-// los demás: Node quita tipos pero no traduce JSX.
-const { compilarComponente } = await import("./compile-tsx.mjs");
-const { RepositoryPanel } = await compilarComponente("../src/ui/repositoryPanel.ts");
+// Los diálogos y el explorador son componentes Preact, así que se compilan
+// igual que los demás: Node quita tipos pero no traduce JSX.
+// En un solo paquete y no uno por módulo: los diálogos comparten la pila que
+// decide cuál está encima, y compilarlos por separado daría dos pilas.
+const { compilarJuntos } = await import("./compile-tsx.mjs");
+const { confirmDialog, openGithubDialog, openCommitDialog, RepositoryPanel } =
+  await compilarJuntos([
+    "../src/ui/confirmDialog.ts",
+    "../src/ui/githubDialog.ts",
+    "../src/ui/commitDialog.ts",
+    "../src/ui/repositoryPanel.ts",
+  ]);
 
 // GitHub: cuenta y acciones están arriba; Escape pertenece al modal superior.
 openGithubDialog();

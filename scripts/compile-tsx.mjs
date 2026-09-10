@@ -15,12 +15,29 @@ import { fileURLToPath, pathToFileURL } from "node:url";
  */
 const DESTINO = new URL("../node_modules/.unfold-test/", import.meta.url);
 
+/**
+ * Compila varias entradas en un solo paquete y junta lo que exportan.
+ *
+ * Hace falta cuando dos módulos comparten estado: la pila de diálogos vive en
+ * un módulo, y compilarlos por separado daría dos pilas distintas. Con una sola
+ * construcción, lo común queda en un trozo compartido y el estado es uno.
+ */
+export async function compilarJuntos(rutasRelativas) {
+  const modulos = await compilarEntradas(rutasRelativas);
+  return Object.assign({}, ...modulos);
+}
+
 export async function compilarComponente(rutaRelativa) {
-  const entrada = fileURLToPath(new URL(rutaRelativa, import.meta.url));
-  const nombre = entrada.replace(/[^\w]+/g, "_");
+  const [modulo] = await compilarEntradas([rutaRelativa]);
+  return modulo;
+}
+
+async function compilarEntradas(rutasRelativas) {
+  const entradas = rutasRelativas.map((ruta) => fileURLToPath(new URL(ruta, import.meta.url)));
+  const nombres = entradas.map((entrada) => entrada.replace(/[^\w]+/g, "_"));
 
   const salida = await build({
-    input: { [nombre]: entrada },
+    input: Object.fromEntries(nombres.map((nombre, i) => [nombre, entradas[i]])),
     platform: "neutral",
     external: [/^preact/],
     output: {
@@ -44,7 +61,13 @@ export async function compilarComponente(rutaRelativa) {
     await writeFile(new URL(trozo.fileName, DESTINO), trozo.code, "utf8");
   }
 
-  const inicial = salida.output.find((trozo) => trozo.type === "chunk" && trozo.isEntry);
-  if (!inicial) throw new Error(`No se pudo compilar ${rutaRelativa}`);
-  return import(pathToFileURL(fileURLToPath(new URL(inicial.fileName, DESTINO))).href);
+  return Promise.all(
+    nombres.map((nombre, i) => {
+      const trozo = salida.output.find(
+        (candidato) => candidato.type === "chunk" && candidato.name === nombre,
+      );
+      if (!trozo) throw new Error(`No se pudo compilar ${rutasRelativas[i]}`);
+      return import(pathToFileURL(fileURLToPath(new URL(trozo.fileName, DESTINO))).href);
+    }),
+  );
 }
