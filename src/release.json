@@ -1,8 +1,8 @@
 {
-  "version": "0.5.1",
+  "version": "0.5.2",
   "highlights": [
-    "**Las copias automáticas dejan de llenar el disco**: escribían un archivo cada treinta segundos y no borraban ninguno. Ahora se guardan las diez últimas de cada documento, y se recoge lo que quedó suelto.",
-    "**El instalador cuenta que puedes conectar repositorios de GitHub**, y ya no enseña una versión escrita a mano que se había quedado atrás.",
-    "**Pasos con nombre en el instalador** y lo que conviene saber antes de instalar: va sólo para tu usuario, sin permisos de administrador."
+    "**El aviso de versión nueva ya no es una franja** que empuja el documento: es una tarjeta en la esquina, con las novedades y el progreso de la instalación dentro.",
+    "**«Más tarde» quiere decir más tarde.** Ese botón descartaba la versión para siempre; ahora sólo aparta el aviso, y el botón de ajustes lo sigue señalando.",
+    "**Las sugerencias de ortografía por fin se pueden ver**: `Shift` + clic derecho abre el menú del sistema, donde WebView2 las guarda."
   ]
 }
