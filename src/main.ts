@@ -4,8 +4,6 @@ import {
   createEditor,
   createEditorState,
   replaceDocument,
-  setSourceMode,
-  setTypewriter,
   type EditorOptions,
 } from "./editor/index.ts";
 import { exportHtml, printDocument, type ExportContext } from "./export/index.ts";
@@ -34,15 +32,13 @@ import { RepositoryPanel } from "./ui/repositoryPanel.ts";
 import { openCommitDialog } from "./ui/commitDialog.ts";
 import { SettingsPanel } from "./ui/settings.ts";
 import { mountWindowControls } from "./ui/windowControls.ts";
-import {
-  buscarActualizacion,
-  instalarActualizacion,
-  omitirVersion,
-  restablecerVersionOmitida,
-} from "./updates.ts";
+import { restablecerVersionOmitida } from "./updates.ts";
+import { mountUpdateBanner } from "./ui/updateBanner.ts";
 import { FileWatcher } from "./watcher.ts";
 import { closeMarkdownMenu, openMarkdownMenu } from "./ui/markdownMenu.ts";
 import { openCommandPalette } from "./ui/commandPalette.ts";
+import { paletteCommands, type PaletteActions } from "./ui/paletteCommands.ts";
+import { aplicarTemaGuardado, mountViewModes } from "./ui/viewModes.ts";
 import { openDocumentSearch } from "./ui/searchDocuments.ts";
 import { historyKey, loadHistory, recordVersion } from "./history.ts";
 import { migrarDesdeLocalStorage } from "./store.ts";
@@ -99,7 +95,6 @@ let sessionSaveTimer: number | undefined;
 let backupTimer: number | undefined;
 /** La guía inicial se descarta al abrir el primer archivo si no se editó. */
 let welcomeTabId: number | null = null;
-let sourceMode = localStorage.getItem("unfold:source-mode") === "on";
 /** Contenido externo pendiente de resolver mientras hay conflicto. */
 let conflictContent: string | null = null;
 const tabConflicts = new Map<number, string>();
@@ -393,8 +388,7 @@ function afterTabChange(): void {
   repositoryPanel.setActive(session.path);
   // El modo máquina de escribir vive en un compartimento del estado, y el
   // estado nuevo trae el suyo vacío: hay que reponerlo en cada cambio.
-  applyTypewriter();
-  applySourceMode();
+  modos.aplicar();
   scheduleSessionSave();
   void watcher.watch(session.path);
   view.focus();
@@ -505,51 +499,6 @@ function exportContext(): ExportContext {
 
 // --- Modos --------------------------------------------------------------------
 
-function toggleTheme(): void {
-  const root = document.documentElement;
-  const next = root.dataset.theme === "dark" ? "light" : "dark";
-  root.dataset.theme = next;
-  localStorage.setItem("unfold:theme", next);
-  el.theme.innerHTML = icon(next === "dark" ? "sun" : "moon");
-}
-
-function toggleFocusMode(): void {
-  document.body.classList.toggle("focus-mode");
-  const button = document.querySelector<HTMLButtonElement>("#btn-focus");
-  button?.classList.toggle("is-on", document.body.classList.contains("focus-mode"));
-  button?.setAttribute("aria-pressed", String(document.body.classList.contains("focus-mode")));
-}
-
-let typewriterOn = localStorage.getItem("unfold:typewriter") === "on";
-
-function applyTypewriter(): void {
-  setTypewriter(view, typewriterOn);
-  el.typewriter.classList.toggle("is-on", typewriterOn);
-  document.body.classList.toggle("typewriter-mode", typewriterOn);
-}
-
-function applySourceMode(): void {
-  setSourceMode(view, sourceMode);
-  el.source.classList.toggle("is-on", sourceMode);
-  el.source.title = sourceMode ? "Vista renderizada" : "Código fuente";
-  el.source.setAttribute("aria-pressed", String(sourceMode));
-  el.source.setAttribute("aria-label", sourceMode ? "Cambiar a vista renderizada" : "Cambiar a código fuente");
-  document.body.classList.toggle("source-mode", sourceMode);
-}
-
-function toggleSourceMode(): void {
-  sourceMode = !sourceMode;
-  localStorage.setItem("unfold:source-mode", sourceMode ? "on" : "off");
-  applySourceMode();
-  view.focus();
-}
-
-function toggleTypewriter(): void {
-  typewriterOn = !typewriterOn;
-  localStorage.setItem("unfold:typewriter", typewriterOn ? "on" : "off");
-  applyTypewriter();
-  view.focus();
-}
 
 let settingsPanel: SettingsPanel;
 let settingsOpen = false;
@@ -730,12 +679,7 @@ function toggleRepositories(force?: boolean): void {
 
 // --- Arranque -----------------------------------------------------------------
 
-// Recién instalado se arranca en claro, no en lo que diga el sistema: es el
-// aspecto con el que se diseñó el editor y el que se quiere enseñar primero.
-// A partir de ahí manda lo que el usuario haya elegido.
-const savedTheme = localStorage.getItem("unfold:theme");
-document.documentElement.dataset.theme = savedTheme ?? "light";
-el.theme.innerHTML = icon(document.documentElement.dataset.theme === "dark" ? "sun" : "moon");
+aplicarTemaGuardado(el.theme);
 
 const initialDocument = takeWelcome();
 
@@ -796,6 +740,7 @@ const editorOptions: EditorOptions = {
 };
 
 view = createEditor(editorOptions);
+const modos = mountViewModes(view, el);
 
 tabs = new Tabs(
   (doc) => createEditorState(doc, editorOptions),
@@ -823,18 +768,21 @@ repositoryPanel = new RepositoryPanel(el.repositories, {
 });
 window.addEventListener("beforeunload", () => repositoryPanel.dispose());
 mountWindowControls(document.querySelector<HTMLElement>("#window-controls")!);
+const actualizaciones = mountUpdateBanner(el, {
+  notify,
+  guardarSesion: saveCurrentSession,
+});
 settingsPanel = new SettingsPanel(el.settings, () => toggleSettings(false), {
-  check: () => checkForUpdates(true),
+  check: () => actualizaciones.comprobar(true),
   resetDismissed: () => {
     restablecerVersionOmitida();
-    checkForUpdates(true);
+    actualizaciones.comprobar(true);
   },
 });
 
 renderHeader();
 renderStats(initialDocument);
-applyTypewriter();
-applySourceMode();
+modos.aplicar();
 applyOutline();
 view.focus();
 
@@ -885,43 +833,67 @@ el.githubButton.addEventListener("click", showGithub);
 window.addEventListener("keydown", (event) => {
   if (event.ctrlKey && event.shiftKey && event.key.toLowerCase() === "p") {
     event.preventDefault();
-    openCommandPalette([
-      { id: "new", label: "Nuevo documento", shortcut: "Ctrl+N", run: newDocument },
-      { id: "open", label: "Abrir documento", shortcut: "Ctrl+O", run: () => void load() },
-      { id: "save", label: "Guardar documento", shortcut: "Ctrl+S", run: () => void persist(false) },
-      { id: "export", label: "Exportar a HTML", shortcut: "Ctrl+Shift+E", run: () => void exportHtml(exportContext()) },
-      { id: "print", label: "Imprimir / exportar PDF", shortcut: "Ctrl+P", run: () => void printDocument(exportContext()) },
-      { id: "source", label: sourceMode ? "Usar vista renderizada" : "Usar código fuente", run: toggleSourceMode },
-      { id: "focus", label: "Alternar modo enfoque", run: toggleFocusMode },
-      { id: "theme", label: "Cambiar tema", run: toggleTheme },
-      { id: "settings", label: "Abrir Apariencia y ajustes", run: () => toggleSettings(true) },
-      { id: "repositories", label: "Explorador de repositorios", shortcut: "Ctrl+Shift+B", run: () => toggleRepositories(true) },
-      { id: "repositories-search", label: "Buscar un documento por nombre", run: () => { toggleRepositories(true); repositoryPanel.focusFilter(); } },
-      { id: "search-documents", label: "Buscar en todos los documentos", shortcut: "Ctrl+Shift+L", run: buscarEnDocumentos },
-      { id: "publish", label: "Publicar cambios en GitHub", shortcut: "Ctrl+Shift+U", run: publishCurrent },
-      { id: "github", label: "Conectar o revisar GitHub", shortcut: "Ctrl+Shift+H", run: showGithub },
-      { id: "history", label: "Ver historial y recuperar versión", run: () => openHistoryDialog(historyKey(session.path, session.name), view.state.doc.toString(), (content) => replaceDocument(view, content)) },
-      { id: "backup-folder", label: `Configurar carpeta de copias${backupFolder() ? ` (${backupFolder()})` : ""}`, run: () => void (async () => {
-        if (!isTauri) { notify("Las copias automáticas requieren la aplicación de escritorio"); return; }
-        const { open } = await import("@tauri-apps/plugin-dialog");
-        const folder = await open({ directory: true, defaultPath: backupFolder() ?? undefined });
-        if (typeof folder === "string") { setBackupFolder(folder); notify("Carpeta de copias guardada"); }
-      })() },
-      { id: "restore-backup", label: "Recuperar última copia automática", run: () => void (async () => {
-        const content = await restoreLatest(historyKey(session.path, session.name));
-        if (content) { replaceDocument(view, content); notify("Última copia restaurada"); } else notify("No hay una copia automática disponible");
-      })() },
-    ]);
+    openCommandPalette(paletteCommands(accionesPaleta));
   }
 });
-document.querySelector("#btn-focus")!.addEventListener("click", toggleFocusMode);
+document.querySelector("#btn-focus")!.addEventListener("click", () => modos.alternarEnfoque());
 el.outlineButton.addEventListener("click", toggleOutline);
 el.repositoriesButton.addEventListener("click", () => toggleRepositories());
-el.typewriter.addEventListener("click", toggleTypewriter);
-el.source.addEventListener("click", toggleSourceMode);
-el.theme.addEventListener("click", toggleTheme);
+el.typewriter.addEventListener("click", () => modos.alternarMaquinaDeEscribir());
+el.source.addEventListener("click", () => modos.alternarCodigoFuente());
+el.theme.addEventListener("click", () => modos.alternarTema());
 el.settingsButton.addEventListener("click", () => toggleSettings());
 el.recentButton.addEventListener("click", () => recentMenu.toggle());
+async function configurarCarpetaCopias(): Promise<void> {
+  if (!isTauri) {
+    notify("Las copias automáticas requieren la aplicación de escritorio");
+    return;
+  }
+  const { open } = await import("@tauri-apps/plugin-dialog");
+  const folder = await open({ directory: true, defaultPath: backupFolder() ?? undefined });
+  if (typeof folder !== "string") return;
+  setBackupFolder(folder);
+  notify("Carpeta de copias guardada");
+}
+
+async function recuperarCopia(): Promise<void> {
+  const content = await restoreLatest(historyKey(session.path, session.name));
+  if (!content) {
+    notify("No hay una copia automática disponible");
+    return;
+  }
+  replaceDocument(view, content);
+  notify("Última copia restaurada");
+}
+
+const accionesPaleta: PaletteActions = {
+  nuevo: newDocument,
+  abrir: () => void load(),
+  guardar: () => void persist(false),
+  exportar: () => void exportHtml(exportContext()),
+  imprimir: () => void printDocument(exportContext()),
+  alternarCodigoFuente: modos.alternarCodigoFuente,
+  alternarEnfoque: modos.alternarEnfoque,
+  alternarTema: modos.alternarTema,
+  abrirAjustes: () => toggleSettings(true),
+  abrirExplorador: () => toggleRepositories(true),
+  buscarPorNombre: () => {
+    toggleRepositories(true);
+    repositoryPanel.focusFilter();
+  },
+  buscarEnDocumentos,
+  publicar: publishCurrent,
+  abrirGithub: showGithub,
+  verHistorial: () =>
+    openHistoryDialog(historyKey(session.path, session.name), view.state.doc.toString(), (content) =>
+      replaceDocument(view, content),
+    ),
+  configurarCarpetaCopias: () => void configurarCarpetaCopias(),
+  recuperarCopia: () => void recuperarCopia(),
+  enCodigoFuente: modos.enCodigoFuente,
+  carpetaCopias: backupFolder,
+};
+
 function chooseImage(): void {
   const input = document.createElement("input");
   input.type = "file";
@@ -943,7 +915,7 @@ function chooseImage(): void {
   input.click();
 }
 view.dom.addEventListener("contextmenu", (event) => {
-  openMarkdownMenu(event, view, sourceMode, toggleSourceMode, chooseImage);
+  openMarkdownMenu(event, view, modos.enCodigoFuente(), modos.alternarCodigoFuente, chooseImage);
 });
 window.addEventListener("resize", closeMarkdownMenu);
 
@@ -1028,89 +1000,6 @@ window.addEventListener("keyup", (event) => {
   }
 });
 window.addEventListener("blur", () => document.body.classList.remove("following-links"));
-
-// --- Actualizaciones ----------------------------------------------------------
-
-let versionNueva = "";
-let estadoUpdate: "idle" | "available" | "checking" | "installing" | "error" = "idle";
-
-const manejadoresUpdate = {
-  onAvailable: (version: string, notas: string) => {
-    estadoUpdate = "available";
-    el.update.classList.remove("is-error");
-    versionNueva = version;
-    const resumen = notas.split("\n")[0]?.trim();
-    el.updateText.textContent = resumen
-      ? `Versión ${version} disponible · ${resumen}`
-      : `Versión ${version} disponible`;
-    el.updateNow.textContent = "Actualizar";
-    el.updateNow.hidden = false;
-    el.updateLater.textContent = "Más tarde";
-    el.updateLater.hidden = false;
-    el.updateNow.disabled = false;
-    el.update.hidden = false;
-  },
-  onProgress: (descargado: number, total: number | null) => {
-    estadoUpdate = "installing";
-    el.update.classList.remove("is-error");
-    const megas = (descargado / 1024 / 1024).toFixed(1);
-    el.updateText.textContent = total
-      ? `Descargando ${megas} de ${(total / 1024 / 1024).toFixed(1)} MB…`
-      : `Descargando ${megas} MB…`;
-  },
-  onError: (mensaje: string) => {
-    estadoUpdate = "error";
-    el.update.classList.add("is-error");
-    console.error("Fallo al actualizar", mensaje);
-    el.updateText.textContent = mensaje;
-    el.updateNow.textContent = "Reintentar";
-    el.updateNow.hidden = false;
-    el.updateNow.disabled = false;
-    el.updateLater.textContent = "Cerrar";
-    el.updateLater.hidden = false;
-    el.update.hidden = false;
-  },
-};
-
-function checkForUpdates(force = false): void {
-  estadoUpdate = "checking";
-  el.update.classList.remove("is-error");
-  el.updateText.textContent = "Buscando actualizaciones…";
-  el.updateNow.hidden = true;
-  el.updateLater.textContent = "Cancelar";
-  el.updateLater.hidden = false;
-  el.update.hidden = false;
-  void buscarActualizacion(manejadoresUpdate, force).then((found) => {
-    if (!found && estadoUpdate === "checking") {
-      estadoUpdate = "idle";
-      el.update.hidden = true;
-      notify("No hay actualizaciones disponibles.");
-    }
-  });
-}
-
-el.updateNow.addEventListener("click", () => {
-  if (estadoUpdate === "error") {
-    checkForUpdates(true);
-    return;
-  }
-  if (estadoUpdate !== "available") return;
-  estadoUpdate = "installing";
-  el.updateNow.disabled = true;
-  el.updateLater.hidden = true;
-  // Instalar reinicia la aplicación: la sesión tiene que estar en disco antes
-  // de ceder el control, por el mismo motivo que al cerrar la ventana.
-  void saveCurrentSession().then(() => instalarActualizacion(manejadoresUpdate));
-});
-
-el.updateLater.addEventListener("click", () => {
-  if (estadoUpdate === "available" && versionNueva) omitirVersion(versionNueva);
-  estadoUpdate = "idle";
-  el.update.hidden = true;
-});
-
-// Se consulta con retraso: la red no debe frenar el arranque del editor.
-window.setTimeout(() => void buscarActualizacion(manejadoresUpdate), 4000);
 
 // GitHub, en silencio y en dos tiempos. El catálogo de repositorios es local:
 // se lee enseguida y es lo que hace que al reiniciar sigan estando ahí aunque
@@ -1209,13 +1098,13 @@ window.addEventListener("keydown", (event) => {
     showGithub();
   } else if (key === "f" && event.shiftKey) {
     event.preventDefault();
-    toggleFocusMode();
+    modos.alternarEnfoque();
   } else if (key === "t" && event.shiftKey) {
     event.preventDefault();
-    toggleTypewriter();
+    modos.alternarMaquinaDeEscribir();
   } else if (key === "m" && event.shiftKey) {
     event.preventDefault();
-    toggleSourceMode();
+    modos.alternarCodigoFuente();
   } else if (key === "l" && event.shiftKey) {
     // «Localizar». `Ctrl+Shift+F` ya es el modo enfoque desde la primera
     // versión, y cambiarlo ahora rompería la memoria de quien ya lo usa.
