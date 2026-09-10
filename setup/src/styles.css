@@ -249,11 +249,11 @@ h1 {
 }
 
 .points {
-  margin: 1.8rem 0 0;
+  margin: 1.35rem 0 0;
   padding: 0;
   list-style: none;
   display: grid;
-  gap: 0.85rem;
+  gap: 0.7rem;
 }
 
 .points li {
@@ -457,7 +457,7 @@ h1 {
   justify-content: flex-end;
   gap: 10px;
   margin-top: auto;
-  padding-top: 1.6rem;
+  padding-top: 1.2rem;
 }
 
 .btn {
@@ -491,7 +491,7 @@ h1 {
 }
 .btn.is-danger { background: #b53b32; color: #fff; }
 .btn.is-danger:hover { background: #c94c42; }
-.text-link { align-self: flex-start; margin-top: 1.3rem; padding: 0; border: 0; background: transparent; color: var(--accent); font: inherit; font-size: .82rem; cursor: pointer; text-decoration: underline; text-underline-offset: 3px; }
+.text-link { align-self: flex-start; margin-top: 0.9rem; padding: 0; border: 0; background: transparent; color: var(--accent); font: inherit; font-size: .82rem; cursor: pointer; text-decoration: underline; text-underline-offset: 3px; }
 .text-link:hover { color: var(--accent-hover); }
 .uninstall-option { margin-top: 2rem; }
 
@@ -524,4 +524,144 @@ h1 {
     animation-duration: 0.01ms !important;
     transition-duration: 0.01ms !important;
   }
+}
+
+/* --- Los pasos, con nombre -------------------------------------------------- */
+
+/*
+ * `01 02 03` solos obligan a adivinar cuántos quedan y de qué van. El número
+ * manda —es lo que se lee de un vistazo— y el nombre va debajo, en pequeño.
+ */
+.step {
+  display: grid;
+  gap: 0.15rem;
+  padding-bottom: 0.55rem;
+  line-height: 1.2;
+}
+
+.step b {
+  font-size: 0.82rem;
+  font-weight: 600;
+}
+
+.step {
+  font-size: 0.7rem;
+  font-weight: 500;
+  letter-spacing: 0.01em;
+}
+
+/* --- GitHub ----------------------------------------------------------------- */
+
+/*
+ * Que se pueda trabajar contra un repositorio es lo que separa a Unfold de un
+ * editor de textos cualquiera, y no se veía por ninguna parte del instalador.
+ * Va en tarjeta y no como un punto más de la lista: los puntos se leen en
+ * diagonal, y esto es lo que conviene que quede.
+ */
+.card-gh {
+  display: grid;
+  grid-template-columns: 34px 1fr;
+  gap: 0.85rem;
+  align-items: start;
+  margin-top: 1.2rem;
+  padding: 0.9rem 1.05rem;
+  border-radius: 12px;
+  background: var(--wash);
+}
+
+.card-gh-mark {
+  display: grid;
+  place-items: center;
+  width: 34px;
+  height: 34px;
+  border-radius: 9px;
+  background: var(--panel);
+  color: #fff;
+}
+
+.card-gh-mark svg {
+  width: 19px;
+  height: 19px;
+}
+
+.card-gh strong {
+  display: block;
+  font-size: 0.88rem;
+  font-weight: 600;
+  color: var(--text);
+}
+
+.card-gh p {
+  margin: 0.3rem 0 0;
+  font-size: 0.82rem;
+  line-height: 1.5;
+  color: var(--text-soft);
+}
+
+/*
+ * El mismo aviso, en el momento en que de verdad sirve: recién instalado y con
+ * el botón de abrir delante. Sólo aparece si la instalación salió bien.
+ */
+.next-step {
+  display: grid;
+  grid-template-columns: 26px 1fr;
+  gap: 0.7rem;
+  align-items: center;
+  margin-top: 1.5rem;
+  padding: 0.8rem 1rem;
+  border-radius: 11px;
+  background: var(--wash);
+}
+
+.next-step-mark {
+  display: grid;
+  place-items: center;
+  color: var(--text-body);
+}
+
+.next-step-mark svg {
+  width: 18px;
+  height: 18px;
+}
+
+.next-step p {
+  margin: 0;
+  font-size: 0.82rem;
+  line-height: 1.5;
+  color: var(--text-soft);
+}
+
+.next-step kbd {
+  display: inline-block;
+  margin: 0 1px;
+  padding: 0.05rem 0.32rem;
+  border-radius: 5px;
+  background: var(--wash-strong);
+  color: var(--text-body);
+  font-family: inherit;
+  font-size: 0.74rem;
+  font-weight: 600;
+}
+
+/*
+ * Lo que conviene saber justo antes de pulsar «Instalar»: dónde va, qué toca
+ * del sistema y cómo se deshace. Estaba en ningún sitio, y el hueco entre las
+ * casillas y los botones estaba vacío.
+ */
+.note {
+  margin: 1.5rem 0 0;
+  padding-top: 1.1rem;
+  border-top: 1px solid var(--wash);
+  font-size: 0.8rem;
+  line-height: 1.6;
+  color: var(--text-faint);
+}
+
+.note code {
+  padding: 0.05rem 0.28rem;
+  border-radius: 5px;
+  background: var(--wash);
+  font-family: ui-monospace, "Cascadia Mono", Consolas, monospace;
+  font-size: 0.92em;
+  color: var(--text-soft);
 }

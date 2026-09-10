@@ -36,6 +36,18 @@ fn destino_por_defecto() -> String {
     destino_en(std::env::var("LOCALAPPDATA").ok())
 }
 
+/// La version que se va a instalar.
+///
+/// La interfaz la llevaba en una constante escrita a mano, y se quedo en 0.1.1
+/// mientras el instalador ya traia la 0.5.0: le decia a quien instalaba que
+/// estaba poniendo una version que no existe. Sale del mismo
+/// `CARGO_PKG_VERSION` con el que se nombra el artefacto empotrado, asi que
+/// no puede volver a separarse de lo que de verdad se instala.
+#[tauri::command]
+fn version_app() -> &'static str {
+    env!("CARGO_PKG_VERSION")
+}
+
 fn megas(bytes: u64) -> u64 {
     // Redondeado hacia arriba: prometer menos de lo que ocupa seria mentir.
     bytes.div_ceil(1024 * 1024)
@@ -157,6 +169,7 @@ pub fn run() {
         .plugin(tauri_plugin_dialog::init())
         .invoke_handler(tauri::generate_handler![
             destino_por_defecto,
+            version_app,
             tamano_instalador,
             instalar,
             abrir_unfold,

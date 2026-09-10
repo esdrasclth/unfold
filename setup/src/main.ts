@@ -11,43 +11,57 @@ import "./styles.css";
  * reescribir la maquinaria, que es la parte que conviene no tocar.
  */
 
-const VERSION = "0.1.1";
-
 const icono = {
   check: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="m5 12.5 4.5 4.5L19 7"/></svg>',
   punto:
     '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="9"/><path d="m8.5 12 2.5 2.5 4.5-5"/></svg>',
   carpeta:
     '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><path d="M3.5 6.5h5.2l1.8 2h9.9v9a2 2 0 0 1-2 2H5.5a2 2 0 0 1-2-2z"/></svg>',
+  github:
+    '<svg viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="M12 .3a12 12 0 0 0-3.8 23.4c.6.1.8-.3.8-.6v-2c-3.3.7-4-1.6-4-1.6-.6-1.4-1.4-1.8-1.4-1.8-1-.7.1-.7.1-.7 1.2.1 1.8 1.2 1.8 1.2 1 1.8 2.8 1.3 3.5 1 .1-.8.4-1.3.7-1.6-2.7-.3-5.5-1.3-5.5-6 0-1.2.5-2.3 1.3-3.1-.2-.4-.6-1.6.1-3.2 0 0 1-.3 3.3 1.2a11.5 11.5 0 0 1 6 0c2.3-1.5 3.3-1.2 3.3-1.2.7 1.6.2 2.8.1 3.2.8.8 1.3 1.9 1.3 3.2 0 4.6-2.8 5.6-5.5 5.9.5.4.9 1.1.9 2.3v3.3c0 .3.1.7.8.6A12 12 0 0 0 12 .3"/></svg>',
   cerrar:
     '<svg viewBox="0 0 12 12" fill="none" stroke="currentColor" stroke-width="1.3" stroke-linecap="round"><path d="m2 2 8 8M10 2l-8 8"/></svg>',
 };
 
-/** Ilustración del panel: un documento con marcas de Markdown desplegándose. */
+/**
+ * Ilustración del panel.
+ *
+ * Un documento con marcas de Markdown desplegándose, y colgando de él un
+ * repositorio: es lo que hace la aplicación y de dónde puede sacar los
+ * documentos. La línea de puntos va del repositorio al documento porque ése es
+ * el sentido en que se empieza —se conecta un repositorio y aparecen sus
+ * archivos—, y quien mira el panel mientras instala se lleva la idea sin leer.
+ */
 const arte = `
 <svg viewBox="0 0 260 200" fill="none" xmlns="http://www.w3.org/2000/svg" aria-hidden="true">
-  <circle cx="72" cy="118" r="46" fill="#b4572a" opacity=".16"/>
-  <g transform="rotate(-4 130 100)">
-    <rect x="72" y="34" width="118" height="146" rx="9" fill="#faf9f7"/>
-    <path d="M172 34h18l-18 18z" fill="#e2ded6"/>
-    <text x="88" y="66" font-family="Georgia, serif" font-size="15" fill="#b4572a">#</text>
-    <rect x="104" y="56" width="58" height="9" rx="4.5" fill="#c9c4bb"/>
-    <text x="88" y="92" font-family="Georgia, serif" font-size="13" fill="#b4572a">##</text>
-    <rect x="110" y="83" width="52" height="8" rx="4" fill="#d5d0c7"/>
-    <circle cx="92" cy="112" r="2.6" fill="#b4572a"/>
-    <rect x="102" y="108" width="60" height="7" rx="3.5" fill="#ddd8cf"/>
-    <circle cx="92" cy="130" r="2.6" fill="#b4572a"/>
-    <rect x="102" y="126" width="46" height="7" rx="3.5" fill="#ddd8cf"/>
-    <circle cx="92" cy="148" r="2.6" fill="#b4572a"/>
-    <rect x="102" y="144" width="54" height="7" rx="3.5" fill="#ddd8cf"/>
+  <circle cx="86" cy="110" r="46" fill="#b4572a" opacity=".16"/>
+  <path d="M64 146c-5-13-1-24 14-30" stroke="#b4572a" stroke-width="2.2" stroke-linecap="round" stroke-dasharray="0.5 6.5"/>
+  <path d="m75 111 8 3.4-6.6 4.8z" fill="#b4572a"/>
+  <g transform="rotate(-4 140 96)">
+    <rect x="84" y="26" width="118" height="146" rx="9" fill="#faf9f7"/>
+    <path d="M184 26h18l-18 18z" fill="#e2ded6"/>
+    <text x="100" y="58" font-family="Georgia, serif" font-size="15" fill="#b4572a">#</text>
+    <rect x="116" y="48" width="58" height="9" rx="4.5" fill="#c9c4bb"/>
+    <text x="100" y="84" font-family="Georgia, serif" font-size="13" fill="#b4572a">##</text>
+    <rect x="122" y="75" width="52" height="8" rx="4" fill="#d5d0c7"/>
+    <circle cx="104" cy="104" r="2.6" fill="#b4572a"/>
+    <rect x="114" y="100" width="60" height="7" rx="3.5" fill="#ddd8cf"/>
+    <circle cx="104" cy="122" r="2.6" fill="#b4572a"/>
+    <rect x="114" y="118" width="46" height="7" rx="3.5" fill="#ddd8cf"/>
+    <circle cx="104" cy="140" r="2.6" fill="#b4572a"/>
+    <rect x="114" y="136" width="54" height="7" rx="3.5" fill="#ddd8cf"/>
   </g>
-  <g transform="rotate(7 214 60)">
-    <rect x="188" y="40" width="46" height="34" rx="8" fill="#2a2825"/>
-    <text x="211" y="63" font-family="Georgia, serif" font-size="17" fill="#faf9f7" text-anchor="middle">**</text>
+  <g transform="rotate(7 224 52)">
+    <rect x="200" y="32" width="46" height="34" rx="8" fill="#2a2825"/>
+    <text x="223" y="55" font-family="Georgia, serif" font-size="17" fill="#faf9f7" text-anchor="middle">**</text>
   </g>
-  <g transform="rotate(-8 48 168)">
-    <rect x="22" y="150" width="56" height="32" rx="8" fill="#2a2825"/>
-    <text x="50" y="171" font-family="Georgia, serif" font-size="14" fill="#faf9f7" text-anchor="middle">[ ]( )</text>
+  <g transform="rotate(-8 42 168)">
+    <rect x="10" y="148" width="64" height="42" rx="12" fill="#2a2825"/>
+    <g transform="translate(20 158) scale(0.92)" fill="#faf9f7">
+      <path d="M12 .3a12 12 0 0 0-3.8 23.4c.6.1.8-.3.8-.6v-2c-3.3.7-4-1.6-4-1.6-.6-1.4-1.4-1.8-1.4-1.8-1-.7.1-.7.1-.7 1.2.1 1.8 1.2 1.8 1.2 1 1.8 2.8 1.3 3.5 1 .1-.8.4-1.3.7-1.6-2.7-.3-5.5-1.3-5.5-6 0-1.2.5-2.3 1.3-3.1-.2-.4-.6-1.6.1-3.2 0 0 1-.3 3.3 1.2a11.5 11.5 0 0 1 6 0c2.3-1.5 3.3-1.2 3.3-1.2.7 1.6.2 2.8.1 3.2.8.8 1.3 1.9 1.3 3.2 0 4.6-2.8 5.6-5.5 5.9.5.4.9 1.1.9 2.3v3.3c0 .3.1.7.8.6A12 12 0 0 0 12 .3"/>
+    </g>
+    <rect x="48" y="163" width="18" height="5" rx="2.5" fill="#6b655c"/>
+    <rect x="48" y="172" width="12" height="5" rx="2.5" fill="#4d4841"/>
   </g>
 </svg>`;
 
@@ -67,9 +81,9 @@ app.innerHTML = `
     </div>
 
     <nav class="steps" id="pasos">
-      <span class="step is-active" data-step="0">01</span>
-      <span class="step" data-step="1">02</span>
-      <span class="step" data-step="2">03</span>
+      <span class="step is-active" data-step="0"><b>01</b>Bienvenida</span>
+      <span class="step" data-step="1"><b>02</b>Opciones</span>
+      <span class="step" data-step="2"><b>03</b>Instalación</span>
     </nav>
 
   <section class="pane is-current" data-pane="0">
@@ -83,11 +97,20 @@ app.innerHTML = `
         <li>${icono.punto}<span>Tus <code>.md</code> siguen siendo texto plano: nada se reescribe al guardar</span></li>
         <li>${icono.punto}<span>Arranca en menos de medio segundo y ocupa unos 5 MB</span></li>
       </ul>
+      <div class="card-gh">
+        <span class="card-gh-mark">${icono.github}</span>
+        <div>
+          <strong>Conecta tus repositorios de GitHub</strong>
+          <p>Clona un repositorio, edita su documentación y publica los cambios
+             sin salir del editor. También puedes abrir cualquier carpeta del disco.</p>
+        </div>
+      </div>
+
       <div class="actions">
         <button class="btn is-primary" data-ir="1">Continuar</button>
       </div>
       <button class="text-link" id="mostrar-desinstalar" type="button">¿Ya tienes Unfold? Desinstalar</button>
-      <p class="footnote">Versión ${VERSION} · Windows 10 y 11</p>
+      <p class="footnote"><span class="version">Unfold</span> · Windows 10 y 11</p>
     </section>
 
     <section class="pane" data-pane="1">
@@ -115,11 +138,17 @@ app.innerHTML = `
         </label>
       </div>
 
+      <p class="note">
+        Se instala sólo para tu usuario, sin permisos de administrador. Unfold
+        quedará asociado a tus archivos <code>.md</code>, y podrás desinstalarlo
+        desde este mismo programa.
+      </p>
+
       <div class="actions">
         <button class="btn is-quiet" data-ir="0">Atrás</button>
         <button class="btn is-primary" id="instalar">Instalar</button>
       </div>
-      <p class="footnote" id="pie-tamano">Versión ${VERSION}</p>
+      <p class="footnote" id="pie-tamano"><span class="version">Unfold</span></p>
     </section>
 
     <section class="pane" data-pane="2">
@@ -128,10 +157,15 @@ app.innerHTML = `
       <div class="progress" id="barra"><span></span></div>
       <p class="status" id="estado">Copiando archivos…</p>
       <div id="fallo"></div>
+      <div class="next-step" id="siguiente" hidden>
+        <span class="next-step-mark">${icono.github}</span>
+        <p>Para trabajar con un repositorio, pulsa el icono de GitHub en la barra
+           superior o usa <kbd>Ctrl</kbd><kbd>Shift</kbd><kbd>H</kbd>.</p>
+      </div>
       <div class="actions">
         <button class="btn is-primary" id="listo" disabled>Listo</button>
       </div>
-      <p class="footnote">Versión ${VERSION}</p>
+      <p class="footnote"><span class="version">Unfold</span></p>
     </section>
 
     <section class="pane" data-pane="3">
@@ -157,6 +191,7 @@ const el = {
   titulo: document.querySelector<HTMLElement>("#titulo-final")!,
   lead: document.querySelector<HTMLElement>("#lead-final")!,
   tamano: document.querySelector<HTMLElement>("#pie-tamano")!,
+  siguiente: document.querySelector<HTMLElement>("#siguiente")!,
   desinstalar: document.querySelector<HTMLButtonElement>("#desinstalar")!,
   borrarDatos: document.querySelector<HTMLInputElement>("#borrar-datos")!,
 };
@@ -210,6 +245,7 @@ async function instalar(): Promise<void> {
   el.fallo.innerHTML = "";
   el.listo.disabled = true;
   el.barra.classList.remove("is-done");
+  el.siguiente.hidden = true;
   el.estado.textContent = "Copiando archivos…";
 
   try {
@@ -223,6 +259,7 @@ async function instalar(): Promise<void> {
     el.lead.textContent = "Ya puedes escribir. Encontrarás la aplicación en el menú de inicio.";
     el.estado.textContent = `Instalado en ${el.ruta.value}`;
     el.listo.textContent = el.abrir.checked ? "Abrir Unfold" : "Cerrar";
+    el.siguiente.hidden = false;
   } catch (error) {
     el.barra.classList.add("is-done");
     el.titulo.textContent = "No se pudo instalar";
@@ -240,6 +277,14 @@ async function instalar(): Promise<void> {
 // Estado inicial que depende del sistema
 void (async () => {
   el.ruta.value = await invoke<string>("destino_por_defecto");
-  const megas = await invoke<number>("tamano_instalador");
-  el.tamano.textContent = `Versión ${VERSION} · ${megas} MB`;
+  const [version, megas] = await Promise.all([
+    invoke<string>("version_app"),
+    invoke<number>("tamano_instalador"),
+  ]);
+  // La versión sale del paquete y no de una constante de aquí: la que había
+  // escrita a mano se quedó en 0.1.1 mientras se instalaba la 0.5.0.
+  for (const hueco of document.querySelectorAll(".version")) {
+    hueco.textContent = `Versión ${version}`;
+  }
+  el.tamano.textContent = `Versión ${version} · ${megas} MB`;
 })();
