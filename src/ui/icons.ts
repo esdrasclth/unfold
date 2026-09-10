@@ -21,6 +21,9 @@ const paths: Record<string, string> = {
   // Controles deslizantes: ajustar la apariencia, no configurar el programa.
   sliders: '<path d="M4 8h9M17 8h3M4 16h3M11 16h9"/><circle cx="15" cy="8" r="2"/><circle cx="9" cy="16" r="2"/>',
   export: '<path d="M12 3.5v11M8.5 7 12 3.5 15.5 7"/><path d="M4.5 14v4.5a2 2 0 0 0 2 2h11a2 2 0 0 0 2-2V14"/>',
+  // Como `export` pero con la flecha al revés: aquí algo entra, no sale.
+  download: '<path d="M12 3.5v11M8.5 11l3.5 3.5L15.5 11"/><path d="M4.5 14v4.5a2 2 0 0 0 2 2h11a2 2 0 0 0 2-2V14"/>',
+  alert: '<path d="M12 9v4M12 16.5v.01"/><path d="M10.3 4.4 2.9 17a2 2 0 0 0 1.7 3h14.8a2 2 0 0 0 1.7-3L13.7 4.4a2 2 0 0 0-3.4 0Z"/>',
   print: '<path d="M7 9V4.5h10V9"/><path d="M5.5 9h13a2 2 0 0 1 2 2v5h-3.5M6 16H2.5v-5a2 2 0 0 1 2-2z" /><path d="M7 14h10v6H7z"/>',
   code: '<path d="m8 7-5 5 5 5M16 7l5 5-5 5M14 4l-4 16"/>',
   github: '<circle cx="7" cy="5" r="2.3"/><circle cx="7" cy="19" r="2.3"/><circle cx="18" cy="12" r="2.3"/><path d="M9.3 5h2.2a3 3 0 0 1 3 3v1a3 3 0 0 0 3 3M9.3 19h2.2a3 3 0 0 0 3-3V8"/>',

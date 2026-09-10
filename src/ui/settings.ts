@@ -15,6 +15,8 @@ import { icon } from "./icons.ts";
 export interface UpdateSettingsActions {
   check: () => void;
   resetDismissed: () => void;
+  /** Vuelve a enseñar la tarjeta de la versión pendiente. */
+  install: () => void;
 }
 
 /**
@@ -111,6 +113,7 @@ export class SettingsPanel {
         ${this.updates ? `
         <section class="settings-group settings-updates">
           <span class="settings-label">Actualizaciones</span>
+          <button class="settings-pending" id="settings-pending" type="button" hidden></button>
           <button class="settings-action" id="settings-check-updates" type="button">Buscar actualizaciones</button>
           <button class="settings-action is-quiet" id="settings-reset-updates" type="button">Volver a mostrar versiones omitidas</button>
           <p class="settings-hint">Se comprueba automáticamente al iniciar, como máximo una vez cada 15 minutos.</p>
@@ -148,6 +151,7 @@ export class SettingsPanel {
     q("settings-close").addEventListener("click", () => this.onClose());
     if (this.updates) {
       q("settings-check-updates").addEventListener("click", () => this.updates?.check());
+      q("settings-pending").addEventListener("click", () => this.updates?.install());
       q("settings-reset-updates").addEventListener("click", () => this.updates?.resetDismissed());
     }
 
@@ -187,6 +191,20 @@ export class SettingsPanel {
     const next = Math.min(max, Math.max(min, this.settings.fontSize + direction * step));
     if (next !== this.settings.fontSize) this.commit({ fontSize: next });
     return next;
+  }
+
+  /**
+   * Enseña aquí la versión pendiente, si la hay.
+   *
+   * Apartar la tarjeta del aviso no puede ser lo mismo que perderla: quien la
+   * cierra tiene que poder volver a encontrarla, y éste es el sitio donde la
+   * buscaría. Sin nada pendiente, la fila no aparece.
+   */
+  setUpdatePending(version: string | null): void {
+    const fila = this.root.querySelector<HTMLButtonElement>("#settings-pending");
+    if (!fila) return;
+    fila.hidden = version === null;
+    fila.textContent = version ? `Instalar Unfold ${version}` : "";
   }
 
   setOpen(open: boolean): void {

@@ -1,117 +1,217 @@
-import {
-  buscarActualizacion,
-  instalarActualizacion,
-  omitirVersion,
-} from "../updates.ts";
-
-/** Los elementos del aviso, que los busca quien monta la interfaz. */
-export interface UpdateRefs {
-  update: HTMLElement;
-  updateText: HTMLElement;
-  updateNow: HTMLButtonElement;
-  updateLater: HTMLButtonElement;
-}
+import { icon } from "./icons.ts";
+import { buscarActualizacion, instalarActualizacion, omitirVersion } from "../updates.ts";
 
 export interface UpdateDeps {
-  /** Para decir que no había nada, que el aviso no puede decirlo escondido. */
+  /** Para decir que no había nada, que la tarjeta no puede decirlo escondida. */
   notify: (message: string) => void;
   /**
-   * Instalar reinicia la aplicación, así que la sesión tiene que estar en
-   * disco antes de ceder el control, igual que al cerrar la ventana.
+   * Instalar reinicia la aplicación, así que la sesión tiene que estar en disco
+   * antes de ceder el control, igual que al cerrar la ventana.
    */
   guardarSesion: () => Promise<void>;
+  /**
+   * Enciende o apaga la señal de que hay algo pendiente.
+   *
+   * Es lo que impide que apartar la tarjeta pierda el aviso: quien la cierra
+   * sigue viendo un punto en el botón de ajustes, y ahí vuelve a encontrarlo.
+   */
+  marcarPendiente: (version: string | null) => void;
 }
 
 export interface UpdateBanner {
   comprobar: (force?: boolean) => void;
+  /** Vuelve a enseñar la tarjeta apartada. */
+  mostrar: () => void;
+  pendiente: () => string | null;
 }
 
+type Estado = "idle" | "checking" | "available" | "installing" | "error";
+
 /**
- * El aviso de versión nueva y lo que se puede hacer con él.
+ * El aviso de versión nueva.
  *
- * Es una máquina de estados pequeña —buscando, disponible, instalando, error—
- * y el estado decide qué hace cada botón: el mismo «Actualizar» reintenta
- * cuando lo anterior falló. Vivía suelta en `main.ts` entre todo lo demás.
+ * Era una franja a todo lo ancho encima del editor: aparecía de golpe y
+ * empujaba el documento hacia abajo mientras alguien escribía, que es la peor
+ * manera de dar una noticia que no corre ninguna prisa. Ahora es una tarjeta en
+ * una esquina, flotando sobre el texto y sin moverlo de sitio.
+ *
+ * Y «Más tarde» quiere decir más tarde. Ese botón guardaba la versión como
+ * omitida para siempre —el rótulo decía una cosa y el código hacía otra—, de
+ * modo que quien lo pulsaba esperando que se lo recordaran no volvía a saber de
+ * esa versión nunca. Descartarla del todo es ahora una decisión aparte y dicha.
  */
-export function mountUpdateBanner(el: UpdateRefs, deps: UpdateDeps): UpdateBanner {
-  let versionNueva = "";
-  let estado: "idle" | "available" | "checking" | "installing" | "error" = "idle";
+export function mountUpdateBanner(host: HTMLElement, deps: UpdateDeps): UpdateBanner {
+  let version = "";
+  let notas = "";
+  let motivo = "";
+  let estado: Estado = "idle";
+
+  host.className = "update-card";
+  host.hidden = true;
+  host.setAttribute("role", "status");
+  host.setAttribute("aria-live", "polite");
+
+  /** Las novedades, en viñetas y sin pasar de tres: es un aviso, no el diario. */
+  const puntos = (texto: string): string[] =>
+    texto
+      .split("\n")
+      .map((linea) => linea.replace(/^[-*•]\s+/, "").trim())
+      .filter((linea) => linea.length > 0 && !linea.startsWith("#"))
+      .slice(0, 3);
+
+  const pintar = (): void => {
+    if (estado === "idle") {
+      host.hidden = true;
+      return;
+    }
+    host.hidden = false;
+    host.classList.toggle("is-error", estado === "error");
+
+    if (estado === "checking") {
+      host.innerHTML = `
+        <div class="update-card-head">
+          <span class="update-card-icon">${icon("refresh")}</span>
+          <div class="update-card-title"><strong>Buscando actualizaciones…</strong></div>
+          <button class="update-card-close" data-accion="cerrar" aria-label="Cerrar">${icon("close")}</button>
+        </div>`;
+      return;
+    }
+
+    if (estado === "installing") {
+      host.innerHTML = `
+        <div class="update-card-head">
+          <span class="update-card-icon">${icon("download")}</span>
+          <div class="update-card-title">
+            <strong>Instalando Unfold ${version}</strong>
+            <span class="update-card-progress-text">Preparando la descarga…</span>
+          </div>
+        </div>
+        <div class="update-card-bar"><span></span></div>
+        <p class="update-card-note">Unfold se reiniciará solo al terminar, y tus pestañas vuelven como están.</p>`;
+      return;
+    }
+
+    if (estado === "error") {
+      host.innerHTML = `
+        <div class="update-card-head">
+          <span class="update-card-icon">${icon("alert")}</span>
+          <div class="update-card-title">
+            <strong>No se pudo actualizar</strong>
+            <span class="update-card-reason"></span>
+          </div>
+          <button class="update-card-close" data-accion="cerrar" aria-label="Cerrar">${icon("close")}</button>
+        </div>
+        <div class="update-card-actions">
+          <button class="update-card-btn is-primary" data-accion="reintentar">Reintentar</button>
+        </div>`;
+      host.querySelector<HTMLElement>(".update-card-reason")!.textContent = motivo;
+      return;
+    }
+
+    const lista = puntos(notas);
+    host.innerHTML = `
+      <div class="update-card-head">
+        <span class="update-card-icon">${icon("download")}</span>
+        <div class="update-card-title">
+          <strong>Unfold ${version}</strong>
+          <span>Hay una versión nueva disponible</span>
+        </div>
+        <button class="update-card-close" data-accion="tarde" aria-label="Más tarde">${icon("close")}</button>
+      </div>
+      ${lista.length ? `<ul class="update-card-notes">${lista.map(() => "<li></li>").join("")}</ul>` : ""}
+      <div class="update-card-actions">
+        <button class="update-card-btn is-primary" data-accion="instalar">Reiniciar e instalar</button>
+        <button class="update-card-btn" data-accion="tarde">Más tarde</button>
+      </div>
+      <button class="update-card-skip" data-accion="omitir">Omitir esta versión</button>`;
+
+    // El texto de las notas se pone por nodo y no interpolado: viene del
+    // manifiesto, y ahí no se escribe nada dentro de una plantilla HTML.
+    for (const [i, li] of [...host.querySelectorAll("li")].entries()) {
+      li.textContent = lista[i]!;
+    }
+  };
 
   const manejadores = {
-    onAvailable: (version: string, notas: string) => {
+    onAvailable: (nueva: string, cuerpo: string) => {
+      version = nueva;
+      notas = cuerpo;
       estado = "available";
-      el.update.classList.remove("is-error");
-      versionNueva = version;
-      const resumen = notas.split("\n")[0]?.trim();
-      el.updateText.textContent = resumen
-        ? `Versión ${version} disponible · ${resumen}`
-        : `Versión ${version} disponible`;
-      el.updateNow.textContent = "Actualizar";
-      el.updateNow.hidden = false;
-      el.updateLater.textContent = "Más tarde";
-      el.updateLater.hidden = false;
-      el.updateNow.disabled = false;
-      el.update.hidden = false;
+      deps.marcarPendiente(nueva);
+      pintar();
     },
     onProgress: (descargado: number, total: number | null) => {
-      estado = "installing";
-      el.update.classList.remove("is-error");
+      const texto = host.querySelector<HTMLElement>(".update-card-progress-text");
+      const barra = host.querySelector<HTMLElement>(".update-card-bar span");
       const megas = (descargado / 1024 / 1024).toFixed(1);
-      el.updateText.textContent = total
-        ? `Descargando ${megas} de ${(total / 1024 / 1024).toFixed(1)} MB…`
-        : `Descargando ${megas} MB…`;
+      if (texto) {
+        texto.textContent = total
+          ? `${megas} de ${(total / 1024 / 1024).toFixed(1)} MB`
+          : `${megas} MB descargados`;
+      }
+      // Sin tamaño total no hay proporción honesta que dibujar, así que la barra
+      // se queda indeterminada en vez de inventarse un porcentaje.
+      if (barra && total) barra.style.width = `${Math.min(100, (descargado / total) * 100)}%`;
     },
     onError: (mensaje: string) => {
-      estado = "error";
-      el.update.classList.add("is-error");
       console.error("Fallo al actualizar", mensaje);
-      el.updateText.textContent = mensaje;
-      el.updateNow.textContent = "Reintentar";
-      el.updateNow.hidden = false;
-      el.updateNow.disabled = false;
-      el.updateLater.textContent = "Cerrar";
-      el.updateLater.hidden = false;
-      el.update.hidden = false;
+      motivo = mensaje;
+      estado = "error";
+      pintar();
     },
   };
 
   const comprobar = (force = false): void => {
     estado = "checking";
-    el.update.classList.remove("is-error");
-    el.updateText.textContent = "Buscando actualizaciones…";
-    el.updateNow.hidden = true;
-    el.updateLater.textContent = "Cancelar";
-    el.updateLater.hidden = false;
-    el.update.hidden = false;
-    void buscarActualizacion(manejadores, force).then((found) => {
-      if (!found && estado === "checking") {
-        estado = "idle";
-        el.update.hidden = true;
-        deps.notify("No hay actualizaciones disponibles.");
-      }
+    pintar();
+    void buscarActualizacion(manejadores, force).then((encontrada) => {
+      if (encontrada || estado !== "checking") return;
+      estado = "idle";
+      deps.marcarPendiente(null);
+      pintar();
+      deps.notify("Ya tienes la última versión de Unfold.");
     });
   };
 
-  el.updateNow.addEventListener("click", () => {
-    if (estado === "error") {
-      comprobar(true);
-      return;
-    }
-    if (estado !== "available") return;
-    estado = "installing";
-    el.updateNow.disabled = true;
-    el.updateLater.hidden = true;
-    void deps.guardarSesion().then(() => instalarActualizacion(manejadores));
-  });
+  host.addEventListener("click", (event) => {
+    const boton = (event.target as HTMLElement).closest<HTMLElement>("[data-accion]");
+    if (!boton) return;
 
-  el.updateLater.addEventListener("click", () => {
-    if (estado === "available" && versionNueva) omitirVersion(versionNueva);
-    estado = "idle";
-    el.update.hidden = true;
+    switch (boton.dataset.accion) {
+      case "cerrar":
+        estado = "idle";
+        pintar();
+        break;
+      // Se aparta, no se descarta: el punto en ajustes lo sigue diciendo.
+      case "tarde":
+        host.hidden = true;
+        break;
+      case "omitir":
+        omitirVersion(version);
+        estado = "idle";
+        deps.marcarPendiente(null);
+        pintar();
+        deps.notify(`No se volverá a avisar de la versión ${version}.`);
+        break;
+      case "reintentar":
+        comprobar(true);
+        break;
+      case "instalar":
+        estado = "installing";
+        pintar();
+        void deps.guardarSesion().then(() => instalarActualizacion(manejadores));
+        break;
+    }
   });
 
   // Se consulta con retraso: la red no debe frenar el arranque del editor.
   window.setTimeout(() => void buscarActualizacion(manejadores), 4000);
 
-  return { comprobar };
+  return {
+    comprobar,
+    mostrar: () => {
+      if (estado === "available") pintar();
+    },
+    pendiente: () => (estado === "available" ? version : null),
+  };
 }

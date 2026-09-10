@@ -194,8 +194,8 @@ body {
 #app {
   display: grid;
   /* Los avisos ocultos no deben desplazar el editor ni el pie a otra fila. */
-  grid-template-areas: "title" "update" "conflict" "editor" "status";
-  grid-template-rows: auto auto auto minmax(0, 1fr) auto;
+  grid-template-areas: "title" "conflict" "editor" "status";
+  grid-template-rows: auto auto minmax(0, 1fr) auto;
   height: 100%;
   min-height: 100vh;
   height: 100dvh;
@@ -204,7 +204,6 @@ body {
 }
 
 #app > .titlebar { grid-area: title; }
-#app > .update-bar { grid-area: update; }
 #app > .conflict-bar { grid-area: conflict; }
 #app > .workspace { grid-area: editor; }
 #app > .statusbar { grid-area: status; }
@@ -306,6 +305,7 @@ body {
 }
 
 .icon-button {
+  position: relative;
   display: grid;
   place-items: center;
   width: 30px;
@@ -1510,64 +1510,14 @@ body.typewriter-mode .cm-content {
  * modal ni ventana aparte. Enterarse de una actualización no debería
  * interrumpir lo que estabas escribiendo.
  */
-.update-bar {
-  display: flex;
-  align-items: center;
-  gap: 0.55rem;
-  padding: 0.5rem 1rem;
-  background: color-mix(in srgb, var(--accent) 16%, var(--chrome));
-  font-size: 12.5px;
-  color: var(--chrome-text);
-  animation: drop-in var(--medium) var(--ease);
-}
 
-.update-bar.is-error {
-  background: color-mix(in srgb, #b54a42 18%, var(--chrome));
-}
 
-.update-bar[hidden] {
-  display: none;
-}
 
-.update-text {
-  flex: 1;
-  min-width: 0;
-  white-space: nowrap;
-  overflow: hidden;
-  text-overflow: ellipsis;
-}
 
-.update-action {
-  flex: none;
-  height: 26px;
-  padding: 0 0.75rem;
-  border: none;
-  border-radius: 6px;
-  background: var(--accent);
-  color: #fff;
-  font-family: inherit;
-  font-size: 12px;
-  cursor: pointer;
-  transition: filter var(--fast) var(--ease), transform var(--fast) var(--ease);
-}
 
-.update-action:hover {
-  filter: brightness(1.08);
-}
 
-.update-action:active {
-  transform: scale(0.97);
-}
 
-.update-action[disabled] {
-  opacity: 0.5;
-  cursor: default;
-}
 
-.update-action.is-quiet {
-  background: transparent;
-  color: var(--chrome-soft);
-}
 
 .settings-action {
   width: 100%;
@@ -1815,11 +1765,6 @@ body.typewriter-mode .cm-content {
 
 .settings-action.is-quiet { color: var(--chrome-soft); }
 
-.update-action.is-quiet:hover {
-  background: var(--chrome-hover);
-  color: var(--chrome-text);
-  filter: none;
-}
 
 /* --- GitHub ------------------------------------------------------------------
  *
@@ -3228,4 +3173,258 @@ body.typewriter-mode .cm-content {
 .github-access button {
   margin-left: auto;
   white-space: nowrap;
+}
+
+/* --- Aviso de versión nueva --------------------------------------------------
+ *
+ * Una tarjeta en la esquina y no una franja encima del editor. La franja
+ * ocupaba una fila de la rejilla, así que al llegar la noticia el documento
+ * entero daba un salto hacia abajo mientras alguien escribía. Esto no corre
+ * ninguna prisa: se queda flotando, se lee cuando toque y se aparta.
+ */
+
+.update-card {
+  position: fixed;
+  right: 18px;
+  bottom: 46px;
+  z-index: 60;
+  width: min(340px, calc(100vw - 36px));
+  padding: 0.9rem 1rem 0.8rem;
+  border: 1px solid var(--chrome-rule);
+  border-radius: 14px;
+  background: var(--chrome);
+  box-shadow: 0 16px 40px rgb(0 0 0 / 26%), 0 2px 6px rgb(0 0 0 / 12%);
+  color: var(--chrome-text);
+  animation: update-card-in var(--medium) var(--ease);
+}
+
+.update-card[hidden] {
+  display: none;
+}
+
+@keyframes update-card-in {
+  from {
+    opacity: 0;
+    transform: translateY(10px) scale(0.985);
+  }
+}
+
+.update-card-head {
+  display: grid;
+  grid-template-columns: 28px 1fr auto;
+  gap: 0.6rem;
+  align-items: start;
+}
+
+.update-card-icon {
+  display: grid;
+  place-items: center;
+  width: 28px;
+  height: 28px;
+  border-radius: 9px;
+  background: color-mix(in srgb, var(--accent) 18%, transparent);
+  color: var(--accent);
+}
+
+.update-card-icon svg {
+  width: 15px;
+  height: 15px;
+}
+
+.update-card.is-error .update-card-icon {
+  background: color-mix(in srgb, #b54a42 20%, transparent);
+  color: #d0655c;
+}
+
+.update-card-title {
+  display: grid;
+  gap: 0.12rem;
+  min-width: 0;
+}
+
+.update-card-title strong {
+  font-size: 13px;
+  font-weight: 620;
+}
+
+.update-card-title span {
+  font-size: 11.5px;
+  line-height: 1.45;
+  color: var(--chrome-faint);
+  overflow-wrap: anywhere;
+}
+
+.update-card-close {
+  display: grid;
+  place-items: center;
+  width: 22px;
+  height: 22px;
+  border: 0;
+  border-radius: 7px;
+  background: transparent;
+  color: var(--chrome-faint);
+  cursor: pointer;
+  transition: background var(--fast) var(--ease), color var(--fast) var(--ease);
+}
+
+.update-card-close:hover {
+  background: var(--chrome-hover);
+  color: var(--chrome-text);
+}
+
+.update-card-close svg {
+  width: 10px;
+  height: 10px;
+}
+
+/* Tres novedades como mucho: es un aviso, no las notas de la versión. */
+.update-card-notes {
+  margin: 0.75rem 0 0;
+  padding: 0;
+  list-style: none;
+  display: grid;
+  gap: 0.3rem;
+}
+
+.update-card-notes li {
+  position: relative;
+  padding-left: 0.85rem;
+  font-size: 11.5px;
+  line-height: 1.5;
+  color: var(--chrome-text);
+}
+
+.update-card-notes li::before {
+  content: "";
+  position: absolute;
+  top: 0.5em;
+  left: 0.15rem;
+  width: 3px;
+  height: 3px;
+  border-radius: 50%;
+  background: var(--accent);
+}
+
+.update-card-actions {
+  display: flex;
+  gap: 8px;
+  margin-top: 0.9rem;
+}
+
+.update-card-btn {
+  flex: 1;
+  height: 30px;
+  padding: 0 0.7rem;
+  border: 1px solid var(--chrome-rule);
+  border-radius: 9px;
+  background: transparent;
+  color: var(--chrome-text);
+  font: inherit;
+  font-size: 12px;
+  font-weight: 560;
+  cursor: pointer;
+  transition: background var(--fast) var(--ease), border-color var(--fast) var(--ease);
+}
+
+.update-card-btn:hover {
+  background: var(--chrome-hover);
+}
+
+.update-card-btn.is-primary {
+  border-color: transparent;
+  background: var(--accent);
+  color: #fff;
+}
+
+.update-card-btn.is-primary:hover {
+  background: color-mix(in srgb, var(--accent) 88%, #fff);
+}
+
+/*
+ * Descartar la versión es una decisión distinta de aplazarla, así que se pide
+ * aparte y con menos peso. Antes «Más tarde» hacía esto mismo sin decirlo.
+ */
+.update-card-skip {
+  display: block;
+  width: 100%;
+  margin-top: 0.55rem;
+  padding: 0.25rem 0;
+  border: 0;
+  background: transparent;
+  color: var(--chrome-faint);
+  font: inherit;
+  font-size: 11px;
+  cursor: pointer;
+}
+
+.update-card-skip:hover {
+  color: var(--chrome-text);
+  text-decoration: underline;
+  text-underline-offset: 3px;
+}
+
+.update-card-bar {
+  height: 4px;
+  margin-top: 0.85rem;
+  border-radius: 2px;
+  background: var(--chrome-hover);
+  overflow: hidden;
+}
+
+.update-card-bar span {
+  display: block;
+  width: 0;
+  height: 100%;
+  border-radius: 2px;
+  background: var(--accent);
+  transition: width 180ms linear;
+}
+
+.update-card-note {
+  margin: 0.6rem 0 0;
+  font-size: 11px;
+  line-height: 1.45;
+  color: var(--chrome-faint);
+}
+
+/*
+ * El punto del botón de ajustes.
+ *
+ * Es lo que permite que apartar la tarjeta no sea perder el aviso: mientras
+ * quede algo pendiente, el botón lo lleva puesto y ahí se vuelve a encontrar.
+ */
+.icon-button.has-badge::after {
+  content: "";
+  position: absolute;
+  top: 5px;
+  right: 5px;
+  width: 6px;
+  height: 6px;
+  border: 1.5px solid var(--chrome);
+  border-radius: 50%;
+  background: var(--accent);
+}
+
+.settings-pending {
+  display: block;
+  width: 100%;
+  margin-bottom: 0.4rem;
+  padding: 0.5rem 0.7rem;
+  border: 0;
+  border-radius: 9px;
+  background: var(--accent);
+  color: #fff;
+  font: inherit;
+  font-size: 12px;
+  font-weight: 560;
+  text-align: left;
+  cursor: pointer;
+}
+
+.settings-pending[hidden] {
+  display: none;
+}
+
+.settings-pending:hover {
+  background: color-mix(in srgb, var(--accent) 88%, #fff);
 }

@@ -141,11 +141,7 @@ app.innerHTML = `
     </div>
     <div class="window-controls" id="window-controls"></div>
   </header>
-  <div class="update-bar" id="update" hidden>
-    <span class="update-text" id="update-text"></span>
-    <button class="update-action" id="update-now">Actualizar</button>
-    <button class="update-action is-quiet" id="update-later">Más tarde</button>
-  </div>
+    <div id="update" hidden></div>
   <div class="conflict-bar" id="conflict" hidden>
     <span class="conflict-text">Este archivo ha cambiado fuera de Unfold y tienes cambios sin guardar.</span>
     <button class="conflict-action" id="conflict-reload">Cargar la versión del disco</button>
@@ -178,6 +174,7 @@ const el = {
   chars: document.querySelector<HTMLElement>("#stat-chars")!,
   read: document.querySelector<HTMLElement>("#stat-read")!,
   caret: document.querySelector<HTMLElement>("#stat-caret")!,
+  update: document.querySelector<HTMLElement>("#update")!,
   theme: document.querySelector<HTMLButtonElement>("#btn-theme")!,
   typewriter: document.querySelector<HTMLButtonElement>("#btn-typewriter")!,
   source: document.querySelector<HTMLButtonElement>("#btn-source")!,
@@ -189,10 +186,6 @@ const el = {
   recentButton: document.querySelector<HTMLButtonElement>("#btn-recent")!,
   githubButton: document.querySelector<HTMLButtonElement>("#btn-github")!,
   tabBar: document.querySelector<HTMLElement>("#tab-bar")!,
-  update: document.querySelector<HTMLElement>("#update")!,
-  updateText: document.querySelector<HTMLElement>("#update-text")!,
-  updateNow: document.querySelector<HTMLButtonElement>("#update-now")!,
-  updateLater: document.querySelector<HTMLButtonElement>("#update-later")!,
 };
 
 /**
@@ -505,6 +498,7 @@ let settingsOpen = false;
 
 function toggleSettings(force?: boolean): void {
   settingsOpen = force ?? !settingsOpen;
+  if (settingsOpen) settingsPanel.setUpdatePending(actualizaciones.pendiente());
   settingsPanel.setOpen(settingsOpen);
   el.settingsButton.classList.toggle("is-on", settingsOpen);
   if (!settingsOpen) view.focus();
@@ -768,12 +762,22 @@ repositoryPanel = new RepositoryPanel(el.repositories, {
 });
 window.addEventListener("beforeunload", () => repositoryPanel.dispose());
 mountWindowControls(document.querySelector<HTMLElement>("#window-controls")!);
-const actualizaciones = mountUpdateBanner(el, {
+const actualizaciones = mountUpdateBanner(el.update, {
   notify,
   guardarSesion: saveCurrentSession,
+  // Un punto en el botón de ajustes mientras haya algo pendiente: apartar la
+  // tarjeta no puede ser lo mismo que perder el aviso.
+  marcarPendiente: (version) => {
+    el.settingsButton.classList.toggle("has-badge", version !== null);
+    el.settingsButton.title = version
+      ? `Apariencia (Ctrl+,) · Unfold ${version} disponible`
+      : "Apariencia (Ctrl+,)";
+    settingsPanel?.setUpdatePending(version);
+  },
 });
 settingsPanel = new SettingsPanel(el.settings, () => toggleSettings(false), {
   check: () => actualizaciones.comprobar(true),
+  install: () => actualizaciones.mostrar(),
   resetDismissed: () => {
     restablecerVersionOmitida();
     actualizaciones.comprobar(true);
