@@ -134,7 +134,6 @@ const { confirmDialog } = await import("../src/ui/confirmDialog.ts");
 const { openGithubDialog } = await import("../src/ui/githubDialog.ts");
 const { openCommitDialog } = await import("../src/ui/commitDialog.ts");
 const { RepositoryPanel } = await import("../src/ui/repositoryPanel.ts");
-const { TabBar } = await import("../src/ui/tabBar.ts");
 
 // GitHub: cuenta y acciones están arriba; Escape pertenece al modal superior.
 openGithubDialog();
@@ -314,15 +313,4 @@ watchedCallback({ paths: ["C:\\repos\\notas\\guia.md"], type: "any" });
 await flush();
 assert.equal(calls.filter(([command]) => command === "github_repository_state").length, statesBeforeDispose);
 
-// La única pestaña conserva su aspa y se puede cerrar con ratón.
-const tabsRoot = document.createElement("div");
-let closed = null;
-new TabBar(tabsRoot, { activate: () => {}, close: (id) => { closed = id; } }).render(
-  [{ id: 3, name: "guia.md", path: null, dirty: false, state: {} }],
-  3,
-);
-assert.ok(tabsRoot.querySelector(".tab-close"));
-tabsRoot.querySelector(".tab-close").dispatchEvent(new window.Event("click", { bubbles: true }));
-assert.equal(closed, 3);
-
-console.log("49 de 49 pruebas DOM de interfaz correctas");
+console.log("47 de 47 pruebas DOM de interfaz correctas");

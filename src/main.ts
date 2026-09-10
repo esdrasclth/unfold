@@ -25,7 +25,8 @@ import { Tabs } from "./tabs.ts";
 import { saveSnapshot } from "./saveSnapshot.ts";
 import { confirmDialog } from "./ui/confirmDialog.ts";
 import { RecentMenu } from "./ui/recentMenu.ts";
-import { TabBar } from "./ui/tabBar.ts";
+import { TabBar, type TabBarProps, type TabBarTab } from "./components/tabs/TabBar.tsx";
+import { mountComponent, type MountedComponent } from "./components/mountComponent.ts";
 import { icon } from "./ui/icons.ts";
 import { Outline } from "./ui/outline.ts";
 import { RepositoryPanel } from "./ui/repositoryPanel.ts";
@@ -86,7 +87,7 @@ const session = {
 
 let view: EditorView;
 let tabs: Tabs;
-let tabBar: TabBar;
+let tabBar: MountedComponent<TabBarProps>;
 let recentMenu: RecentMenu;
 let outline: Outline;
 let repositoryPanel: RepositoryPanel;
@@ -151,7 +152,7 @@ app.innerHTML = `
     <aside class="repositories is-collapsed" id="repositories" inert></aside>
     <aside class="outline is-collapsed" id="outline" inert></aside>
     <div class="editor-column">
-      <div class="tab-bar" id="tab-bar" hidden></div>
+      <div class="tab-bar" id="tab-bar" role="tablist" aria-label="Documentos abiertos"></div>
       <main class="editor-host" id="editor-host"></main>
     </div>
     <aside class="settings" id="settings" inert></aside>
@@ -736,13 +737,22 @@ const editorOptions: EditorOptions = {
 view = createEditor(editorOptions);
 const modos = mountViewModes(view, el);
 
-tabs = new Tabs(
-  (doc) => createEditorState(doc, editorOptions),
-  () => tabBar.render(tabs.list(), tabs.active().id),
-);
-tabBar = new TabBar(el.tabBar, {
-  activate: (id) => void switchTab(id),
-  close: (id) => void closeTab(id),
+const pintarPestanas = (): void =>
+  tabBar.update({
+    tabs: tabs.list().map(
+      (tab): TabBarTab => ({ id: tab.id, name: tab.name, path: tab.path, dirty: tab.dirty }),
+    ),
+    activeId: tabs.active().id,
+    onActivate: (id) => void switchTab(id),
+    onClose: (id) => void closeTab(id),
+  });
+
+tabs = new Tabs((doc) => createEditorState(doc, editorOptions), () => pintarPestanas());
+tabBar = mountComponent<TabBarProps>(el.tabBar, TabBar, {
+  tabs: [],
+  activeId: 0,
+  onActivate: (id: number) => void switchTab(id),
+  onClose: (id: number) => void closeTab(id),
 });
 const initialTab = tabs.adopt(view.state, titleFromDoc(initialDocument));
 if (initialDocument) welcomeTabId = initialTab.id;
