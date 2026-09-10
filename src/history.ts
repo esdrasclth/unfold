@@ -28,6 +28,7 @@ type Registro = Record<string, LocalVersion[]>;
  */
 let registro: Registro = {};
 let cargado = false;
+let escrituraPendiente: Promise<void> = Promise.resolve();
 
 export async function loadHistory(desde: Store = store): Promise<void> {
   try {
@@ -41,13 +42,15 @@ export async function loadHistory(desde: Store = store): Promise<void> {
   cargado = true;
 }
 
-async function guardar(en: Store = store): Promise<void> {
-  try {
-    await en.write("history", JSON.stringify(registro));
-  } catch (error) {
-    // Ahora sí se dice. Antes se tragaba, y por eso el problema duró tanto.
-    console.error("No se pudo guardar el historial", error);
-  }
+function guardar(en: Store = store): void {
+  const contenido = JSON.stringify(registro);
+  escrituraPendiente = escrituraPendiente
+    .then(() => en.write("history", contenido))
+    .catch((error) => {
+      // El error queda consumido para que una escritura fallida no bloquee las
+      // siguientes. Se conserva la cola y se cuenta el fallo.
+      console.error("No se pudo guardar el historial", error);
+    });
 }
 
 export function recordVersion(documentKey: string, content: string, en: Store = store): void {
@@ -61,7 +64,7 @@ export function recordVersion(documentKey: string, content: string, en: Store = 
     content,
   });
   registro[documentKey] = lista.slice(0, MAX);
-  void guardar(en);
+  guardar(en);
 }
 
 export function versionsFor(documentKey: string): LocalVersion[] {
@@ -70,7 +73,7 @@ export function versionsFor(documentKey: string): LocalVersion[] {
 
 export function clearHistory(documentKey: string, en: Store = store): void {
   delete registro[documentKey];
-  void guardar(en);
+  guardar(en);
 }
 
 export function historyKey(path: string | null, name: string): string {
@@ -81,4 +84,5 @@ export function historyKey(path: string | null, name: string): string {
 export function resetHistory(): void {
   registro = {};
   cargado = false;
+  escrituraPendiente = Promise.resolve();
 }

@@ -1,4 +1,5 @@
 import { defineConfig } from "vite";
+import preact from "@preact/preset-vite";
 import packageInfo from "./package.json" with { type: "json" };
 import release from "./src/release.json" with { type: "json" };
 import tauriConfig from "./src-tauri/tauri.conf.json" with { type: "json" };
@@ -14,6 +15,7 @@ if (versions.size !== 1) {
 // Tauri sirve la UI desde un puerto fijo y espera que el proceso de Vite
 // no intente reubicarse si está ocupado.
 export default defineConfig({
+  plugins: [preact()],
   clearScreen: false,
   server: {
     port: 1420,

@@ -10,7 +10,7 @@
     "release": "tauri build",
     "tauri": "tauri",
     "lint": "oxlint",
-    "test": "node --experimental-strip-types scripts/test-markdown.mjs && node --experimental-strip-types scripts/test-export.mjs && node --experimental-strip-types scripts/test-math.mjs && node --experimental-strip-types scripts/test-welcome.mjs && node --experimental-strip-types scripts/test-session.mjs && node --experimental-strip-types scripts/test-history.mjs && node --experimental-strip-types scripts/test-backups.mjs && node --experimental-strip-types scripts/test-recent.mjs && node --experimental-strip-types scripts/test-updates.mjs && node --experimental-strip-types scripts/test-files.mjs && node --experimental-strip-types scripts/test-save.mjs && node --experimental-strip-types scripts/test-watcher.mjs && node --experimental-strip-types scripts/test-live-preview.mjs && node --experimental-strip-types scripts/test-ui.mjs",
+    "test": "node --experimental-strip-types scripts/test-markdown.mjs && node --experimental-strip-types scripts/test-export.mjs && node --experimental-strip-types scripts/test-math.mjs && node --experimental-strip-types scripts/test-welcome.mjs && node --experimental-strip-types scripts/test-session.mjs && node --experimental-strip-types scripts/test-tabs.mjs && node --experimental-strip-types scripts/test-app-controller.mjs && node --experimental-strip-types scripts/test-history.mjs && node --experimental-strip-types scripts/test-backups.mjs && node --experimental-strip-types scripts/test-recent.mjs && node --experimental-strip-types scripts/test-updates.mjs && node --experimental-strip-types scripts/test-files.mjs && node --experimental-strip-types scripts/test-save.mjs && node --experimental-strip-types scripts/test-watcher.mjs && node --experimental-strip-types scripts/test-live-preview.mjs && node --experimental-strip-types scripts/test-ui.mjs",
     "benchmark:large": "node --experimental-strip-types scripts/benchmark-large.mjs",
     "release:setup": "npm run release && npm --prefix setup run release"
   },
@@ -32,9 +32,11 @@
     "@tauri-apps/plugin-process": "^2.3.1",
     "@tauri-apps/plugin-updater": "^2.11.0",
     "katex": "^0.18.7",
-    "mermaid": "^11.17.2"
+    "mermaid": "^11.17.2",
+    "preact": "^10.29.8"
   },
   "devDependencies": {
+    "@preact/preset-vite": "^2.10.6",
     "@tauri-apps/cli": "^2.11.4",
     "@types/katex": "^0.16.8",
     "linkedom": "^0.18.13",

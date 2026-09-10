@@ -34,12 +34,17 @@ export class Tabs {
   private activeId = 0;
   private nextId = 1;
   private repaintPending = false;
+  private readonly makeState: (doc: string) => EditorState;
+  private readonly onChange: () => void;
 
   constructor(
-    private readonly makeState: (doc: string) => EditorState,
+    makeState: (doc: string) => EditorState,
     /** Se llama cuando cambia la lista o la pestaña activa. */
-    private readonly onChange: () => void,
-  ) {}
+    onChange: () => void,
+  ) {
+    this.makeState = makeState;
+    this.onChange = onChange;
+  }
 
   /**
    * Pide repintar la barra.

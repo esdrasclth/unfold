@@ -149,4 +149,32 @@ assert.equal(historyKey(null, "Sin título"), "untitled:Sin título");
   assert.equal(almacen.escrituras, 0, "no se escribe antes de saber qué había");
 }
 
-console.log("18 de 18 pruebas de historial correctas");
+// Dos cambios rápidos no pueden terminar en disco en el orden inverso.
+{
+  resetHistory();
+  const contenidoGrabado = [];
+  const resolver = [];
+  const almacen = {
+    read: async () => null,
+    write: (_name, contents) => new Promise((resolve) => {
+      contenidoGrabado.push(contents);
+      resolver.push(resolve);
+    }),
+  };
+  await loadHistory(almacen);
+
+  recordVersion("doc", "primera", almacen);
+  recordVersion("doc", "segunda", almacen);
+  await asentar();
+
+  assert.equal(contenidoGrabado.length, 1, "la segunda escritura espera a la primera");
+  resolver.shift()();
+  await asentar();
+  assert.equal(contenidoGrabado.length, 2, "la escritura más nueva empieza después");
+  assert.equal(JSON.parse(contenidoGrabado[0]).doc[0].content, "primera");
+  assert.equal(JSON.parse(contenidoGrabado[1]).doc[0].content, "segunda");
+  resolver.shift()();
+  await asentar();
+}
+
+console.log("22 de 22 pruebas de historial correctas");

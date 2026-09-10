@@ -24,10 +24,18 @@ export async function saveSession(
   en: Store = store,
 ): Promise<void> {
   try {
-    await en.write("session", JSON.stringify({ ...snapshot, version: FORMAT_VERSION }));
+    await saveSessionOrThrow(snapshot, en);
   } catch (error) {
     console.error("No se pudo guardar la sesión", error);
   }
+}
+
+/** Variante para capas que presentan el error y no deben perderlo aquí. */
+export async function saveSessionOrThrow(
+  snapshot: Omit<SessionSnapshot, "version">,
+  en: Store = store,
+): Promise<void> {
+  await en.write("session", JSON.stringify({ ...snapshot, version: FORMAT_VERSION }));
 }
 
 export async function loadSession(en: Store = store): Promise<SessionSnapshot | null> {
