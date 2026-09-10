@@ -107,6 +107,7 @@ Markdown disponibles y `Ctrl+Shift+M` alterna el modo Código fuente.
 | Exportar HTML · Imprimir o PDF | `Ctrl+Shift+E` · `Ctrl+P` |
 | Modo enfoque · Máquina de escribir | `Ctrl+Shift+F` · `Ctrl+Shift+T` |
 | Código fuente · Menú Markdown | `Ctrl+Shift+M` · clic derecho |
+| Sugerencias de ortografía | `Shift` + clic derecho |
 | Pegar sin formato | `Ctrl+Shift+V` |
 | En tablas: celda · fila | `Tab` / `Shift+Tab` · `Enter` |
 

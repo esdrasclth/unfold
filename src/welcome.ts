@@ -50,6 +50,7 @@ ${release.highlights.map((highlight) => `- ${highlight}`).join("\n")}
 | Cerrar · Cambiar pestaña | \`Ctrl+W\` · \`Ctrl+Tab\` |
 | Enfoque · Máquina de escribir | \`Ctrl+Shift+F\` · \`Ctrl+Shift+T\` |
 | Código fuente · Menú Markdown | \`Ctrl+Shift+M\` · clic derecho |
+| Sugerencias de ortografía | \`Shift\` + clic derecho |
 | Explorador · Buscar en todos | \`Ctrl+Shift+B\` · \`Ctrl+Shift+L\` |
 | GitHub · Publicar cambios | \`Ctrl+Shift+H\` · \`Ctrl+Shift+U\` |
 | Exportar HTML · Imprimir/PDF | \`Ctrl+Shift+E\` · \`Ctrl+P\` |

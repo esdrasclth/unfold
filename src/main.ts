@@ -915,6 +915,15 @@ function chooseImage(): void {
   input.click();
 }
 view.dom.addEventListener("contextmenu", (event) => {
+  /*
+   * Con Shift se deja pasar el menú del sistema.
+   *
+   * El corrector de WebView2 está pedido desde el principio, así que las
+   * palabras mal escritas ya salen subrayadas. Pero las sugerencias sólo viven
+   * en el menú nativo —una página no puede leerlas—, y este menú propio lo
+   * tapaba siempre: se veía el subrayado y no había forma de corregir.
+   */
+  if (event.shiftKey) return;
   openMarkdownMenu(event, view, modos.enCodigoFuente(), modos.alternarCodigoFuente, chooseImage);
 });
 window.addEventListener("resize", closeMarkdownMenu);

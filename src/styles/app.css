@@ -1402,6 +1402,16 @@ body.typewriter-mode .cm-content {
   border-top: 1px solid var(--chrome-rule);
 }
 
+/* Una pista, no un comando: no se pulsa, sólo dice dónde está lo que falta. */
+.menu-foot {
+  margin: 0;
+  padding: 0.5rem 0.6rem 0.15rem;
+  border-top: 1px solid var(--chrome-rule);
+  font-size: 10.5px;
+  line-height: 1.4;
+  color: var(--chrome-faint);
+}
+
 @keyframes menu-in {
   from {
     opacity: 0;

@@ -123,6 +123,19 @@ export function openMarkdownMenu(
   });
   menu.append(mode);
 
+  /*
+   * Dónde están las sugerencias de ortografía.
+   *
+   * El subrayado rojo lo pone WebView2 y se ve desde siempre, pero sus
+   * sugerencias viven sólo en el menú del sistema y este menú lo tapaba. Ahora
+   * se deja pasar con Shift, y se dice aquí porque es donde alguien viene a
+   * buscarlo: hace clic derecho sobre la palabra mal escrita y no la encuentra.
+   */
+  const pista = document.createElement("p");
+  pista.className = "menu-foot";
+  pista.textContent = "Shift + clic derecho: sugerencias de ortografía";
+  menu.append(pista);
+
   document.body.append(menu);
   const margin = 8;
   const left = Math.min(event.clientX, window.innerWidth - menu.offsetWidth - margin);
