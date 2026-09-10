@@ -187,15 +187,19 @@ const fondo = document.createElement("div");
 fondo.id = "app";
 document.body.prepend(fondo);
 const commitBackdrop = document.querySelector(".github-backdrop");
+// El aislamiento recae en el hueco que cuelga del `body`, no en el fondo: los
+// diálogos viven dentro del suyo, y marcar el fondo dejaría fuera del teclado
+// al propio diálogo que lo pone.
+const commitHost = commitBackdrop.parentElement;
 assert.equal(commitBackdrop.inert, undefined, "el propio diálogo nunca se aísla");
 
 const upper = confirmDialog("Confirmar", "¿Cerrar?", [{ label: "Cancelar", value: "cancel", cancel: true }]);
 // Con dos apilados, el de arriba aísla también al de abajo…
-assert.equal(commitBackdrop.inert, true, "el diálogo de debajo queda aislado");
+assert.equal(commitHost.inert, true, "el diálogo de debajo queda aislado");
 document.dispatchEvent(key("Escape"));
 assert.equal(await upper, "cancel");
 // …y al cerrarse lo devuelve a su sitio, no lo deja inerte para siempre.
-assert.equal(commitBackdrop.inert, false, "cerrar el de arriba libera el de abajo");
+assert.equal(commitHost.inert, false, "cerrar el de arriba libera el de abajo");
 assert.ok(document.querySelector(".commit-dialog"));
 changesFingerprint = "abc:blob:fresh";
 document.querySelector(".commit-refresh").dispatchEvent(new window.Event("click", { bubbles: true }));
