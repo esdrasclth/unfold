@@ -1,4 +1,6 @@
-import { folderOf, forgetRecent, loadRecent, whenLabel } from "../recent.ts";
+import { forgetRecent, loadRecent } from "../recent.ts";
+import { mountComponent, type MountedComponent } from "../components/mountComponent.ts";
+import { RecentMenu as RecentMenuView, type RecentMenuProps } from "../components/recent/RecentMenu.tsx";
 
 export interface RecentMenuHandlers {
   open: (path: string) => void;
@@ -8,45 +10,38 @@ export interface RecentMenuHandlers {
 /**
  * Menú de archivos recientes, anclado al botón que lo abre.
  *
- * Se construye al desplegarlo y no al arrancar: la lista cambia con cada
- * archivo que se abre, y así no hay que mantenerla sincronizada.
+ * La lista es un componente Preact; aquí quedan las cosas que no son pintar:
+ * abrir y cerrar, colocarlo bajo su botón sin que se salga de la ventana,
+ * cerrarlo al pulsar fuera y llevar el foco.
+ *
+ * Se pinta al desplegarlo y no al arrancar, porque la lista cambia con cada
+ * archivo que se abre y así no hay que mantenerla al día.
+ *
+ * El teclado es nuevo: antes se podía tabular hasta las filas pero no había
+ * forma de recorrerlas, y al cerrar con Escape el foco se quedaba perdido en
+ * un menú que ya no existía.
  */
 export class RecentMenu {
   private readonly root: HTMLElement;
+  private readonly vista: MountedComponent<RecentMenuProps>;
+  private readonly anchor: HTMLElement;
+  private readonly handlers: RecentMenuHandlers;
   private open = false;
 
-  constructor(
-    private readonly anchor: HTMLElement,
-    private readonly handlers: RecentMenuHandlers,
-  ) {
+  constructor(anchor: HTMLElement, handlers: RecentMenuHandlers) {
+    this.anchor = anchor;
+    this.handlers = handlers;
+
     this.root = document.createElement("div");
     this.root.className = "menu";
     this.root.hidden = true;
-    document.body.appendChild(this.root);
+    this.root.setAttribute("role", "menu");
+    this.root.setAttribute("aria-label", "Documentos recientes");
+    document.body.append(this.root);
 
-    this.root.addEventListener("click", (event) => {
-      const target = event.target as HTMLElement | null;
+    this.vista = mountComponent<RecentMenuProps>(this.root, RecentMenuView, this.props());
 
-      const forget = target?.closest<HTMLElement>("[data-forget]");
-      if (forget) {
-        event.stopPropagation();
-        forgetRecent(forget.dataset.forget!);
-        this.render();
-        return;
-      }
-
-      const item = target?.closest<HTMLElement>("[data-path]");
-      if (item) {
-        this.hide();
-        this.handlers.open(item.dataset.path!);
-        return;
-      }
-
-      if (target?.closest("[data-browse]")) {
-        this.hide();
-        this.handlers.browse();
-      }
-    });
+    this.root.addEventListener("keydown", (event) => this.alTeclado(event));
 
     // Cerrar al pulsar fuera o con Escape.
     document.addEventListener("mousedown", (event) => {
@@ -58,6 +53,9 @@ export class RecentMenu {
       if (this.open && event.key === "Escape") {
         event.preventDefault();
         this.hide();
+        // El foco vuelve a donde estaba: dejarlo dentro de un menú escondido
+        // deja al teclado sin sitio desde el que seguir.
+        this.anchor.focus();
       }
     });
   }
@@ -65,6 +63,34 @@ export class RecentMenu {
   toggle(): void {
     if (this.open) this.hide();
     else this.show();
+  }
+
+  hide(): void {
+    this.root.hidden = true;
+    this.open = false;
+    this.anchor.classList.remove("is-on");
+  }
+
+  private props(): RecentMenuProps {
+    return {
+      files: loadRecent(),
+      onOpen: (path) => {
+        this.hide();
+        this.handlers.open(path);
+      },
+      onForget: (path) => {
+        forgetRecent(path);
+        this.render();
+      },
+      onBrowse: () => {
+        this.hide();
+        this.handlers.browse();
+      },
+    };
+  }
+
+  private render(): void {
+    this.vista.update(this.props());
   }
 
   private show(): void {
@@ -79,39 +105,39 @@ export class RecentMenu {
     this.root.style.left = `${Math.max(8, left)}px`;
     this.root.style.top = `${box.bottom + 4}px`;
     this.anchor.classList.add("is-on");
+
+    this.opciones()[0]?.focus();
   }
 
-  hide(): void {
-    this.root.hidden = true;
-    this.open = false;
-    this.anchor.classList.remove("is-on");
+  private opciones(): HTMLElement[] {
+    return [...this.root.querySelectorAll<HTMLElement>('[role="menuitem"]')];
   }
 
-  private render(): void {
-    const files = loadRecent();
-    const items = files
-      .map(
-        (file) => `
-        <button class="menu-item" data-path="${escapeAttribute(file.path)}" title="${escapeAttribute(file.path)}">
-          <span class="menu-item-name">${escapeHtml(file.name)}</span>
-          <span class="menu-item-meta">${escapeHtml(folderOf(file.path))} · ${escapeHtml(whenLabel(file.opened))}</span>
-          <span class="menu-item-forget" data-forget="${escapeAttribute(file.path)}" title="Quitar de la lista" role="button">×</span>
-        </button>`,
-      )
-      .join("");
+  /** Flechas para recorrer, Inicio y Fin para los extremos; las dos dan vuelta. */
+  private alTeclado(event: KeyboardEvent): void {
+    const opciones = this.opciones();
+    if (opciones.length === 0) return;
+    const actual = opciones.indexOf(document.activeElement as HTMLElement);
 
-    this.root.innerHTML = `
-      <div class="menu-head">Recientes</div>
-      ${items || '<p class="menu-empty">Todavía no has abierto ningún archivo.</p>'}
-      <button class="menu-item is-action" data-browse>Buscar en el disco…</button>
-    `;
+    let destino: number;
+    switch (event.key) {
+      case "ArrowDown":
+        destino = (actual + 1) % opciones.length;
+        break;
+      case "ArrowUp":
+        destino = (actual - 1 + opciones.length) % opciones.length;
+        break;
+      case "Home":
+        destino = 0;
+        break;
+      case "End":
+        destino = opciones.length - 1;
+        break;
+      default:
+        return;
+    }
+
+    event.preventDefault();
+    opciones[destino]?.focus();
   }
-}
-
-function escapeHtml(text: string): string {
-  return text.replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;");
-}
-
-function escapeAttribute(text: string): string {
-  return escapeHtml(text).replace(/"/g, "&quot;");
 }
