@@ -27,6 +27,8 @@ import { confirmDialog } from "./ui/confirmDialog.ts";
 import { RecentMenu } from "./ui/recentMenu.ts";
 import { TabBar, type TabBarProps, type TabBarTab } from "./components/tabs/TabBar.tsx";
 import { mountComponent, type MountedComponent } from "./components/mountComponent.ts";
+import { DocumentTitle, type DocumentTitleProps } from "./components/status/DocumentTitle.tsx";
+import { StatusBar, type StatusBarProps } from "./components/status/StatusBar.tsx";
 import { icon } from "./ui/icons.ts";
 import { Outline } from "./ui/outline.ts";
 import { RepositoryPanel } from "./ui/repositoryPanel.ts";
@@ -107,11 +109,7 @@ app.innerHTML = `
   <header class="titlebar" data-tauri-drag-region>
     <button class="icon-button titlebar-panel" id="btn-outline" title="Esquema (Ctrl+Shift+O)">${icon("panel")}</button>
     <button class="icon-button titlebar-panel" id="btn-repositories" title="Repositorios (Ctrl+Shift+B)">${icon("repositories")}</button>
-    <div class="titlebar-file is-compact">
-      <span class="titlebar-icon">${icon("file")}</span>
-      <span class="titlebar-name" id="doc-name">Sin título</span>
-      <span class="titlebar-status" id="doc-status"></span>
-    </div>
+    <div class="titlebar-file is-compact" id="titlebar-file"></div>
     <!--
       Cuatro grupos, y dentro de cada uno los botones pegados: el archivo, lo
       que sale de él, cómo se escribe y cómo se ve. Doce iconos seguidos a la
@@ -157,24 +155,15 @@ app.innerHTML = `
     </div>
     <aside class="settings" id="settings" inert></aside>
   </div>
-  <footer class="statusbar">
-    <span id="stat-words">0 palabras</span>
-    <span id="stat-chars">0 caracteres</span>
-    <span id="stat-read">1 min de lectura</span>
-    <span id="stat-caret">Ln 1, Col 1</span>
-  </footer>
+  <footer class="statusbar" id="statusbar" role="contentinfo"></footer>
 `;
 
 const el = {
-  name: document.querySelector<HTMLElement>("#doc-name")!,
-  status: document.querySelector<HTMLElement>("#doc-status")!,
+  titlebarFile: document.querySelector<HTMLElement>("#titlebar-file")!,
+  statusbar: document.querySelector<HTMLElement>("#statusbar")!,
   host: document.querySelector<HTMLElement>("#editor-host")!,
   outline: document.querySelector<HTMLElement>("#outline")!,
   conflict: document.querySelector<HTMLElement>("#conflict")!,
-  words: document.querySelector<HTMLElement>("#stat-words")!,
-  chars: document.querySelector<HTMLElement>("#stat-chars")!,
-  read: document.querySelector<HTMLElement>("#stat-read")!,
-  caret: document.querySelector<HTMLElement>("#stat-caret")!,
   update: document.querySelector<HTMLElement>("#update")!,
   theme: document.querySelector<HTMLButtonElement>("#btn-theme")!,
   typewriter: document.querySelector<HTMLButtonElement>("#btn-typewriter")!,
@@ -204,34 +193,51 @@ function titleFromDoc(doc: string): string {
   return clean ? clean.slice(0, 32) : "Sin título";
 }
 
+/**
+ * Estado visible del documento y de la barra de estado.
+ *
+ * Los dos componentes son de Preact y se pintan desde aquí, que sigue siendo
+ * quien sabe cuándo cambia algo. Se guarda lo último enseñado porque cada
+ * repintado necesita el estado entero: el recuento no sabe dónde está el
+ * cursor, y el cursor no sabe cuántas palabras hay.
+ */
+let vistaTitulo: DocumentTitleProps = { name: "Sin título", notice: null, dirty: false, saved: false };
+let vistaEstado: StatusBarProps = { doc: "", line: 1, column: 1 };
+
+function pintarTitulo(cambio: Partial<DocumentTitleProps> = {}): void {
+  vistaTitulo = { ...vistaTitulo, ...cambio };
+  documentTitle.update(vistaTitulo);
+}
+
+function pintarEstado(cambio: Partial<StatusBarProps> = {}): void {
+  vistaEstado = { ...vistaEstado, ...cambio };
+  statusBar.update(vistaEstado);
+}
+
 /** Aviso breve en la barra de título; se borra solo. */
+const documentTitle = mountComponent<DocumentTitleProps>(el.titlebarFile, DocumentTitle, {
+  name: "Sin título",
+  notice: null,
+  dirty: false,
+  saved: false,
+});
+const statusBar = mountComponent<StatusBarProps>(el.statusbar, StatusBar, { doc: "", line: 1, column: 1 });
+
 let noticeTimer: number | undefined;
 function notify(message: string): void {
   window.clearTimeout(noticeTimer);
-  el.status.textContent = message;
-  el.status.classList.add("is-notice");
-  noticeTimer = window.setTimeout(() => {
-    el.status.classList.remove("is-notice");
-    renderHeader();
-  }, 3000);
+  pintarTitulo({ notice: message });
+  noticeTimer = window.setTimeout(() => pintarTitulo({ notice: null }), 3000);
 }
 
 // --- Estado visible -----------------------------------------------------------
 
 function renderHeader(): void {
-  el.name.textContent = session.name;
-  el.status.textContent = session.dirty ? "sin guardar" : session.path ? "guardado" : "";
-  el.status.classList.toggle("is-dirty", session.dirty);
-  el.status.setAttribute("role", "status");
-  el.status.setAttribute("aria-live", "polite");
-  el.status.setAttribute("aria-label", session.dirty ? "Documento sin guardar" : "Documento guardado");
+  pintarTitulo({ name: session.name, dirty: session.dirty, saved: session.path !== null });
 }
 
 function renderStats(doc: string): void {
-  const words = doc.trim() ? doc.trim().split(/\s+/).length : 0;
-  el.words.textContent = `${words.toLocaleString("es")} ${words === 1 ? "palabra" : "palabras"}`;
-  el.chars.textContent = `${doc.length.toLocaleString("es")} caracteres`;
-  el.read.textContent = `${Math.max(1, Math.round(words / 200))} min de lectura`;
+  pintarEstado({ doc });
 }
 
 /** Guarda pestañas, borradores y posición sin escribir los archivos del usuario. */
@@ -683,7 +689,7 @@ const editorOptions: EditorOptions = {
   doc: initialDocument,
   resolveAsset: makeAssetResolver(() => session.path),
   onSelection: (line, column) => {
-    el.caret.textContent = `Ln ${line}, Col ${column}`;
+    pintarEstado({ line, column });
     if (outlineOn) outline.refresh();
     scheduleSessionSave();
     scheduleBackup();
