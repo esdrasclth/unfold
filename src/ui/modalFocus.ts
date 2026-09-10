@@ -18,10 +18,22 @@ export function aislarFondo(propio: HTMLElement): () => void {
   const previo = document.activeElement as HTMLElement | null;
   const marcados: HTMLElement[] = [];
 
+  /*
+   * Se compara contra el ancestro que cuelga del `body`, no contra el elemento
+   * que se pasa. Los diálogos de Preact viven dentro de un hueco propio, así
+   * que el fondo ya no es hijo directo del `body`: sin esto, el hueco entraría
+   * en la lista y el diálogo se aislaría a sí mismo, dejando su propio
+   * contenido fuera del teclado.
+   */
+  let raiz: HTMLElement = propio;
+  while (raiz.parentElement && raiz.parentElement !== document.body) {
+    raiz = raiz.parentElement;
+  }
+
   // Sin copiar: marcar `inert` no añade ni quita hijos, así que la colección
   // viva no se mueve bajo los pies.
   for (const nodo of document.body.children) {
-    if (nodo === propio || !(nodo instanceof HTMLElement) || nodo.inert) continue;
+    if (nodo === raiz || !(nodo instanceof HTMLElement) || nodo.inert) continue;
     nodo.inert = true;
     marcados.push(nodo);
   }
