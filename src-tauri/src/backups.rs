@@ -88,7 +88,8 @@ fn copias_de(folder: &Path, seguro: &str) -> Vec<(u64, PathBuf)> {
             Some((marca, ruta))
         })
         .collect();
-    encontradas.sort_by(|a, b| b.0.cmp(&a.0));
+    // De la más reciente a la más vieja: lo que se restaura es la primera.
+    encontradas.sort_by_key(|(marca, _)| std::cmp::Reverse(*marca));
     encontradas
 }
 
