@@ -1,9 +1,8 @@
 {
-  "version": "0.5.0",
+  "version": "0.5.1",
   "highlights": [
-    "**Abre carpetas del disco** en el explorador, no sólo repositorios de GitHub: el `+` de la cabecera, y se recuerdan al reiniciar.",
-    "**Busca en todos tus documentos a la vez** con `Ctrl+Shift+L`, en carpetas y repositorios juntos. Abrir un resultado lleva el cursor a su línea.",
-    "**El historial y la sesión pasan a disco**: en el almacenamiento del navegador no cabían, y al llenarse dejaban de guardar sin avisar.",
-    "**Una sola ventana**: abrir un `.md` con Unfold ya abierto lo trae a la que tienes, en vez de arrancar otra instancia que se pisara con ella."
+    "**Las copias automáticas dejan de llenar el disco**: escribían un archivo cada treinta segundos y no borraban ninguno. Ahora se guardan las diez últimas de cada documento, y se recoge lo que quedó suelto.",
+    "**El instalador cuenta que puedes conectar repositorios de GitHub**, y ya no enseña una versión escrita a mano que se había quedado atrás.",
+    "**Pasos con nombre en el instalador** y lo que conviene saber antes de instalar: va sólo para tu usuario, sin permisos de administrador."
   ]
 }
