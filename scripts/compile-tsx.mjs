@@ -17,24 +17,34 @@ const DESTINO = new URL("../node_modules/.unfold-test/", import.meta.url);
 
 export async function compilarComponente(rutaRelativa) {
   const entrada = fileURLToPath(new URL(rutaRelativa, import.meta.url));
+  const nombre = entrada.replace(/[^\w]+/g, "_");
+
   const salida = await build({
-    input: entrada,
+    input: { [nombre]: entrada },
     platform: "neutral",
     external: [/^preact/],
-    output: { format: "esm" },
+    output: {
+      format: "esm",
+      entryFileNames: "[name].mjs",
+      chunkFileNames: "[name]-[hash].mjs",
+    },
     write: false,
     logLevel: "silent",
   });
 
-  const codigo = salida.output.find((chunk) => chunk.type === "chunk")?.code;
-  if (!codigo) throw new Error(`No se pudo compilar ${rutaRelativa}`);
-
-  // A un archivo de verdad y dentro del proyecto, no a un `data:`: los módulos
-  // de datos no resuelven `preact`, que es un especificador desnudo y necesita
-  // un `node_modules` por encima desde el que buscar.
+  // A archivos de verdad y dentro del proyecto, no a un `data:`: los módulos de
+  // datos no resuelven `preact`, que es un especificador desnudo y necesita un
+  // `node_modules` por encima desde el que buscar.
+  //
+  // Y se escriben todos los trozos, no sólo la entrada: un `import()` diferido
+  // —el plugin de archivos que usa el explorador— se queda en un trozo aparte.
   await mkdir(DESTINO, { recursive: true });
-  const nombre = entrada.replace(/[\\/:]/g, "_").replace(/\.tsx$/, ".mjs");
-  const archivo = new URL(nombre, DESTINO);
-  await writeFile(archivo, codigo, "utf8");
-  return import(pathToFileURL(fileURLToPath(archivo)).href);
+  for (const trozo of salida.output) {
+    if (trozo.type !== "chunk") continue;
+    await writeFile(new URL(trozo.fileName, DESTINO), trozo.code, "utf8");
+  }
+
+  const inicial = salida.output.find((trozo) => trozo.type === "chunk" && trozo.isEntry);
+  if (!inicial) throw new Error(`No se pudo compilar ${rutaRelativa}`);
+  return import(pathToFileURL(fileURLToPath(new URL(inicial.fileName, DESTINO))).href);
 }

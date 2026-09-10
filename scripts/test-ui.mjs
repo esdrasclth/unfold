@@ -133,7 +133,10 @@ const key = (value) => {
 const { confirmDialog } = await import("../src/ui/confirmDialog.ts");
 const { openGithubDialog } = await import("../src/ui/githubDialog.ts");
 const { openCommitDialog } = await import("../src/ui/commitDialog.ts");
-const { RepositoryPanel } = await import("../src/ui/repositoryPanel.ts");
+// El explorador es ahora un componente Preact, así que se compila igual que
+// los demás: Node quita tipos pero no traduce JSX.
+const { compilarComponente } = await import("./compile-tsx.mjs");
+const { RepositoryPanel } = await compilarComponente("../src/ui/repositoryPanel.ts");
 
 // GitHub: cuenta y acciones están arriba; Escape pertenece al modal superior.
 openGithubDialog();
