@@ -31,15 +31,20 @@ export class Outline {
     this.view = view;
     // El contenido vive en un contenedor de ancho fijo para que al plegar el
     // panel el texto no se reajuste: sólo se desplaza fuera de vista.
-    this.root.innerHTML = `
-      <div class="outline-inner" id="outline-inner">
-        <div class="outline-head">Esquema</div>
-        <nav class="outline-list" id="outline-list"></nav>
-      </div>
-      <div class="outline-resizer" id="outline-resizer" title="Arrastra para ajustar el ancho"></div>
-    `;
-    this.list = this.root.querySelector<HTMLElement>("#outline-list")!;
-    this.inner = this.root.querySelector<HTMLElement>("#outline-inner")!;
+    const inner = document.createElement("div");
+    inner.className = "outline-inner";
+    const head = document.createElement("div");
+    head.className = "outline-head";
+    head.textContent = "Esquema";
+    const list = document.createElement("nav");
+    list.className = "outline-list";
+    inner.append(head, list);
+    const resizer = document.createElement("div");
+    resizer.className = "outline-resizer";
+    resizer.title = "Arrastra para ajustar el ancho";
+    this.root.append(inner, resizer);
+    this.list = list;
+    this.inner = inner;
     this.vista = mountComponent<OutlineListProps>(this.list, OutlineList, {
       headings: [],
       activeIndex: -1,
@@ -47,7 +52,7 @@ export class Outline {
     });
 
     this.applyWidth(Number(localStorage.getItem(WIDTH_KEY)) || DEFAULT_WIDTH);
-    this.wireResizer(this.root.querySelector<HTMLElement>("#outline-resizer")!);
+    this.wireResizer(resizer);
 
     this.list.addEventListener("keydown", (event) => this.alTeclado(event));
   }

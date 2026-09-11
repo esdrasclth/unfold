@@ -120,7 +120,7 @@ export class RepositoryPanel {
   focusFilter(): void {
     // Se busca al llamar y no se guarda: el campo lo pinta Preact, y quedarse
     // con el nodo de hace un rato es quedarse con uno que puede haber cambiado.
-    const filtro = this.root.querySelector<HTMLInputElement>("#repos-filter");
+    const filtro = this.root.querySelector<HTMLInputElement>(".repos-filter");
     filtro?.focus();
     filtro?.select();
   }

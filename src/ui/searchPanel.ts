@@ -48,38 +48,72 @@ export function unfoldSearchPanel(view: EditorView): Panel {
    * búsquedas no reemplazan nada, y tenerlo siempre puesto le costaba el doble
    * de alto al atajo que más se usa.
    */
-  dom.innerHTML = `
-    <div class="search-row">
-      <button class="search-expand" id="sp-expand" title="Reemplazar" aria-expanded="false">
-        ${icon("chevronRight")}
-      </button>
-      <div class="search-field-wrap">
-        <input class="search-field" id="sp-find" placeholder="Buscar" autocomplete="off" />
-        <div class="search-toggles">
-          <button class="search-toggle" id="sp-case" title="Distinguir mayúsculas" aria-pressed="false">Aa</button>
-          <button class="search-toggle" id="sp-word" title="Palabra completa" aria-pressed="false">ab|</button>
-          <button class="search-toggle" id="sp-regex" title="Expresión regular" aria-pressed="false">.*</button>
-        </div>
-      </div>
-      <span class="search-count" id="sp-count"></span>
-      <button class="icon-button" id="sp-prev" title="Anterior (Shift+Enter)">${icon("up")}</button>
-      <button class="icon-button" id="sp-next" title="Siguiente (Enter)">${icon("down")}</button>
-      <button class="icon-button" id="sp-close" title="Cerrar (Esc)">${icon("close")}</button>
-    </div>
-    <div class="search-replace-row">
-      <div class="search-row">
-        <span class="search-expand-hueco" aria-hidden="true"></span>
-        <div class="search-field-wrap">
-          <input class="search-field" id="sp-replace" placeholder="Reemplazar por" autocomplete="off" />
-        </div>
-        <button class="search-action" id="sp-one">Reemplazar</button>
-        <button class="search-action" id="sp-all">Todo</button>
-      </div>
-    </div>
-  `;
+  const make = <K extends keyof HTMLElementTagNameMap>(tag: K, className?: string): HTMLElementTagNameMap[K] => {
+    const node = document.createElement(tag);
+    if (className) node.className = className;
+    return node;
+  };
+  const row = make("div", "search-row");
+  const expand = make("button", "search-expand");
+  expand.type = "button";
+  expand.title = "Reemplazar";
+  expand.setAttribute("aria-expanded", "false");
+  expand.innerHTML = icon("chevronRight");
+  const findWrap = make("div", "search-field-wrap");
+  const find = make("input", "search-field");
+  find.placeholder = "Buscar";
+  find.setAttribute("aria-label", "Buscar en el documento");
+  find.autocomplete = "off";
+  const togglesWrap = make("div", "search-toggles");
+  const makeToggle = (title: string, text: string): HTMLButtonElement => {
+    const button = make("button", "search-toggle");
+    button.type = "button";
+    button.title = title;
+    button.setAttribute("aria-pressed", "false");
+    button.textContent = text;
+    togglesWrap.append(button);
+    return button;
+  };
+  const toggles = {
+    case: makeToggle("Distinguir mayúsculas", "Aa"),
+    word: makeToggle("Palabra completa", "ab|"),
+    regex: makeToggle("Expresión regular", ".*"),
+  };
+  findWrap.append(find, togglesWrap);
+  const count = make("span", "search-count");
+  const button = (className: string, title: string, glyph: string): HTMLButtonElement => {
+    const node = make("button", className);
+    node.type = "button";
+    node.title = title;
+    node.setAttribute("aria-label", title);
+    node.innerHTML = icon(glyph);
+    return node;
+  };
+  const previous = button("icon-button", "Anterior (Shift+Enter)", "up");
+  const next = button("icon-button", "Siguiente (Enter)", "down");
+  const close = button("icon-button", "Cerrar (Esc)", "close");
+  row.append(expand, findWrap, count, previous, next, close);
+  const replaceRow = make("div", "search-replace-row");
+  const replaceLine = make("div", "search-row");
+  const spacer = make("span", "search-expand-hueco");
+  spacer.setAttribute("aria-hidden", "true");
+  const replaceWrap = make("div", "search-field-wrap");
+  const replace = make("input", "search-field");
+  replace.placeholder = "Reemplazar por";
+  replace.setAttribute("aria-label", "Reemplazar por");
+  replace.autocomplete = "off";
+  replaceWrap.append(replace);
+  const replaceOne = make("button", "search-action");
+  replaceOne.type = "button";
+  replaceOne.textContent = "Reemplazar";
+  const replaceAllButton = make("button", "search-action");
+  replaceAllButton.type = "button";
+  replaceAllButton.textContent = "Todo";
+  replaceLine.append(spacer, replaceWrap, replaceOne, replaceAllButton);
+  replaceRow.append(replaceLine);
+  dom.append(row, replaceRow);
 
   const REPLACE_KEY = "unfold:search-replace";
-  const expand = dom.querySelector<HTMLButtonElement>("#sp-expand")!;
   const setReplacing = (on: boolean): void => {
     dom.classList.toggle("is-replacing", on);
     expand.setAttribute("aria-expanded", String(on));
@@ -88,17 +122,8 @@ export function unfoldSearchPanel(view: EditorView): Panel {
   expand.addEventListener("click", () => {
     const on = !dom.classList.contains("is-replacing");
     setReplacing(on);
-    if (on) dom.querySelector<HTMLInputElement>("#sp-replace")!.focus();
+    if (on) replace.focus();
   });
-
-  const find = dom.querySelector<HTMLInputElement>("#sp-find")!;
-  const replace = dom.querySelector<HTMLInputElement>("#sp-replace")!;
-  const count = dom.querySelector<HTMLElement>("#sp-count")!;
-  const toggles = {
-    case: dom.querySelector<HTMLButtonElement>("#sp-case")!,
-    word: dom.querySelector<HTMLButtonElement>("#sp-word")!,
-    regex: dom.querySelector<HTMLButtonElement>("#sp-regex")!,
-  };
 
   const commit = (): void => {
     const query = new SearchQuery({
@@ -147,11 +172,11 @@ export function unfoldSearchPanel(view: EditorView): Panel {
     }
   });
 
-  dom.querySelector("#sp-prev")!.addEventListener("click", () => findPrevious(view));
-  dom.querySelector("#sp-next")!.addEventListener("click", () => findNext(view));
-  dom.querySelector("#sp-one")!.addEventListener("click", () => replaceNext(view));
-  dom.querySelector("#sp-all")!.addEventListener("click", () => replaceAll(view));
-  dom.querySelector("#sp-close")!.addEventListener("click", () => {
+  previous.addEventListener("click", () => findPrevious(view));
+  next.addEventListener("click", () => findNext(view));
+  replaceOne.addEventListener("click", () => replaceNext(view));
+  replaceAllButton.addEventListener("click", () => replaceAll(view));
+  close.addEventListener("click", () => {
     closeSearchPanel(view);
     view.focus();
   });

@@ -78,11 +78,11 @@ export async function printDocument(context: ExportContext): Promise<void> {
     resolveAsset: context.resolveAsset,
   }));
 
-  const previous = document.getElementById("print-frame");
+  const previous = document.querySelector<HTMLIFrameElement>("iframe[data-unfold-print]");
   if (previous) previous.remove();
 
   const frame = document.createElement("iframe");
-  frame.id = "print-frame";
+  frame.dataset.unfoldPrint = "true";
   frame.setAttribute("aria-hidden", "true");
   // Fuera de la vista pero con tamaño real: un iframe de 0px no pagina bien.
   frame.style.cssText =

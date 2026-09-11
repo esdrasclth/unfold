@@ -7,15 +7,30 @@
  * nota mirando la pantalla, y todo se nota usándolo con el teclado.
  */
 import assert from "node:assert/strict";
+import { h, render } from "preact";
 import { crearDom, evento } from "./dom-preact.mjs";
 
 crearDom();
 
 const { compilarJuntos } = await import("./compile-tsx.mjs");
-const { confirmDialog, vaciarLaPila } = await compilarJuntos([
+const { confirmDialog, vaciarLaPila, DialogHost, dialogSnapshot, subscribeDialogs } = await compilarJuntos([
   "../src/ui/confirmDialog.ts",
   "../src/components/dialogs/stack.ts",
+  "../src/components/dialogs/DialogHost.tsx",
+  "../src/ui/dialogs.ts",
 ]);
+
+const app = document.createElement("div");
+document.body.append(app);
+const pintarDialogos = (dialogs) => render(
+  h("div", null,
+    h("main", { id: "test-background" }),
+    h(DialogHost, { dialogs }),
+  ),
+  app,
+);
+pintarDialogos(dialogSnapshot());
+subscribeDialogs(pintarDialogos);
 
 const teclear = (key) => document.dispatchEvent(evento("keydown", { key }));
 const esperar = () => new Promise((r) => setTimeout(r, 0));
@@ -125,8 +140,7 @@ prueba("y después le toca al de abajo");
 
 // --- El fondo ---------------------------------------------------------------
 
-const fondo = document.createElement("main");
-document.body.append(fondo);
+const fondo = document.querySelector("#test-background");
 
 respuesta = confirmDialog("Aislar", "¿Seguro?", OPCIONES);
 await esperar();

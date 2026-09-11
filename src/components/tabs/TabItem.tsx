@@ -45,6 +45,7 @@ export function TabItem({
       ref={propio}
       role="tab"
       id={`tab-${id}`}
+      data-tab-id={id}
       class={`tab${active ? " is-active" : ""}${dirty ? " is-dirty" : ""}`}
       title={path ?? name}
       aria-selected={active}

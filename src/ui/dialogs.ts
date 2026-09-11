@@ -1,4 +1,5 @@
-import { render, type VNode } from "preact";
+import type { VNode } from "preact";
+import type { HostedDialog } from "../components/dialogs/DialogHost.tsx";
 
 /** Cualquier vista: los diálogos traen sus propias propiedades. */
 type Vista = VNode<any>;
@@ -22,23 +23,40 @@ export interface DialogHandle {
   close: () => void;
 }
 
+let siguienteId = 1;
+let dialogs: readonly HostedDialog[] = [];
+const subscriptions = new Set<(dialogs: readonly HostedDialog[]) => void>();
+
+export function dialogSnapshot(): readonly HostedDialog[] {
+  return dialogs;
+}
+
+export function subscribeDialogs(
+  subscription: (dialogs: readonly HostedDialog[]) => void,
+): () => void {
+  subscriptions.add(subscription);
+  return () => subscriptions.delete(subscription);
+}
+
+function publish(next: readonly HostedDialog[]): void {
+  dialogs = next;
+  for (const subscription of subscriptions) subscription(dialogs);
+}
+
 export function openDialog(vista: Vista, alCerrar?: () => void): DialogHandle {
-  const hueco = document.createElement("div");
-  hueco.className = "dialog-host";
-  document.body.append(hueco);
-  render(vista, hueco);
+  const id = siguienteId++;
+  publish([...dialogs, { id, view: vista }]);
 
   let cerrado = false;
   return {
     update: (siguiente) => {
-      if (!cerrado) render(siguiente, hueco);
+      if (cerrado) return;
+      publish(dialogs.map((dialog) => dialog.id === id ? { ...dialog, view: siguiente } : dialog));
     },
     close: () => {
       if (cerrado) return;
       cerrado = true;
-      // Desmontar antes de quitar: es lo que dispara la limpieza de los efectos.
-      render(null, hueco);
-      hueco.remove();
+      publish(dialogs.filter((dialog) => dialog.id !== id));
       alCerrar?.();
     },
   };

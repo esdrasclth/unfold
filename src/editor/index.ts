@@ -29,7 +29,7 @@ import { unfoldTheme } from "./theme.ts";
 import { typewriter, typewriterMode } from "./typewriter.ts";
 
 export interface EditorOptions {
-  parent: HTMLElement;
+  parent?: HTMLElement;
   doc: string;
   /** Se llama en cada cambio del documento, para el autoguardado. */
   onChange: (doc: string) => void;
@@ -142,6 +142,7 @@ export function createEditorState(doc: string, options: EditorOptions): EditorSt
 }
 
 export function createEditor(options: EditorOptions): EditorView {
+  if (!options.parent) throw new Error("createEditor necesita un nodo parent");
   return new EditorView({
     parent: options.parent,
     state: createEditorState(options.doc, options),

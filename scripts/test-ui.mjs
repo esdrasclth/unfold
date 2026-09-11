@@ -1,6 +1,7 @@
 /** Pruebas DOM de los flujos donde habían escapado regresiones visuales. */
 import assert from "node:assert/strict";
 import { parseHTML } from "linkedom";
+import { h, render } from "preact";
 
 const { window } = parseHTML("<!doctype html><html><body></body></html>");
 globalThis.window = window;
@@ -135,13 +136,35 @@ const key = (value) => {
 // En un solo paquete y no uno por módulo: los diálogos comparten la pila que
 // decide cuál está encima, y compilarlos por separado daría dos pilas.
 const { compilarJuntos } = await import("./compile-tsx.mjs");
-const { confirmDialog, openGithubDialog, openCommitDialog, RepositoryPanel } =
+const {
+  confirmDialog,
+  openGithubDialog,
+  openCommitDialog,
+  RepositoryPanel,
+  DialogHost,
+  dialogSnapshot,
+  subscribeDialogs,
+} =
   await compilarJuntos([
     "../src/ui/confirmDialog.ts",
     "../src/ui/githubDialog.ts",
     "../src/ui/commitDialog.ts",
     "../src/ui/repositoryPanel.ts",
+    "../src/components/dialogs/DialogHost.tsx",
+    "../src/ui/dialogs.ts",
   ]);
+
+const dialogRoot = document.createElement("div");
+document.body.append(dialogRoot);
+const pintarDialogos = (dialogs) => render(
+  h("div", null,
+    h("div", { id: "app-background" }),
+    h(DialogHost, { dialogs }),
+  ),
+  dialogRoot,
+);
+pintarDialogos(dialogSnapshot());
+subscribeDialogs(pintarDialogos);
 
 // GitHub: cuenta y acciones están arriba; Escape pertenece al modal superior.
 openGithubDialog();
@@ -183,13 +206,11 @@ assert.equal(calls.findLast(([command]) => command === "github_repository_diff")
 assert.equal(document.querySelector(".commit-diff-more"), null);
 // El diálogo declara `aria-modal`: el fondo tiene que quedar fuera del alcance
 // del teclado de verdad, y no sólo en el atributo.
-const fondo = document.createElement("div");
-fondo.id = "app";
-document.body.prepend(fondo);
+const fondo = document.querySelector("#app-background");
 const commitBackdrop = document.querySelector(".github-backdrop");
-// El aislamiento recae en el hueco que cuelga del `body`, no en el fondo: los
-// diálogos viven dentro del suyo, y marcar el fondo dejaría fuera del teclado
-// al propio diálogo que lo pone.
+assert.equal(fondo.inert, true, "el contenido de la aplicación queda aislado");
+// El aislamiento recae en los hermanos del hueco, no en el fondo del propio
+// diálogo: marcarlo dejaría fuera del teclado al overlay que lo pone.
 const commitHost = commitBackdrop.parentElement;
 assert.equal(commitBackdrop.inert, undefined, "el propio diálogo nunca se aísla");
 

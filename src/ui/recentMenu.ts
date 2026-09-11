@@ -5,6 +5,8 @@ import { RecentMenu as RecentMenuView, type RecentMenuProps } from "../component
 export interface RecentMenuHandlers {
   open: (path: string) => void;
   browse: () => void;
+  /** Mantiene al armazón declarativo al tanto del estado del menú. */
+  onOpenChange?: (open: boolean) => void;
 }
 
 /**
@@ -69,6 +71,7 @@ export class RecentMenu {
     this.root.hidden = true;
     this.open = false;
     this.anchor.classList.remove("is-on");
+    this.handlers.onOpenChange?.(false);
   }
 
   private props(): RecentMenuProps {
@@ -97,6 +100,7 @@ export class RecentMenu {
     this.render();
     this.root.hidden = false;
     this.open = true;
+    this.handlers.onOpenChange?.(true);
 
     // Anclado bajo el botón y sin salirse por la derecha de la ventana.
     const box = this.anchor.getBoundingClientRect();

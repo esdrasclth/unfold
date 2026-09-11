@@ -193,6 +193,7 @@ body {
 
 #app {
   display: grid;
+  visibility: hidden;
   /* Los avisos ocultos no deben desplazar el editor ni el pie a otra fila. */
   grid-template-areas: "title" "conflict" "editor" "status";
   grid-template-rows: auto auto minmax(0, 1fr) auto;
@@ -201,6 +202,10 @@ body {
   height: 100dvh;
   background: var(--chrome);
   overflow: hidden;
+}
+
+#app[data-ready="true"] {
+  visibility: visible;
 }
 
 #app > .titlebar { grid-area: title; }

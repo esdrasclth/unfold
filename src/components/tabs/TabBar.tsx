@@ -67,7 +67,7 @@ export function TabBar({ tabs, activeId, onActivate, onClose }: TabBarProps) {
     onActivate(siguiente.id);
     // El foco viaja con la selección: quien recorre con las flechas espera
     // seguir dentro de la barra, no que el foco se quede en la de antes.
-    document.getElementById(`tab-${siguiente.id}`)?.focus();
+    document.querySelector<HTMLElement>(`[role="tab"][data-tab-id="${siguiente.id}"]`)?.focus();
   };
 
   return (

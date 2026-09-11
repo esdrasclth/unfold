@@ -1,6 +1,6 @@
 import { useLayoutEffect, useRef } from "preact/hooks";
 import type { ComponentChildren } from "preact";
-import { aislarFondo } from "../../ui/modalFocus.ts";
+import { aislarFondo } from "./FocusTrap.ts";
 import { entrarEnLaPila, esElSuperior, salirDeLaPila } from "./stack.ts";
 
 export interface DialogProps {

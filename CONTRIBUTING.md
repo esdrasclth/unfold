@@ -71,6 +71,18 @@ tema oscuro.
 npm test
 ```
 
+## Arquitectura y auditoría de interfaz
+
+`src/main.ts` es sólo el bootstrap. El runtime vive en `src/app/runtime.ts`;
+los atajos y la integración de escritorio están desacoplados en módulos propios,
+y las vistas Preact se encuentran bajo `src/components/`. GitHub y Mermaid se
+cargan de forma diferida mediante `import()` cuando se solicitan.
+
+Antes de abrir un pull request ejecuta `npm run build` y revisa el resumen de
+Vite en `dist/assets` para comparar el bundle inicial. En cambios de interfaz,
+comprueba nombres accesibles (`aria-label` o texto visible), `aria-modal` y
+foco atrapado en diálogos, además de `inert` en paneles plegados.
+
 Cubren las tres piezas con más casos límite, que son los conversores:
 
 - **HTML a Markdown**, lo que ocurre al pegar desde un navegador
