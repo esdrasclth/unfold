@@ -1,8 +1,8 @@
 {
-  "version": "0.5.3",
+  "version": "0.5.4",
   "highlights": [
-    "**Arranca más ligero.** GitHub y los diagramas ya no se cargan al abrir: se piden cuando los usas, así que el arranque mueve un 6 % menos de código.",
-    "**Los diálogos ya no sueltan el foco.** El tabulador se queda dentro del cuadro abierto, `Escape` cierra el de encima y el foco vuelve a donde estaba.",
-    "**Los paneles plegados dejan de estorbar al teclado**: mientras estén cerrados, el tabulador los salta en lugar de pasear por botones que no se ven."
+    "**La rueda del ratón vuelve a mover el documento.** El editor crecía hasta el largo del texto y no le quedaba nada que desplazar; ahora se queda del alto de su hueco, que es de donde sale el desplazamiento.",
+    "**`Ctrl+,` abre la apariencia**, y no sólo la cierra. Estaba cableado al mismo sitio que `Escape`, así que el único atajo que la abre no la abría.",
+    "**El Markdown se lee mejor.** Las citas dejan aire entre la barra y el texto, las listas sangran lo que se parte en varias líneas para que la continuación caiga bajo la primera letra, y una tarea ya no sale con viñeta y casilla a la vez."
   ]
 }
