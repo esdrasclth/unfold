@@ -1,8 +1,8 @@
 {
-  "version": "0.5.4",
+  "version": "0.5.5",
   "highlights": [
-    "**La rueda del ratón vuelve a mover el documento.** El editor crecía hasta el largo del texto y no le quedaba nada que desplazar; ahora se queda del alto de su hueco, que es de donde sale el desplazamiento.",
-    "**`Ctrl+,` abre la apariencia**, y no sólo la cierra. Estaba cableado al mismo sitio que `Escape`, así que el único atajo que la abre no la abría.",
-    "**El Markdown se lee mejor.** Las citas dejan aire entre la barra y el texto, las listas sangran lo que se parte en varias líneas para que la continuación caiga bajo la primera letra, y una tarea ya no sale con viñeta y casilla a la vez."
+    "**Las preferencias vuelven a funcionar en la aplicación instalada.** El tamaño del texto, el interlineado y el ancho de la columna no hacían nada: una regla de seguridad demasiado estricta bloqueaba los estilos que la aplicación necesita aplicar al vuelo.",
+    "**Y con ellas, el desplazamiento y el aspecto del editor.** Por lo mismo, el editor se quedaba sin la mitad de su estructura: no se desplazaba con la rueda y la columna de texto perdía su ancho.",
+    "**El Markdown se lee mejor.** Las citas dejan aire entre la barra y el texto, las listas sangran lo que se parte en varias líneas, y una tarea ya no sale con viñeta y casilla a la vez."
   ]
 }
