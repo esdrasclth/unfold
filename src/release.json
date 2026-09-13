@@ -1,8 +1,8 @@
 {
-  "version": "0.5.2",
+  "version": "0.5.3",
   "highlights": [
-    "**El aviso de versión nueva ya no es una franja** que empuja el documento: es una tarjeta en la esquina, con las novedades y el progreso de la instalación dentro.",
-    "**«Más tarde» quiere decir más tarde.** Ese botón descartaba la versión para siempre; ahora sólo aparta el aviso, y el botón de ajustes lo sigue señalando.",
-    "**Las sugerencias de ortografía por fin se pueden ver**: `Shift` + clic derecho abre el menú del sistema, donde WebView2 las guarda."
+    "**Arranca más ligero.** GitHub y los diagramas ya no se cargan al abrir: se piden cuando los usas, así que el arranque mueve un 6 % menos de código.",
+    "**Los diálogos ya no sueltan el foco.** El tabulador se queda dentro del cuadro abierto, `Escape` cierra el de encima y el foco vuelve a donde estaba.",
+    "**Los paneles plegados dejan de estorbar al teclado**: mientras estén cerrados, el tabulador los salta en lugar de pasear por botones que no se ven."
   ]
 }

@@ -4958,7 +4958,7 @@ dependencies = [
 
 [[package]]
 name = "unfold"
-version = "0.5.2"
+version = "0.5.3"
 dependencies = [
  "git2",
  "keyring",
