@@ -38,8 +38,17 @@ las características que realmente cambian para quien acaba de actualizar.
 
 ```powershell
 $env:TAURI_SIGNING_PRIVATE_KEY = Get-Content "$HOME\.unfold\updater.key" -Raw
+$env:TAURI_SIGNING_PRIVATE_KEY_PASSWORD = ""
 npm run release:setup
 ```
+
+La segunda variable hace falta **aunque la clave no tenga contraseña**. Si no se
+define, Tauri la pide por consola, y en una terminal sin entrada interactiva
+—un agente, un paso de CI— lee lo que haya y falla con
+`incorrect updater private key password: Wrong password for that key`. El
+mensaje induce a pensar que la clave está perdida, y no lo está: para
+descartarlo, compara `~/.unfold/updater.key.pub` con el `pubkey` de
+`src-tauri/tauri.conf.json`, que deben ser idénticos.
 
 De ahí salen tres artefactos:
 
