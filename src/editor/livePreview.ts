@@ -52,6 +52,15 @@ const headingLine = [1, 2, 3, 4, 5, 6].map((level) =>
   Decoration.line({ class: `cm-md-heading cm-md-h${level}` }),
 );
 const quoteLine = Decoration.line({ class: "cm-md-quote" });
+/*
+ * Las líneas de lista se marcan para poder darles sangría francesa: sin ella,
+ * lo que se parte en varias líneas vuelve al margen y la lista deja de leerse
+ * como una lista. Van dos clases porque el marcador de una lista numerada es
+ * más ancho que una viñeta y la sangría tiene que acompañarlo.
+ */
+const bulletLine = Decoration.line({ class: "cm-md-list" });
+const orderedLine = Decoration.line({ class: "cm-md-list cm-md-list-ordered" });
+const taskLine = Decoration.line({ class: "cm-md-list cm-md-list-task" });
 const frontmatterLine = Decoration.line({ class: "cm-md-frontmatter" });
 const codeLine = Decoration.line({ class: "cm-md-codeblock" });
 
@@ -203,8 +212,19 @@ export function buildDecorations(
         if (name === "ListMark") {
           const marker = state.doc.sliceString(node.from, node.to);
           const ordered = /\d/.test(marker);
+          const isTask = /^[ \t]+\[[ xX]\]/.test(state.doc.sliceString(node.to, node.to + 8));
+          const line = state.doc.lineAt(node.from);
+          decorations.push(
+            (ordered ? orderedLine : isTask ? taskLine : bulletLine).range(line.from),
+          );
           if (!ordered && !lineTouched(node.from)) {
-            replaceWith(node.from, node.to, Decoration.replace({ widget: new BulletWidget() }));
+            // Una tarea ya trae su casilla: poner además la viñeta deja la línea
+            // con dos marcadores («• [ ] tarea») donde el Markdown pide uno. Se
+            // oculta el guion junto al hueco que lo separa del corchete, para
+            // que la casilla ocupe el sitio que le corresponde.
+            const gap = /^([ \t]+)\[/.exec(state.doc.sliceString(node.to, node.to + 8));
+            if (isTask && gap) conceal(node.from, node.to + gap[1].length);
+            else replaceWith(node.from, node.to, Decoration.replace({ widget: new BulletWidget() }));
           }
           return;
         }

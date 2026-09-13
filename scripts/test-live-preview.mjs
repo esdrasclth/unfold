@@ -136,4 +136,48 @@ const conClase = (lista, texto, clase) =>
   );
 }
 
-console.log("14 de 14 pruebas de vista previa en vivo correctas");
+// -- Una tarea no lleva ademas vinieta --------------------------------------
+{
+  // El guion de `- [ ]` es el marcador de lista y el corchete el de la tarea:
+  // dibujar los dos deja la linea con dos marcadores donde el Markdown pide
+  // uno, y la casilla desplazada a la derecha del punto.
+  const doc = "- [ ] Pendiente\n\nOtro parrafo.\n";
+  const lista = decoraciones(doc, doc.length);
+  assert.ok(
+    !lista.some((d) => d.widget === "BulletWidget"),
+    "la casilla sustituye a la vinieta en lugar de sumarse a ella",
+  );
+  assert.ok(oculto(lista, "- "), "el guion y su hueco se ocultan enteros");
+}
+
+// -- Una lista normal si lleva vinieta --------------------------------------
+{
+  const doc = "- Uno\n\nOtro parrafo.\n";
+  const lista = decoraciones(doc, doc.length);
+  assert.ok(
+    lista.some((d) => d.widget === "BulletWidget"),
+    "lo que no es tarea conserva su punto",
+  );
+}
+
+// -- Cada tipo de lista marca su linea, que es de donde sale la sangria ------
+{
+  // La sangria francesa vive en CSS, pero necesita saber que marcador lleva
+  // delante cada linea: un numero ocupa mas que un punto, y una casilla mas
+  // que un numero.
+  const casos = [
+    ["- Uno\n", "cm-md-list"],
+    ["1. Uno\n", "cm-md-list cm-md-list-ordered"],
+    ["- [ ] Uno\n", "cm-md-list cm-md-list-task"],
+  ];
+  for (const [doc, clase] of casos) {
+    const lista = decoraciones(doc, doc.length);
+    assert.ok(
+      lista.some((d) => d.from === 0 && d.clase === clase),
+      `la linea de <<${doc.trim()}>> se marca como ${clase}`,
+    );
+  }
+}
+
+console.log("18 de 18 pruebas de vista previa en vivo correctas");
+

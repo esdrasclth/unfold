@@ -124,9 +124,18 @@ body.following-links .cm-md-link {
 
 .cm-md-quote {
   position: relative;
-  padding-left: 1.2em;
   color: var(--text-soft);
   font-style: italic;
+}
+
+/*
+ * La sangría se escribe con la especificidad de `.cm-editor .cm-line` a
+ * propósito: el tema de CodeMirror fija ahí `padding: 0 4px`, así que
+ * `.cm-md-quote` a secas perdía y el texto acababa pegado a la barra, que es
+ * justo lo que la barra no puede hacer: separar sin dejar aire no separa nada.
+ */
+.cm-editor .cm-line.cm-md-quote {
+  padding-left: calc(4px + 1.15em);
 }
 
 .cm-md-quote::before {
@@ -135,26 +144,74 @@ body.following-links .cm-md-link {
   left: 4px;
   top: 0;
   bottom: 0;
-  width: 2.5px;
+  width: 3px;
   border-radius: 999px;
   background: var(--accent);
-  opacity: 0.35;
+  opacity: 0.45;
 }
 
 /* --- Listas ---------------------------------------------------------------- */
 
 /*
+ * Sangría francesa. Sin ella, un elemento que se parte en varias líneas vuelve
+ * al margen y la lista se deshace: lo que sigue al marcador ya no se distingue
+ * de un párrafo suelto. Cada medida es lo que ocupa su propio marcador —punto,
+ * casilla o número— para que la línea de continuación caiga exactamente bajo la
+ * primera letra del texto, y no a ojo.
+ *
+ * La primera línea no se mueve: el `text-indent` negativo cancela el relleno,
+ * de modo que entrar en la línea y ver reaparecer el `-` crudo no descoloca
+ * nada.
+ */
+.cm-editor .cm-line.cm-md-list {
+  padding-left: calc(4px + 0.68em);
+  text-indent: -0.68em;
+}
+
+.cm-editor .cm-line.cm-md-list-ordered {
+  padding-left: calc(4px + 1.03em);
+  text-indent: -1.03em;
+}
+
+.cm-editor .cm-line.cm-md-list-task {
+  padding-left: calc(4px + 1.19em);
+  text-indent: -1.19em;
+}
+
+/*
  * La viñeta sustituye a un único carácter, así que no debe forzar anchura: si
  * lo hiciera, el texto daría un salto lateral cada vez que el cursor entra en
- * la línea y reaparece el marcador original.
+ * la línea y reaparece el marcador original. Por eso el glifo sigue ahí
+ * reservando su sitio, transparente, y el punto se dibuja encima: así es un
+ * círculo igual de redondo en cualquiera de las tipografías que ofrece el panel
+ * de apariencia, en lugar de lo que cada una entienda por «•».
+ *
+ * El `text-indent: 0` no es decorativo: la propiedad se hereda, y dentro de un
+ * `inline-block` se aplicaba otra vez, sacando el punto casi una eme a la
+ * izquierda de su línea.
  */
 .cm-md-bullet {
-  color: var(--accent);
-  font-weight: 700;
+  position: relative;
+  display: inline-block;
+  text-indent: 0;
+  color: transparent;
+}
+
+.cm-md-bullet::after {
+  content: "";
+  position: absolute;
+  left: 50%;
+  top: 50%;
+  transform: translate(-50%, -50%);
+  width: 0.34em;
+  height: 0.34em;
+  border-radius: 50%;
+  background: var(--accent);
 }
 
 .cm-md-task {
   appearance: none;
+  text-indent: 0;
   width: 0.95em;
   height: 0.95em;
   margin: 0 0.15em 0 0;
