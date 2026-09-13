@@ -434,6 +434,19 @@ body {
   border-radius: 0;
 }
 
+/*
+ * El hueco donde monta CodeMirror es un eslabón de la cadena de alturas, no un
+ * envoltorio decorativo: `.cm-editor` pide `height: 100%`, y sin una altura
+ * definida aquí eso resuelve a `auto`. Entonces el editor crece hasta el largo
+ * del documento, su `.cm-scroller` queda con `scrollHeight === clientHeight`
+ * —nada que desplazar— y el desbordamiento cae en `.editor-host`, que tiene
+ * `overflow: hidden`. Resultado: la rueda del ratón deja de mover el documento.
+ */
+.editor-host .editor-mount {
+  height: 100%;
+  min-height: 0;
+}
+
 .editor-host .cm-editor {
   height: 100%;
   /* Ctrl++/Ctrl+- cambia un solo paso; la transición conserva continuidad

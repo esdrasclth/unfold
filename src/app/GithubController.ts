@@ -7,7 +7,7 @@ export interface GithubControllerOptions {
   onStatus(status: GithubAuthStatus): void;
 }
 
-/** Coordina la hidrataciÃ³n silenciosa del estado GitHub de la interfaz. */
+/** Coordina la hidratación silenciosa del estado GitHub de la interfaz. */
 export function startGithubController(options: GithubControllerOptions): () => void {
   if (!isTauri) return () => {};
   const timer = window.setTimeout(() => {

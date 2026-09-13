@@ -1,7 +1,10 @@
 export type PanelName = "outline" | "repositories" | "settings";
 
 export interface CommandHandlers {
+  /** Sólo cierra: es lo que hace Escape, que nunca abre nada. */
   closeSettings(): void;
+  /** Alterna la apariencia, que es lo que hace su atajo. */
+  toggleSettings(): void;
   zoom(direction: 1 | -1): void;
   toggleRepositories(): void;
   toggleOutline(): void;
@@ -34,7 +37,9 @@ export function registerCommands(handlers: CommandHandlers): () => void {
       (event.key === "+" || event.key === "=" || event.code === "NumpadAdd");
     const zoomOut = !event.altKey && (event.key === "-" || event.code === "NumpadSubtract");
     if (zoomIn || zoomOut) { event.preventDefault(); handlers.zoom(zoomIn ? 1 : -1); return; }
-    if (event.key === ",") { event.preventDefault(); handlers.closeSettings(); return; }
+    // Alternar, no cerrar: éste es el único atajo que abre la apariencia, y
+    // cablearlo a `closeSettings` lo dejaba sin poder abrir nada.
+    if (event.key === ",") { event.preventDefault(); handlers.toggleSettings(); return; }
     if (key === "b" && event.shiftKey) { event.preventDefault(); handlers.toggleRepositories(); }
     else if (key === "o" && event.shiftKey) { event.preventDefault(); handlers.toggleOutline(); }
     else if (key === "o") { event.preventDefault(); handlers.open(); }

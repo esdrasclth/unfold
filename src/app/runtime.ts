@@ -903,9 +903,10 @@ const accionesPaleta: PaletteActions = {
 
 const unregisterCommands = registerCommands({
   closeSettings: () => { if (settingsOpen) toggleSettings(false); },
+  toggleSettings: () => toggleSettings(),
   zoom: (direction) => {
     const fontSize = settingsPanel.zoomContent(direction);
-    notify(`TamaÃ±o del texto: ${fontSize} px`);
+    notify(`Tamaño del texto: ${fontSize} px`);
   },
   toggleRepositories,
   toggleOutline,
