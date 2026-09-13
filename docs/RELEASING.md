@@ -42,6 +42,16 @@ $env:TAURI_SIGNING_PRIVATE_KEY_PASSWORD = ""
 npm run release:setup
 ```
 
+**Ojo con PowerShell 5.1**: `$env:VAR = ""` no crea la variable vacía, la
+**borra**, de modo que el recetario de arriba deja la contraseña sin definir y
+la compilación falla. Comprobarlo con `Test-Path env:TAURI_SIGNING_PRIVATE_KEY_PASSWORD`,
+que debe dar `True`. Desde un shell POSIX no hay problema, porque ahí el prefijo
+sí la pasa vacía:
+
+```bash
+TAURI_SIGNING_PRIVATE_KEY="$(cat ~/.unfold/updater.key)" TAURI_SIGNING_PRIVATE_KEY_PASSWORD=   npm run release:setup
+```
+
 La segunda variable hace falta **aunque la clave no tenga contraseña**. Si no se
 define, Tauri la pide por consola, y en una terminal sin entrada interactiva
 —un agente, un paso de CI— lee lo que haya y falla con
@@ -103,6 +113,42 @@ Con una versión anterior instalada, ábrela y espera unos segundos: debe
 aparecer la franja de aviso. La comprobación se hace una vez al día; para
 forzarla en una prueba hay que borrar la clave `unfold:ultima-comprobacion` del
 almacenamiento local.
+
+## La CSP no puede llevar nonce en `style-src`
+
+Al compilar, Tauri analiza los recursos del frontend y endurece la CSP
+inyectando `nonce` y hashes. Si lo hace sobre `style-src`, **rompe la
+aplicación instalada**: por especificación, un nonce hace que
+`'unsafe-inline'` se ignore por completo, y con él se van los estilos que la
+aplicación inyecta en caliente —el tema de CodeMirror y los estilos en línea
+con los que se aplican las preferencias—.
+
+El síntoma no parece de CSP: la ventana abre, pero el editor no se desplaza,
+la columna pierde su ancho, y el tamaño y el interlineado del panel de
+apariencia no hacen nada. En desarrollo no se ve, porque el frontend se sirve
+desde Vite y la CSP no se aplica igual; sólo aparece compilando e instalando.
+
+Por eso `style-src` va en `dangerousDisableAssetCspModification`, y hay una
+prueba —`scripts/test-csp.mjs`— que salta si alguien lo quita mientras
+`'unsafe-inline'` siga ahí.
+
+El IPC va aparte: viaja por su propio protocolo, así que `connect-src` tiene
+que permitir `ipc:` y `http://ipc.localhost`. Sin eso, la llamada se bloquea y
+Tauri cae a un respaldo por `postMessage` que funciona, pero por el camino
+lento y llenando la consola de errores.
+
+## Para inspeccionar una compilación de release
+
+Las devtools van desactivadas, pero el puerto de depuración de WebView2 no
+depende de Tauri:
+
+```bash
+WEBVIEW2_ADDITIONAL_BROWSER_ARGUMENTS=--remote-debugging-port=9223 \
+  ./src-tauri/target/release/unfold.exe
+```
+
+Y se conecta uno a `http://127.0.0.1:9223/json/list`. Es la única forma de ver
+los errores de CSP de la aplicación empaquetada, que es donde aparecen.
 
 ## El endpoint tiene que ser HTTPS
 
