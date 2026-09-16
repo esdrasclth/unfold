@@ -53,7 +53,7 @@
   "applicationCategory": "DeveloperApplication",
   "applicationSubCategory": "Editor de texto",
   "operatingSystem": "Windows 10, Windows 11",
-  "softwareVersion": "0.3.0",
+  "softwareVersion": "0.5.5",
   "inLanguage": "es",
   "downloadUrl": "https://github.com/esdrasclth/unfold/releases/latest/download/Unfold-Setup.exe",
   "installUrl": "https://github.com/esdrasclth/unfold/releases/latest",
@@ -69,9 +69,11 @@
     "Vista previa en vivo dentro del texto, sin panel dividido",
     "Tablas renderizadas y navegables con Tab",
     "Fórmulas con KaTeX y frontmatter YAML",
-    "Explorador de repositorios de GitHub con árbol y búsqueda",
+    "Explorador de carpetas del disco y repositorios de GitHub, con árbol y búsqueda",
+    "Buscar en todos los documentos a la vez, no sólo en el abierto",
     "Vista previa del diff de cada archivo antes de confirmar",
     "Confirmar y publicar cambios en GitHub desde la aplicación",
+    "Corrector ortográfico, modo enfoque y modo máquina de escribir",
     "Exportar a HTML autocontenido y a PDF"
   ],
   "offers": {
@@ -232,8 +234,8 @@
   <div class="hero-texto">
     <a class="novedad" href="#github">
       <span class="novedad-punto" aria-hidden="true"></span>
-      <strong>Novedad 0.3</strong>
-      <span>GitHub dentro del editor</span>
+      <strong>GitHub</strong>
+      <span>dentro del editor</span>
       <svg class="novedad-galon" viewBox="0 0 1024 1024" aria-hidden="true"><use href="#galon"/></svg>
     </a>
 
@@ -327,8 +329,7 @@
 
 <section class="pilares" id="pilares">
   <article>
-    <span class="pilar-num">01</span>
-    <h3>Tus archivos no cambian</h3>
+    <h3><span class="pilar-num">01</span> Tus archivos no cambian</h3>
     <p>
       El buffer contiene Markdown literal, no un modelo intermedio. Guardar
       escribe lo que ya había: abrir un <code>.md</code> con Unfold nunca
@@ -336,16 +337,14 @@
     </p>
   </article>
   <article>
-    <span class="pilar-num">02</span>
-    <h3>Arranca en 250 ms</h3>
+    <h3><span class="pilar-num">02</span> Arranca en 250 ms</h3>
     <p>
       Pesa poco porque usa el WebView2 que Windows ya trae, en vez de
       empaquetar un navegador entero dentro del instalador.
     </p>
   </article>
   <article>
-    <span class="pilar-num">03</span>
-    <h3>Se edita donde se lee</h3>
+    <h3><span class="pilar-num">03</span> Se edita donde se lee</h3>
     <p>
       Al poner el cursor en una línea sus marcadores reaparecen, atenuados
       para no dar un tirón visual, y puedes editarlos. Al salir, se ocultan.
@@ -356,7 +355,6 @@
 <section class="captura-seccion">
   <div class="captura-cabecera">
     <div>
-      <p class="etiqueta">La aplicación</p>
       <h2 class="titulo"><span class="mk">## </span>Así se ve</h2>
     </div>
     <div class="conmutador" role="group" aria-label="Tema de la aplicación">
@@ -376,10 +374,9 @@
 </section>
 
 <section id="caracteristicas" class="caracteristicas">
-  <p class="etiqueta">Todo lo que trae</p>
   <h2 class="titulo"><span class="mk">## </span>Qué sabe hacer</h2>
   <p class="bajada bajada-ancha">
-    Diecisiete cosas, agrupadas por el momento en el que las necesitas.
+    Veinte cosas, agrupadas por el momento en el que las necesitas.
   </p>
 
   <div class="grupos">
@@ -443,6 +440,14 @@
           <p>Conecta los que elijas y ábrelos desde el explorador, junto a tus carpetas del disco, con el estado de cada documento al lado.</p>
         </li>
         <li>
+          <h4>Crear dentro del repositorio</h4>
+          <p>Un documento nuevo desde la cabecera del repositorio, en el propio explorador, sin salir a buscar la carpeta.</p>
+        </li>
+        <li>
+          <h4>Traer cambios</h4>
+          <p>Baja lo que haya en el remoto con avance rápido. Si tienes cambios sin confirmar, o la rama se ha separado, se detiene y lo dice en vez de inventar una fusión.</p>
+        </li>
+        <li>
           <h4>Diff antes de confirmar</h4>
           <p>Despliega cualquier archivo de la vista de cambios y lee lo que añade y lo que quita, línea a línea.</p>
         </li>
@@ -472,6 +477,10 @@
           <h4>Escribe como prefieras</h4>
           <p>Menú contextual para insertar Markdown, o modo Código fuente con <kbd>Ctrl+Shift+M</kbd>.</p>
         </li>
+        <li>
+          <h4>Corrector ortográfico</h4>
+          <p>El subrayado lo pone Windows y se ve desde el primer momento. Las sugerencias viven en el menú del sistema: <kbd>Shift</kbd> + clic derecho lo deja pasar.</p>
+        </li>
       </ul>
     </section>
   </div>
@@ -496,12 +505,12 @@
       <div><dt>GitHub · Apariencia</dt><dd><kbd>Ctrl+Shift+H</kbd> <kbd>Ctrl+,</kbd></dd></div>
       <div><dt>Enfoque · Máquina de escribir</dt><dd><kbd>Ctrl+Shift+F</kbd> <kbd>Ctrl+Shift+T</kbd></dd></div>
       <div><dt>Código fuente · Exportar</dt><dd><kbd>Ctrl+Shift+M</kbd> <kbd>Ctrl+Shift+E</kbd></dd></div>
+      <div><dt>Sugerencias de ortografía</dt><dd><kbd>Shift</kbd> + clic derecho</dd></div>
     </dl>
   </div>
 </section>
 
 <section id="github" class="github">
-  <p class="etiqueta">Integración con GitHub · nuevo en 0.3</p>
   <h2 class="titulo"><span class="mk">## </span>Tu documentación, donde ya vive</h2>
   <p class="bajada bajada-ancha">
     Conecta los repositorios que quieras y edita su Markdown como cualquier otro
@@ -603,7 +612,6 @@
 
 <section id="como-funciona" class="explicacion">
   <div class="explicacion-texto">
-    <p class="etiqueta">Por dentro</p>
     <h2 class="titulo"><span class="mk">## </span>Cómo funciona</h2>
     <p>
       El buffer de CodeMirror contiene el Markdown tal cual. Un plugin recorre
@@ -640,7 +648,6 @@
 </section>
 
 <section id="instalar" class="instalar">
-  <p class="etiqueta">En un minuto</p>
   <h2 class="titulo"><span class="mk">## </span>Instalar</h2>
   <ol class="pasos">
     <li><span class="paso-num">01</span><div><h3>Descarga el instalador</h3><p><code>Unfold-Setup.exe</code>, unos <span data-peso>8,0 MB</span>.</p></div></li>
@@ -659,7 +666,6 @@
 </section>
 
 <section id="dudas" class="dudas">
-  <p class="etiqueta">Antes de descargar</p>
   <h2 class="titulo"><span class="mk">## </span>Dudas razonables</h2>
 
   <div class="preguntas">

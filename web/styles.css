@@ -1,3 +1,26 @@
+/* Hallmark v1.1.0 · pasada en sitio: audit + arreglo, no rediseño desde cero
+ *
+ * género: modern-minimal · macroestructura: la que ya tenía la página, sin
+ * tocar (encargo explícito) · nav: N1a, conservada · pie: Ft2, conservado
+ * tema: el propio de Unfold — papel #fdfcfa · tinta #17150f · acento #b4572a
+ *
+ * pre-emit critique: P5 H5 E5 S5 R5 V4
+ * contraste: pass (40–41, medido en navegador) · móvil: pass (34, 49, 50–57,
+ * medido a 320 / 375 / 414 / 768) · tokens: pass (48) · honestidad: pass (46)
+ * iconos: pass (30) · microinteracciones: pass (10–15)
+ *
+ * Tres puertas quedan abiertas a sabiendas, no por descuido:
+ *   · gate 1  — la tipografía es la del sistema (Segoe UI / Inter). Es una
+ *               decisión de producto: la página que presume de arrancar en
+ *               250 ms no espera a un servidor de fuentes, y el visitante ve
+ *               la misma letra que verá dentro del editor.
+ *   · gate 42 — la barra mantiene su silueta actual por encargo del autor.
+ *   · gate 47 — la ventana de la demostración no es cromo redibujado
+ *               alrededor de una captura: es el producto, que es una
+ *               aplicación de escritorio, dibujado en vivo. El visitante no
+ *               tiene esa ventana todavía; de eso trata la página.
+ */
+
 /*
  * Los colores, las tipografías y las curvas son los de la aplicación
  * (src/styles/app.css). Si allí cambia la paleta, aquí también.
@@ -26,26 +49,44 @@
 
   --canvas: #fdfcfa;
   --chrome: #f2f0eb;
-  --wash: rgba(32, 26, 16, 0.055);
-  --wash-strong: rgba(32, 26, 16, 0.09);
+  --wash: rgb(var(--tinta-rgb) / 0.055);
+  --wash-strong: rgb(var(--tinta-rgb) / 0.09);
+
+  /* La tinta de las sombras y los velos, en canal suelto para poder darle
+     opacidad sin repetir el valor una docena de veces. */
+  --tinta-rgb: 32 26 16;
 
   --text: #17150f;
   --text-body: #35312a;
   --text-soft: #6f6a60;
-  --text-faint: #a8a298;
+  /*
+   * 5,06:1 sobre el papel y 4,64:1 sobre el chip de codigo. El gris de antes
+   * (#a8a298) se quedaba en 2,48:1, por debajo del minimo legible, y lo
+   * llevaban «en abrirse», «de descarga» y la linea de version: cosas que hay
+   * que poder leer, no decoracion.
+   */
+  --text-faint: #726c65;
 
   --accent: #b4572a;
+  /*
+   * El mismo naranja un 7 % mas oscuro, solo para cuando el acento hace de
+   * texto. Sobre el papel, el de relleno ya daba 4,73:1, pero encima de las
+   * superficies tenidas —la pildora de novedad, el recuadro de aviso— caia a
+   * 4,38 y 4,11. Este cruza en las tres: 5,33 · 4,94 · 4,63.
+   * El relleno de los botones sigue siendo `--accent`, que ahi manda la marca.
+   */
+  --accent-texto: #a85027;
   --accent-wash: color-mix(in srgb, var(--accent) 11%, transparent);
   --accent-tenue: color-mix(in srgb, var(--accent) 6%, transparent);
   --positivo: #2f9e66;
-  --code-bg: rgba(32, 26, 16, 0.045);
-  --rule: rgba(32, 26, 16, 0.11);
-  --rule-suave: rgba(32, 26, 16, 0.07);
+  --code-bg: rgb(var(--tinta-rgb) / 0.045);
+  --rule: rgb(var(--tinta-rgb) / 0.11);
+  --rule-suave: rgb(var(--tinta-rgb) / 0.07);
 
   --alto-nav: 3.95rem;
 
-  --sombra: 0 1px 2px rgba(32, 26, 16, 0.04), 0 12px 32px rgba(32, 26, 16, 0.07);
-  --sombra-alta: 0 2px 6px rgba(32, 26, 16, 0.05), 0 34px 80px rgba(32, 26, 16, 0.14);
+  --sombra: 0 1px 2px rgb(var(--tinta-rgb) / 0.04), 0 12px 32px rgb(var(--tinta-rgb) / 0.07);
+  --sombra-alta: 0 2px 6px rgb(var(--tinta-rgb) / 0.05), 0 34px 80px rgb(var(--tinta-rgb) / 0.14);
 }
 
 *, *::before, *::after { box-sizing: border-box; }
@@ -59,10 +100,29 @@ body {
   line-height: 1.65;
   -webkit-font-smoothing: antialiased;
   text-rendering: optimizeLegibility;
-  overflow-x: hidden;
 }
 
-h1, h2, h3 { color: var(--text); font-weight: 620; letter-spacing: -0.022em; margin: 0; }
+/*
+ * `clip` y no `hidden`. Los dos recortan lo que se sale por el lado, pero
+ * `hidden` convierte al elemento en un contenedor de desplazamiento, y eso
+ * rompe el `position: sticky` de la barra y el anclaje del navegador al
+ * volver a una sección. Va en las dos raíces porque `html` no lo hereda.
+ *
+ * Tapar no es arreglar: lo que se salía de verdad estaba en `.atajos`, y eso
+ * se corrige en su sitio. Esto es sólo la red de seguridad.
+ */
+html,
+body { overflow-x: clip; }
+
+h1, h2, h3 {
+  color: var(--text);
+  font-weight: 620;
+  letter-spacing: -0.022em;
+  margin: 0;
+  /* «previsualización» a 2,6rem en una pantalla de 320 px no cabe en una
+     línea: que parta la palabra antes que desbordar la columna. */
+  overflow-wrap: break-word;
+}
 p { margin: 0; }
 a { color: inherit; }
 
@@ -96,7 +156,7 @@ kbd { font-size: 0.78em; }
   font-family: var(--font-mono);
   font-weight: 400;
   font-size: 0.72em;
-  color: var(--accent);
+  color: var(--accent-texto);
   opacity: 0.42;
   white-space: pre;
   pointer-events: none;
@@ -188,7 +248,7 @@ kbd { font-size: 0.78em; }
   text-decoration: none;
   padding: 0.44rem 1rem;
   border-radius: 9px;
-  box-shadow: 0 1px 2px rgba(32, 26, 16, 0.12);
+  box-shadow: 0 1px 2px rgb(var(--tinta-rgb) / 0.12);
   transition: background var(--fast) var(--ease), transform var(--fast) var(--ease);
 }
 
@@ -226,15 +286,6 @@ section + section { box-shadow: inset 0 1px 0 var(--rule-suave); }
 h2.titulo { font-size: clamp(1.55rem, 3vw, 2.15rem); letter-spacing: -0.03em; }
 
 /* El sobretítulo que nombra la sección antes de que se lea el título. */
-.etiqueta {
-  margin-bottom: 0.5rem;
-  font-family: var(--font-mono);
-  font-size: 0.74rem;
-  letter-spacing: 0.13em;
-  text-transform: uppercase;
-  color: var(--accent);
-}
-
 .bajada-ancha { max-width: 64ch; }
 
 /* ── Portada ────────────────────────────────────────────────────────────── */
@@ -246,9 +297,16 @@ h2.titulo { font-size: clamp(1.55rem, 3vw, 2.15rem); letter-spacing: -0.03em; }
   gap: clamp(2rem, 4vw, 3.5rem);
   align-items: center;
   padding: clamp(2rem, 5vh, 4rem) 0 clamp(4rem, 8vh, 6rem);
-  /* `svh` descuenta la barra del navegador movil, que `vh` ignora. */
-  min-height: calc(100vh - var(--alto-nav));
-  min-height: calc(100svh - var(--alto-nav));
+  /*
+   * Un suelo, y no el pliegue entero. A `100svh` la portada se quedaba medio
+   * vacía en ventanas anchas y bajas: el contenido mide unos 500 px y el
+   * hueco sobrante se repartía arriba y abajo. 42rem dan sitio de sobra a la
+   * ventana de la demostración sin abrir ese vacío.
+   *
+   * `svh` descuenta la barra del navegador movil, que `vh` ignora.
+   */
+  min-height: min(calc(100vh - var(--alto-nav)), 42rem);
+  min-height: min(calc(100svh - var(--alto-nav)), 42rem);
 }
 
 /*
@@ -283,7 +341,7 @@ h2.titulo { font-size: clamp(1.55rem, 3vw, 2.15rem); letter-spacing: -0.03em; }
   transition: background var(--fast) var(--ease), border-color var(--fast) var(--ease);
 }
 
-.novedad strong { color: var(--accent); font-weight: 600; }
+.novedad strong { color: var(--accent-texto); font-weight: 600; }
 .novedad:hover { background: var(--accent-wash); border-color: color-mix(in srgb, var(--accent) 42%, transparent); }
 
 .novedad-punto {
@@ -297,7 +355,7 @@ h2.titulo { font-size: clamp(1.55rem, 3vw, 2.15rem); letter-spacing: -0.03em; }
 .novedad-galon {
   width: 14px;
   height: 14px;
-  color: var(--accent);
+  color: var(--accent-texto);
   transform: rotate(-90deg);
   transition: transform var(--medium) var(--ease);
 }
@@ -329,6 +387,9 @@ h2.titulo { font-size: clamp(1.55rem, 3vw, 2.15rem); letter-spacing: -0.03em; }
   font-size: 1rem;
   font-weight: 560;
   text-decoration: none;
+  /* Un botón es un objeto de una línea. Partido en dos, el lector no sabe si
+     el salto es intencionado o un fallo de maquetación. */
+  white-space: nowrap;
   transition: transform var(--fast) var(--ease), background var(--fast) var(--ease),
               box-shadow var(--medium) var(--ease);
 }
@@ -347,13 +408,14 @@ h2.titulo { font-size: clamp(1.55rem, 3vw, 2.15rem); letter-spacing: -0.03em; }
 
 .btn-primario {
   background: var(--accent);
-  color: #fff;
-  box-shadow: 0 1px 2px rgba(32, 26, 16, 0.12), 0 10px 24px var(--accent-wash);
+  /* El papel, no el blanco puro: el mismo tono que usa `.nav-cta`. 4,71:1. */
+  color: var(--canvas);
+  box-shadow: 0 1px 2px rgb(var(--tinta-rgb) / 0.12), 0 10px 24px var(--accent-wash);
 }
 
 .btn-primario:hover {
-  background: color-mix(in srgb, var(--accent) 88%, #000);
-  box-shadow: 0 2px 5px rgba(32, 26, 16, 0.14), 0 16px 34px var(--accent-wash);
+  background: color-mix(in srgb, var(--accent) 88%, var(--text));
+  box-shadow: 0 2px 5px rgb(var(--tinta-rgb) / 0.14), 0 16px 34px var(--accent-wash);
 }
 
 .btn-suave { background: var(--wash); color: var(--text); }
@@ -567,7 +629,7 @@ h2.titulo { font-size: clamp(1.55rem, 3vw, 2.15rem); letter-spacing: -0.03em; }
   padding: 0.85rem clamp(0.9rem, 2.4vw, 1.3rem) 1rem;
   background: var(--chrome);
   border-top: 1px solid var(--rule);
-  box-shadow: 0 -14px 30px rgba(32, 26, 16, 0.09);
+  box-shadow: 0 -14px 30px rgb(var(--tinta-rgb) / 0.09);
   font-size: 0.8rem;
   transform: translateY(101%);
   opacity: 0;
@@ -616,7 +678,7 @@ h2.titulo { font-size: clamp(1.55rem, 3vw, 2.15rem); letter-spacing: -0.03em; }
 
 .publicar-ruta { flex: 1; min-width: 0; overflow: hidden; text-overflow: ellipsis; }
 .publicar-diff i { color: var(--positivo); font-style: normal; }
-.publicar-diff b { color: var(--accent); font-weight: 400; }
+.publicar-diff b { color: var(--accent-texto); font-weight: 400; }
 
 .publicar-mensaje {
   display: flex;
@@ -692,7 +754,7 @@ h2.titulo { font-size: clamp(1.55rem, 3vw, 2.15rem); letter-spacing: -0.03em; }
 }
 
 .ln.plegada .pieza { max-width: 5ch; opacity: 1; }
-.pieza .punto { color: var(--accent); font-weight: 700; }
+.pieza .punto { color: var(--accent-texto); font-weight: 700; }
 
 /* La misma casilla que dibuja la aplicación: cuadrado, y relleno al marcarse. */
 .caja {
@@ -814,7 +876,7 @@ h2.titulo { font-size: clamp(1.55rem, 3vw, 2.15rem); letter-spacing: -0.03em; }
   height: 34px;
   display: grid;
   place-items: center;
-  color: var(--accent);
+  color: var(--accent-texto);
   border-radius: 50%;
   /* El centrado vive aquí y no sólo en los fotogramas: si la animación se
      desactiva por «menos movimiento», el galón debe seguir centrado. */
@@ -857,6 +919,9 @@ h2.titulo { font-size: clamp(1.55rem, 3vw, 2.15rem); letter-spacing: -0.03em; }
   font-weight: 640;
   letter-spacing: -0.03em;
   color: var(--text);
+  /* Cuatro datos en columnas: con cifras proporcionales el 250 y el 8,1 no
+     se alinean entre sí y la fila se lee torcida. */
+  font-variant-numeric: tabular-nums;
 }
 
 .cifras dd { margin: 0.1rem 0 0; font-size: 0.86rem; color: var(--text-faint); }
@@ -868,23 +933,51 @@ h2.titulo { font-size: clamp(1.55rem, 3vw, 2.15rem); letter-spacing: -0.03em; }
 
 /* ── Pilares ────────────────────────────────────────────────────────────── */
 
+/*
+ * Tres ideas, tres anchos distintos y un escalón que baja. Antes eran tres
+ * columnas iguales con ficha, borde redondeado y sombra: la cuadrícula de
+ * tarjetas que emite cualquier plantilla. Aquí la jerarquía la llevan el
+ * texto, la regla de arriba y el hueco, como en el resto del papel.
+ *
+ * Los anchos van de más a menos (5 · 4 · 3 de doce) porque el primer pilar
+ * es el que más tiene que explicar y el último el que menos.
+ */
 .pilares {
   display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(255px, 1fr));
-  gap: clamp(1.6rem, 4vw, 3rem);
-  padding: clamp(2.8rem, 6vw, 4.5rem) 0;
+  grid-template-columns: repeat(12, minmax(0, 1fr));
+  gap: clamp(1.8rem, 3.5vw, 2.8rem);
+  padding: clamp(3rem, 7vw, 5rem) 0 clamp(2.6rem, 5vw, 4rem);
 }
 
-.pilar-num {
-  display: block;
-  font-family: var(--font-mono);
-  font-size: 0.78rem;
-  color: var(--accent);
-  margin-bottom: 0.7rem;
+.pilares article { min-width: 0; }
+
+.pilares h3 {
+  display: flex;
+  align-items: baseline;
+  gap: 0.55rem;
+  padding-top: 1.05rem;
+  border-top: 1px solid var(--rule);
+  font-size: 1.08rem;
+  margin-bottom: 0.5rem;
 }
 
-.pilares h3 { font-size: 1.08rem; margin-bottom: 0.5rem; }
+/* El número entra en la línea del título, no encima: apilado era el mismo
+   gesto de ficha que se acaba de quitar. Igual que en `.grupo-titulo`. */
+.pilar-num { font-family: var(--font-mono); font-size: 0.74rem; color: var(--accent-texto); }
+
 .pilares p { color: var(--text-soft); font-size: 0.95rem; }
+
+/* El escalón sólo existe cuando hay sitio para las tres columnas. Por debajo
+   se apilan a lo ancho, sin desniveles que ahí no significan nada. */
+@media (min-width: 901px) {
+  .pilares article:nth-child(1) { grid-column: 1 / span 5; }
+  .pilares article:nth-child(2) { grid-column: 6 / span 4; margin-top: clamp(1rem, 2.5vw, 2rem); }
+  .pilares article:nth-child(3) { grid-column: 10 / span 3; margin-top: clamp(2rem, 5vw, 3.6rem); }
+}
+
+@media (max-width: 900px) {
+  .pilares { grid-template-columns: 1fr; gap: 1.7rem; }
+}
 
 /* ── Captura ────────────────────────────────────────────────────────────── */
 
@@ -959,7 +1052,7 @@ h2.titulo { font-size: clamp(1.55rem, 3vw, 2.15rem); letter-spacing: -0.03em; }
   font-size: 1.02rem;
 }
 
-.grupo-num { font-family: var(--font-mono); font-size: 0.74rem; color: var(--accent); }
+.grupo-num { font-family: var(--font-mono); font-size: 0.74rem; color: var(--accent-texto); }
 
 .grupo ul { list-style: none; margin: 0; padding: 0; }
 
@@ -991,7 +1084,10 @@ h2.titulo { font-size: clamp(1.55rem, 3vw, 2.15rem); letter-spacing: -0.03em; }
 
 .atajos dl {
   display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(400px, 1fr));
+  /* `min(400px, 100%)`: la pista pedía 400 px fijos dentro de una caja de
+     unos 236 px, y la fila se salía 138 px por la derecha en cualquier movil.
+     Con el `min()` la pista nunca es más ancha que su contenedor. */
+  grid-template-columns: repeat(auto-fit, minmax(min(400px, 100%), 1fr));
   gap: 0 clamp(1.5rem, 4vw, 3.5rem);
   margin: 0;
 }
@@ -1008,6 +1104,18 @@ h2.titulo { font-size: clamp(1.55rem, 3vw, 2.15rem); letter-spacing: -0.03em; }
 .atajos dt { font-size: 0.9rem; color: var(--text-soft); }
 .atajos dd { margin: 0; white-space: nowrap; }
 .atajos kbd { background: var(--canvas); border: 1px solid var(--rule-suave); }
+
+/*
+ * A 320 px la fila «etiqueta a la izquierda, teclas a la derecha» no cabe:
+ * tres de las siete se salían de la caja por entre 12 y 30 px. Se apilan, y
+ * las teclas pasan a la línea siguiente entre chips; cada tecla sigue entera,
+ * que un `Ctrl+Shift+F` partido por la mitad no se puede leer.
+ */
+@media (max-width: 560px) {
+  .atajos div { flex-direction: column; align-items: flex-start; gap: 0.35rem; }
+  .atajos dd { white-space: normal; }
+  .atajos kbd { white-space: nowrap; }
+}
 
 /* ── Cómo funciona ──────────────────────────────────────────────────────── */
 
@@ -1155,7 +1263,7 @@ h2.titulo { font-size: clamp(1.55rem, 3vw, 2.15rem); letter-spacing: -0.03em; }
 
 .pasos li { display: flex; gap: 0.9rem; align-items: baseline; }
 
-.paso-num { font-family: var(--font-mono); font-size: 0.82rem; color: var(--accent); flex: none; }
+.paso-num { font-family: var(--font-mono); font-size: 0.82rem; color: var(--accent-texto); flex: none; }
 .pasos h3 { font-size: 1rem; margin-bottom: 0.3rem; }
 .pasos p { font-size: 0.92rem; color: var(--text-soft); }
 
@@ -1170,7 +1278,7 @@ h2.titulo { font-size: clamp(1.55rem, 3vw, 2.15rem); letter-spacing: -0.03em; }
 }
 
 .aviso strong { color: var(--text); }
-.aviso a { color: var(--accent); text-underline-offset: 3px; }
+.aviso a { color: var(--accent-texto); text-underline-offset: 3px; }
 
 /* ── Dudas ──────────────────────────────────────────────────────────────── */
 
@@ -1196,7 +1304,7 @@ h2.titulo { font-size: clamp(1.55rem, 3vw, 2.15rem); letter-spacing: -0.03em; }
 }
 
 .preguntas summary::-webkit-details-marker { display: none; }
-.preguntas summary:hover { color: var(--accent); }
+.preguntas summary:hover { color: var(--accent-texto); }
 
 /* El signo, dibujado con dos trazos: al abrirse, el vertical desaparece. */
 .preguntas summary::after {
@@ -1299,12 +1407,8 @@ h2.titulo { font-size: clamp(1.55rem, 3vw, 2.15rem); letter-spacing: -0.03em; }
 .con-animaciones .captura.revelar.visible { transform: none; }
 
 /* La barra se despega del papel en cuanto la página deja de estar arriba. */
-.nav { box-shadow: 0 0 0 rgba(32, 26, 16, 0); transition: box-shadow var(--medium) var(--ease); }
-.desplazado .nav { box-shadow: 0 1px 0 var(--rule-suave), 0 8px 24px rgba(32, 26, 16, 0.05); }
-
-/* Y los pilares levantan un poco su número. */
-.pilar-num { transition: transform var(--medium) var(--ease), color var(--medium) var(--ease); }
-.pilares article:hover .pilar-num { transform: translateY(-2px); }
+.nav { box-shadow: 0 0 0 rgb(var(--tinta-rgb) / 0); transition: box-shadow var(--medium) var(--ease); }
+.desplazado .nav { box-shadow: 0 1px 0 var(--rule-suave), 0 8px 24px rgb(var(--tinta-rgb) / 0.05); }
 
 /* Quien pide menos movimiento recibe el resultado, no el camino. */
 @media (prefers-reduced-motion: reduce) {
@@ -1321,12 +1425,12 @@ h2.titulo { font-size: clamp(1.55rem, 3vw, 2.15rem); letter-spacing: -0.03em; }
  * sin salir de la paleta de papel, tinta y terracota de Unfold.
  * -------------------------------------------------------------------------- */
 :root {
-  --sombra-card: 0 1px 2px rgba(32, 26, 16, 0.035), 0 18px 46px rgba(32, 26, 16, 0.075);
+  --sombra-card: 0 1px 2px rgb(var(--tinta-rgb) / 0.035), 0 18px 46px rgb(var(--tinta-rgb) / 0.075);
 }
 
 body {
   background:
-    radial-gradient(circle at 84% 7%, rgba(180, 87, 42, 0.075), transparent 28rem),
+    radial-gradient(circle at 84% 7%, color-mix(in srgb, var(--accent) 7.5%, transparent), transparent 28rem),
     var(--canvas);
 }
 
@@ -1337,7 +1441,7 @@ body {
 }
 
 .nav-marca { font-size: 1.03rem; }
-.nav-cta { border: 1px solid var(--rule-suave); box-shadow: 0 1px 2px rgba(32, 26, 16, 0.04); }
+.nav-cta { border: 1px solid var(--rule-suave); box-shadow: 0 1px 2px rgb(var(--tinta-rgb) / 0.04); }
 
 .hero { padding-top: clamp(3.5rem, 9vh, 7rem); }
 .hero-texto { position: relative; z-index: 1; }
@@ -1354,23 +1458,13 @@ body {
 
 .ventana,
 .captura { border: 1px solid color-mix(in srgb, var(--text) 10%, transparent); }
-.ventana { box-shadow: var(--sombra-card), 0 0 0 12px rgba(180, 87, 42, 0.035); }
+.ventana { box-shadow: var(--sombra-card), 0 0 0 12px color-mix(in srgb, var(--accent) 3.5%, transparent); }
 
-.pilares { gap: 1rem; }
-.pilares article {
-  padding: 1.45rem 1.35rem 1.55rem;
-  border: 1px solid var(--rule-suave);
-  border-radius: 16px;
-  background: color-mix(in srgb, var(--canvas) 78%, var(--chrome));
-  box-shadow: 0 1px 1px rgba(32, 26, 16, 0.025);
-  transition: transform var(--medium) var(--ease), box-shadow var(--medium) var(--ease),
-              border-color var(--medium) var(--ease);
-}
-.pilares article:hover {
-  transform: translateY(-4px);
-  border-color: color-mix(in srgb, var(--accent) 28%, var(--rule));
-  box-shadow: var(--sombra-card);
-}
+/*
+ * Aquí había una ficha: relleno, borde, fondo, sombra y un hover que movía,
+ * teñía el borde y encendía la sombra, las tres cosas a la vez. Un pilar no
+ * se puede pulsar, así que no tiene que contestar al ratón. Se queda quieto.
+ */
 
 .captura { box-shadow: var(--sombra-card); }
 .cierre { border-radius: 22px; margin: 1rem 0 0; padding-inline: 1.5rem; }
@@ -1384,6 +1478,8 @@ body {
   .nav { padding-inline: 1rem; }
   .hero h1 { font-size: clamp(2.35rem, 12vw, 3.2rem); }
   .acciones .btn { width: 100%; justify-content: center; }
+  /* Sin esto «Descargar Unfold» no cabía en una línea a 320 px. */
+  .btn-grande { padding: 0.9rem 1.3rem; font-size: 0.98rem; }
   .pilares article { padding: 1.2rem; }
 }
 

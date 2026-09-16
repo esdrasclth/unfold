@@ -1,0 +1,15 @@
+[
+  {
+    "date": "2026-09-15",
+    "verb": "audit + redesign en sitio",
+    "macrostructure": "preexistente (sin cambiar por encargo)",
+    "theme": "propio de Unfold (papel #fdfcfa / acento #b4572a)",
+    "enrichment": "none (la demo animada ya existia)",
+    "brief": "web de Unfold: arreglar hallazgos del audit y romper la rejilla de tarjetas",
+    "gates_abiertos": [
+      1,
+      42,
+      47
+    ]
+  }
+]
